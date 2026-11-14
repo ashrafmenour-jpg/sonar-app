@@ -1,0 +1,50 @@
+name: Build Sonar apps
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', 'mac/**', '.github/workflows/**']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.11.1' }
+      - name: Bundle the Sonar page
+        run: mkdir -p android/app/src/main/assets/www && cp web/index.html web/version.json android/app/src/main/assets/www/
+      - name: Build APK
+        working-directory: android
+        run: gradle assembleRelease --no-daemon --stacktrace
+      - run: cp android/app/build/outputs/apk/release/app-release.apk Sonar.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: Sonar-apk, path: Sonar.apk }
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Sonar.app
+        run: bash mac/build.sh
+      - uses: actions/upload-artifact@v4
+        with: { name: Sonar-mac, path: Sonar-Mac.zip }
+  release:
+    needs: [android, mac]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { merge-multiple: true }
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v3.0.${{ github.run_number }}
+          name: Sonar 3.0.${{ github.run_number }}
+          make_latest: 'true'
+          body: |
+            Sonar للتابلت (Sonar.apk) وللماك (Sonar-Mac.zip).
+            صفحة Sonar نفسها بتتحدّث لوحدها جوه التطبيقين.
+          files: |
+            Sonar.apk
+            Sonar-Mac.zip
