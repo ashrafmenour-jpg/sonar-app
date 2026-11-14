@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.1';
+window.SONAR_WEB = '3.0.2';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -13731,6 +13731,51 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.1', e); } }, 600);
 
 } catch (e) { console.warn("baked 3.0.1", e); }
+/* ===== baked update 3.0.2 ===== */
+try {
+/* Sonar 3.0.2 — «صفقاتي» rebuilt (Ashraf, 14 Nov 23:49: "الصفقات تبقى فوق، والحاجات الطويلة ورا بعض تحت وبطريقة أحسن")
+   1 · open trades on top, as live cards (price now, %, R, where it sits between stop and target, target 1 hit → stop at entry)
+   2 · pending orders: only the live ones, with how far the price is from the trigger; the old ones folded
+   3 · the record: one compact table (day · coin · side · grade · result), folded, with the totals on its title
+   4 · your own simulator trades stay at the bottom, unchanged */
+setTimeout(function () { try {
+  const f2 = v => N(v) ? (v >= 0 ? '+' : '') + v.toFixed(2) + 'R' : '—', pcs = v => N(v) ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—', cls = v => v > 0 ? 'up21' : v < 0 ? 'dn21' : 'mu21';
+  const LV = window.P222 && P222.LV, day = t => new Date(t).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const ST = { on: ['مستني', 'wt21'], fill: ['اتنفذ ✓', 'up21'], exp: ['انتهى', 'mu21'], gone: ['مشي من غيرنا', 'mu21'] };
+  const T = {
+    open() { return PICK.st.list.filter(x => { const q = PICK.res(x); return q && !q.done; }); },
+    closed() { return PICK.st.list.map(x => ({ x, q: PICK.res(x) })).filter(o => o.q && o.q.done); },
+    kpi(o, c) { const n = c.length, w = c.filter(z => z.q.R > 0).length, m = n ? c.reduce((a, z) => a + z.q.R, 0) / n : 0, on = JUDGE.st.pend.filter(p => p.st === 'on').length;
+      let acc = null; try { acc = P22.ACC.m(); } catch (e) {}
+      const box = (l, v, s, k) => `<div class="v-card t32k"><small>${l}</small><b class="num ${k || ''}">${v}</b>${s ? `<em>${s}</em>` : ''}</div>`;
+      return `<div class="t32kpi">${box('مفتوحة دلوقتي', o.length, `من ${PICK.MAX_OPEN} مسموح`)}${box('اتاخدت النهارده', PICK.today().length, `من ${PICK.MAX_DAY} في اليوم`)}${box('مقفولة', n, n ? `كسب ${Math.round(w / n * 100)}% · متوسط ${f2(m)}` : 'لسه', cls(m))}${box('أوامر معلّقة', on, on ? 'مستنية سعرها' : 'مفيش')}${acc ? box('حساب ما قبل التداول', '$' + Math.round(acc.eq).toLocaleString('en'), `${pcs((acc.eq / acc.eq0 - 1) * 100)} من البداية`, cls(acc.eq - acc.eq0)) : ''}</div>`; },
+    card(x) { try { const s = LV && LV.of(x); const d = JUDGE.of(x.sym), d2 = Object.assign({}, d, { k: 'now', sg: x.sg, grade: x.grade, e: s ? s.e : x.p, stop: s ? s.stop : x.stop, tp1: x.tp1, tp2: x.tp2, why: x.why || d.why });
+        return V21.dcard(d2, x.sym, s ? LV.html(s, false) : ''); } catch (e) { return `<div class="v-card"><b>${esc(base(x.sym))}</b></div>`; } },
+    pend() { const P = JUDGE.st.pend, on = P.filter(p => p.st === 'on'), old = P.filter(p => p.st !== 'on').slice(0, 15);
+      const row = p => { const px = S.prices[p.sym], tgt = p.type === 'pull' ? p.e : p.lvl, dist = N(px) && N(tgt) ? (tgt / px - 1) * 100 : null, st = ST[p.st] || [p.st, 'mu21'];
+        return `<tr data-v21sym="${esc(p.sym)}" style="cursor:pointer"><td><b>${esc(base(p.sym))}</b> <span class="${p.sg > 0 ? 'up21' : 'dn21'}">${p.sg > 0 ? 'شراء' : 'بيع'}</span> <small class="mu21">${esc(p.grade || '')}</small></td><td class="mu21">${esc(String(p.t || ''))}</td><td class="num">${N(dist) && p.st === 'on' ? `<span class="${Math.abs(dist) < 1 ? 'wt21' : 'mu21'}">${pcs(dist)}</span>` : ''}</td><td class="${st[1]}">${st[0]}</td></tr>`; };
+      return `<div class="v-sec"><h2>⏳ أوامر مستنية سعرها <small>${on.length ? on.length + ' أمر · العقل بينفذها على الورق لوحده' : 'مفيش دلوقتي'}</small></h2>
+        ${on.length ? `<div class="v-card t32tab"><table><thead><tr><th>العملة</th><th>الشرط</th><th>المسافة</th><th>الحالة</th></tr></thead><tbody>${on.map(row).join('')}</tbody></table></div>` : ''}
+        ${old.length ? `<details class="v-card t32fold"><summary>الأوامر القديمة <small class="mu21">${old.length} — اتنفذ ${P.filter(p => p.st === 'fill').length} · انتهى ${P.filter(p => p.st === 'exp').length} · مشي من غيرنا ${P.filter(p => p.st === 'gone').length}</small></summary><div class="t32tab"><table><tbody>${old.map(row).join('')}</tbody></table></div></details>` : ''}</div>`; },
+    rec(c) { if (!c.length) return ''; const n = c.length, w = c.filter(z => z.q.R > 0).length, m = c.reduce((a, z) => a + z.q.R, 0) / n, why = { tp2: 'الهدف التاني', be: 'الهدف الأول ثم الدخول', sl: 'الوقف', time: 'انتهى الوقت' };
+      return `<div class="v-sec"><details class="v-card t32fold" ${store.get('t32.rec', 0) ? 'open' : ''} id="t32rec"><summary>📜 سجل القرارات المقفولة <small class="mu21">${n} قرار · كسب ${Math.round(w / n * 100)}% · متوسط ${f2(m)}</small></summary>
+        <div class="t32tab"><table><thead><tr><th>اتاخدت</th><th>العملة</th><th>الدرجة</th><th>اتقفلت بـ</th><th>النتيجة</th></tr></thead><tbody>${c.map(({ x, q }) => `<tr data-v21sym="${esc(x.sym)}" style="cursor:pointer"><td class="mu21">${day(x.t)}</td><td><b>${esc(base(x.sym))}</b> <span class="${x.sg > 0 ? 'up21' : 'dn21'}">${x.sg > 0 ? 'شراء' : 'بيع'}</span></td><td>${x.grade === 'A' ? '⭐ A' : 'B'}</td><td class="mu21">${esc(why[q.why] || q.why || '')}</td><td class="num ${cls(q.R)}"><b>${f2(q.R)}</b></td></tr>`).join('')}</tbody></table></div></details></div>`; },
+    render() { const w = $('#v21tr'); if (!w) return; const o = this.open(), c = this.closed();
+      w.innerHTML = `${this.kpi(o, c)}
+        <div class="v-sec"><h2>🟢 صفقات العقل المفتوحة <small>${o.length ? 'على الورق · السعر والنتيجة لحظة بلحظة' : ''}</small></h2>${o.length ? `<div class="v-list">${o.map(x => this.card(x)).join('')}</div>` : `<div class="v-card v-empty"><b>مفيش صفقة مفتوحة دلوقتي</b>أول ما العقل ياخد قرار هيظهر هنا.</div>`}</div>
+        ${this.pend()}${this.rec(c)}`;
+      const d = $('#t32rec'); if (d) d.addEventListener('toggle', () => store.set('t32.rec', d.open ? 1 : 0)); } };
+  V21.trades = function () { try { T.render(); } catch (e) { console.warn('t32', e); } };
+  const st = document.createElement('style'); st.textContent = `
+.t32kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:6px 0 4px}.t32k{padding:12px 14px}.t32k small{display:block;color:var(--v-fa);font-size:12px}.t32k b{display:block;font-size:22px;margin:2px 0}.t32k em{display:block;font-style:normal;font-size:12px;color:var(--v-mu)}
+.t32tab{overflow-x:auto}.t32tab table{width:100%;border-collapse:collapse;font-size:14px}.t32tab th{text-align:start;font-weight:600;color:var(--v-fa);font-size:12px;padding:6px 8px;border-bottom:1px solid var(--v-line)}.t32tab td{padding:9px 8px;border-bottom:1px solid var(--v-line)}.t32tab tr:last-child td{border-bottom:0}.t32tab tbody tr:hover{background:var(--v-s2)}
+details.t32fold>summary{cursor:pointer;list-style:none;font-weight:600}details.t32fold>summary::-webkit-details-marker{display:none}details.t32fold>summary:after{content:' ▾';color:var(--v-fa)}details.t32fold[open]>summary{margin-bottom:10px}details.t32fold{margin-top:10px}
+`; document.head.appendChild(st);
+  if (V21.tab === 'trades') V21.trades();
+  window.P302 = T;
+} catch (e) { console.warn('3.0.2', e); } }, 700);
+
+} catch (e) { console.warn("baked 3.0.2", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
