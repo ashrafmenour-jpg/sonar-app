@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.2';
+window.SONAR_WEB = '3.0.3';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -13776,6 +13776,26 @@ details.t32fold>summary{cursor:pointer;list-style:none;font-weight:600}details.t
 } catch (e) { console.warn('3.0.2', e); } }, 700);
 
 } catch (e) { console.warn("baked 3.0.2", e); }
+/* ===== baked update 3.0.3 ===== */
+try {
+/* Sonar 3.0.3 — «فحص الجهاز» inside the apps tells the truth (notifications/storage/battery come from the app, not the browser),
+   and the old «Fully Kiosk» instructions are replaced by the app's own. */
+setTimeout(function () { try {
+  const APP = window.SonarApp; if (!APP) return;
+  const r0 = P30.DEV.run.bind(P30.DEV);
+  P30.DEV.run = async function () { const L = await r0(), plat = window.SONAR_PLAT;
+    const set = (k, ok, d) => { const i = L.findIndex(x => x[0] === k); if (i >= 0) L[i] = [k, ok, d]; };
+    set('حماية التخزين من المسح', 1, 'التطبيق بيحفظ بياناته جوه نفسه');
+    set('الإشعارات', 1, plat === 'mac' ? 'من الماك نفسه' : 'من أندرويد نفسه');
+    set('منع الشاشة من النوم', 1, plat === 'mac' ? 'الماك مش بينام والبرنامج شغال' : 'شغال والشاشة مقفولة');
+    if (plat === 'mac') { const i = L.findIndex(x => x[0] === 'قراءة البطارية'); if (i >= 0) L.splice(i, 1); }
+    set('مشاركة الملفات مع Claude', 1, plat === 'mac' ? 'الملف بيتحفظ في Downloads — اسحبه للمحادثة' : 'قايمة المشاركة ← Claude');
+    this.L = L; return L; };
+  const d0 = P30.C.dev.bind(P30.C);
+  P30.C.dev = function () { return d0().replace(/<p class="mu21" style="font-size:13px;margin:8px 0 0">📲[\s\S]*?<\/p>/, `<p class="mu21" style="font-size:13px;margin:8px 0 0">📲 انت شغال من <b>تطبيق Sonar ${window.SONAR_PLAT === 'mac' ? 'للماك' : 'لأندرويد'}</b>: البيانات جوه التطبيق، والتحديثات بتنزل لوحدها. التنزيل للأجهزة التانية: <a href="https://github.com/ashrafmenour-jpg/sonar-app/releases/latest" target="_blank">أحدث نسخة</a>.</p>`); };
+} catch (e) { console.warn('3.0.3', e); } }, 800);
+
+} catch (e) { console.warn("baked 3.0.3", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
