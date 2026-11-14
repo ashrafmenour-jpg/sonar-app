@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.3';
+window.SONAR_WEB = '3.0.4';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -13796,6 +13796,24 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.3', e); } }, 800);
 
 } catch (e) { console.warn("baked 3.0.3", e); }
+/* ===== baked update 3.0.4 ===== */
+try {
+/* Sonar 3.0.4 — moving the AI keys without touching them: importing an «all my data» file into a copy that already has data asks
+   first; «keys and settings only» brings just the online-AI keys/settings and keeps everything else here as it is. */
+setTimeout(function () { try {
+  const KEYS = ['sonarpro.fai.cfg', 'sonarpro.ai.prov', 'sonarpro.ai.cfg'];
+  const i0 = MIG.import.bind(MIG);
+  MIG.import = async function (file) { let o; try { o = JSON.parse(await file.text()); } catch (e) { return i0(file); }
+    const has = (TRN.st.closed || []).length || (TRN.st.open || []).length || (PICK.st.list || []).length;
+    if (o && o.app === 'sonar-pro-all' && o.keys && has) {
+      const k = KEYS.filter(x => o.keys[x] != null);
+      if (k.length && confirm(`عندك بيانات شغالة هنا.\n\nأيوه = خد مفاتيح العقل الأونلاين وإعداداته بس من الملف (والباقي يفضل زي ما هو)\nلأ = استبدل كل حاجة هنا بالملف`)) {
+        for (const x of k) { try { localStorage.setItem(x, o.keys[x]); } catch (e) {} }
+        try { store.flushAll && store.flushAll(); } catch (e) {} toast('✅ المفاتيح اتنقلت — بعيد التحميل…', 'info'); setTimeout(() => location.reload(), 900); return; } }
+    return i0(file); };
+} catch (e) { console.warn('3.0.4', e); } }, 850);
+
+} catch (e) { console.warn("baked 3.0.4", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
