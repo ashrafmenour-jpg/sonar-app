@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.4';
+window.SONAR_WEB = '3.0.5';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -8221,7 +8221,7 @@ const SOL2 = { snap: new Map(), seen: new Map(), busy: false, at: 0, trAt: 0, SI
   async fast() { if (this.fbusy) return; const F = this.S.filter(s => s.fast), A = [...new Set(F.flatMap(s => this.st().books[s.k].open.map(t => t.a)))]; if (!A.length) return; this.fbusy = true;
     try { for (let i = 0; i < A.length && i < 60; i += 30) await SOLR.j(`${SOLR.GT}/pools/multi/${A.slice(i, i + 30).join(',')}`); this.step(true); DREAM.save(); } catch (e) {} finally { this.fbusy = false; } },
   init() { const j0 = SOLR.j.bind(SOLR); SOLR.j = async url => { const r = await j0(url); try { if (/geckoterminal/.test(url)) SOL2.ingest(r); } catch (e) {} return r; };
-    const s0 = SOLR.scan.bind(SOLR); SOLR.scan = async function () { await s0(); try { await SOL2.run(); } catch (e) {} };
+    const s0 = SOLR.scan.bind(SOLR); SOLR.scan = async function () { await s0(); if (!SOLR.st().on) return; try { await SOL2.run(); } catch (e) {} };
     const f0 = SOLR.finish.bind(SOLR); SOLR.finish = function (p) { const r = f0(p); try { SOL2.L = null; } catch (e) {} return r; };
     const r0 = SOLR.render.bind(SOLR); SOLR.render = function () { r0(); try { const el = $('#solWrap'); if (el && !el.querySelector('.sol2')) { el.insertAdjacentHTML('afterbegin', SOL2.html()); SOL2.wire(el); } } catch (e) { console.warn('sol2 render', e); } };
     // Solana gets more room: more new coins per scan, more under watch, and the scan runs even when the tab is closed
@@ -10852,7 +10852,7 @@ setTimeout(() => HELP.ping(), 2500); setInterval(() => HELP.ping(), 120000);
    ===================================================================== */
 const SOLR = { busy: false, ok: null, msg: '', timer: null, GT: 'https://api.geckoterminal.com/api/v2/networks/solana',
   st() { const D = DREAM.st; return D.sol || (D.sol = { on: 1, rug: 1, pools: {} }); },
-  async j(url) { try { const r = await fetch(url, { headers: { accept: 'application/json' } }); if (r.ok) return await r.json(); throw new Error('HTTP ' + r.status); } catch (e) { if (!HELP.ok) await HELP.ping(); if (!HELP.ok) throw new Error('nohelper'); const c = new AbortController(), tm = setTimeout(() => c.abort(), 45000); const r = await fetch(HELP.base + '/proxy?u=' + encodeURIComponent(url), { signal: c.signal }).finally(() => clearTimeout(tm)); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); } },
+  async j(url) { if (!this.st().on) throw new Error('solana-off'); try { const r = await fetch(url, { headers: { accept: 'application/json' } }); if (r.ok) return await r.json(); throw new Error('HTTP ' + r.status); } catch (e) { if (!HELP.ok) await HELP.ping(); if (!HELP.ok) throw new Error('nohelper'); const c = new AbortController(), tm = setTimeout(() => c.abort(), 45000); const r = await fetch(HELP.base + '/proxy?u=' + encodeURIComponent(url), { signal: c.signal }).finally(() => clearTimeout(tm)); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); } },
   start() { if (this.timer) return; this.scan(); this.timer = setInterval(() => this.scan(), 3 * 60000); },
   async scan() { if (!this.st().on || this.busy) return; this.busy = true; const P = this.st().pools, now = Date.now();
     try { this.added = 0; for (const pg of [1, 2]) { const j = await this.j(`${this.GT}/new_pools?page=${pg}`);
@@ -13814,6 +13814,23 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.4', e); } }, 850);
 
 } catch (e) { console.warn("baked 3.0.4", e); }
+/* ===== baked update 3.0.5 ===== */
+try {
+/* Sonar 3.0.5 — the Solana experiment is cancelled (Ashraf, 15 Nov: «الغيه»)
+   Result when it stopped: sniping 34 trades avg −63% (13 rugs), pump 19 avg −38%, flash 19 avg −30%.
+   Every Solana request goes through SOLR.j → blocked here, so no data is spent on it; old records stay saved. */
+setTimeout(function () { try {
+  const s = SOLR.st(); if (s.on || !s.off305) { s.on = 0; s.off305 = s.off305 || Date.now(); DREAM.save(); }
+  if (SOLR.timer) { clearInterval(SOLR.timer); SOLR.timer = null; }
+  SOLR.start = function () {}; SOLR.scan = async function () {}; SOLR.j = async function () { throw new Error('solana-off'); };
+  try { SOL2.run = async function () {}; } catch (e) {}
+  SOLR.render = function () { const el = $('#solWrap'); if (!el) return;
+    el.innerHTML = `<div class="box"><b>☀️ تجربة سولانا اتلغت</b><div class="note" style="margin-top:6px">اتقفلت يوم 15 نوفمبر لأنها خسرانة وبتاكل باقة النت: القنص 34 صفقة متوسطها −63% (13 عملة طلعت نصب) · الانفجارات 19 صفقة −38% · الومضات 19 صفقة −30%. مفيش أي طلب لسولانا بيتبعت تاني، والسجل القديم محفوظ.</div></div>`; };
+  SOLR.render();
+  window.P305 = { off: s.off305 };
+} catch (e) { console.warn('3.0.5', e); } }, 900);
+
+} catch (e) { console.warn("baked 3.0.5", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
