@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.5';
+window.SONAR_WEB = '3.0.6';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -58,6 +58,44 @@ window.SONAR_WEB = '3.0.5';
   I.write();
   addEventListener('storage', e => { if (e.key !== K || !e.newValue) return; try { const o = JSON.parse(e.newValue); if (o.id !== me.id && o.t > me.t) I.yieldNow(o); } catch (x) {} });
   setInterval(() => { if (I.passive) return; const o = I.other(); if (o && o.t > me.t && now() - o.hb < 60000) return I.yieldNow(o); I.write(); }, 10000);
+})();
+
+/* Sonar 3.0.6 — network saver (runs before everything, outside the PERF meter so a saved request is not counted as one)
+   The 15 Nov diagnosis: ~617 MB in 15 h. Most of it was the same answer asked again and again by different engines:
+   the whole-market ticker every ~18 s (197 MB), the same candles (126 MB), order-book/trades snapshots, open-interest history.
+   1 · SHARE: the same GET within a short window gets the saved answer (and requests already on the way are shared).
+   2 · PAUSE: an outside exchange that fails 20 times in a row (KuCoin candles: 2760 calls, 0 bytes) is paused 2 h, then tried again. */
+(function () {
+  const now = () => Date.now(), f0 = window.fetch;
+  const N = window.NET306 = { hit: 0, saved: 0, blocked: 0, C: new Map(), bytes: 0, dead: {}, fails: {}, paused: {} };
+  const eco = () => { try { return !!(window.S && S.set && +S.set.eco); } catch (e) { return false; } };
+  const TTL = u => {
+    if (/\/ticker\/24hr(\?|$)/.test(u) && !/symbol=/.test(u)) return eco() ? 15e3 : 55e3;
+    if (/premiumIndex(\?|$)/.test(u) && !/symbol=/.test(u)) return 55e3;
+    if (/api\.bybit\.com.*tickers|okx\.com.*tickers|bitget\.com.*tickers|gateio\.ws.*tickers/.test(u)) return 110e3;
+    if (/klines\?/.test(u)) { if (/endTime=/.test(u)) return 600e3; const iv = (/interval=(\w+)/.exec(u) || [])[1] || '1h'; return iv === '1m' ? 15e3 : /^(3m|5m)$/.test(iv) ? 30e3 : 60e3; }
+    if (/openInterestHist|LongShortAccountRatio|LongShortPositionRatio|takerlongshortRatio/.test(u)) return 240e3;
+    if (/\/depth\?|\/aggTrades\?|orderbook/.test(u)) return 15e3;
+    return 0; };
+  const SEC = /kucoin|mexc|sapi\.xt\.com|lbkex|bitget|gateio|bybit|okx\.com|deribit|reddit|hyperliquid|faireconomy/;
+  const mk = b => new Response(b, { status: 200, headers: { 'content-type': 'application/json' } });
+  const trim = () => { for (const [k, e] of N.C) { if (N.bytes < 25e6 && N.C.size < 700) break; if (e.b != null) N.bytes -= e.b.length; N.C.delete(k); } };
+  const ok = h => { if (N.fails[h]) N.fails[h] = 0; };
+  const bad = h => { if (!SEC.test(h)) return; const n = N.fails[h] = (N.fails[h] || 0) + 1, lim = N.paused[h] ? 3 : 20; if (n >= lim) { N.dead[h] = now() + (N.paused[h] ? 6 : 2) * 3600e3; N.paused[h] = (N.paused[h] || 0) + 1; N.fails[h] = 0; } };
+  window.fetch = function (u, o) {
+    let url = ''; try { url = String(u && u.url || u); } catch (e) { return f0.apply(this, arguments); }
+    const host = (/^https?:\/\/([^/]+)/.exec(url) || [])[1] || '';
+    const D = N.dead[host]; if (D) { if (now() < D) { N.blocked++; return Promise.reject(new TypeError('host-paused ' + host)); } delete N.dead[host]; }
+    const get = !(o && (o.body || (o.method && String(o.method).toUpperCase() !== 'GET'))) && !(u && u.method && u.method !== 'GET');
+    const ttl = get ? TTL(url) : 0;
+    if (ttl) { const c = N.C.get(url); if (c) { if (c.b != null && now() - c.t < ttl) { N.hit++; N.saved += c.b.length; return Promise.resolve(mk(c.b)); } if (c.p && now() - c.t < 30e3) { N.hit++; return c.p.then(b => mk(b)); } } }
+    const p = f0.apply(this, arguments).then(r => { if (r.ok) ok(host); else if (r.status >= 400 && r.status !== 429) bad(host); return r; }, e => { bad(host); throw e; });
+    if (ttl) { const e = { t: now(), p: null, b: null };
+      e.p = p.then(r => { if (!r.ok) throw new TypeError('Load failed'); return r.clone().text(); })
+        .then(b => { if (b.length > 3e6) { N.C.delete(url); return b; } e.b = b; e.t = now(); e.p = null; N.bytes += b.length; trim(); return b; }, x => { if (N.C.get(url) === e) N.C.delete(url); throw x; });
+      e.p.catch(() => {}); const old = N.C.get(url); if (old && old.b != null) N.bytes -= old.b.length; N.C.delete(url); N.C.set(url, e); }
+    return p; };
+  window.__HIDE_TRN = 1;
 })();
 
 window.PT = p => (p && (p.at || +String(p.id || '').slice(0, 13))) || 0;
@@ -9454,7 +9492,7 @@ const TRN = { st: store.get('trn.st', { eq: 10000, eq0: 10000, since: Date.now()
       const mk = (() => { try { return MOOD.now().k; } catch (e) { return ''; } })();
       OC[src] = (OC[src] || 0) + 1; this.st.open.push(Object.assign({ id: ++this.st.id, src, sym: r.sym, sg: d, t: now, lc: now, reg, mood: mk, sup, ag, rk: this.budget(src, mk, r.sym, d, P, this.liq(r)), half: false, fr: fresh ? 1 : 0, cf: r.conf ? r.conf.pct : null, cost: this.liq(r), why: String((WH[r.sym] || {})[src] || '').slice(0, 180) }, P)); rc[key] = now; opened++; try { XBOT.open(this.st.open[this.st.open.length - 1]); } catch (e) {} }
     try { this.strip(); } catch (e) {}
-    if (opened) { this.save(); if (!this.toldOpen) { this.toldOpen = true; toast(`🎓 محفظة التدريب فتحت ${opened} صفقة تجريبية (${this.st.open.filter(t => t.src === this.RADAR).length} منها جاهزة من الرادار)`); } } if (S.market === 'trn') this.render(); },
+    if (opened) { this.save(); if (!this.toldOpen && !window.__HIDE_TRN) { this.toldOpen = true; toast(`🎓 محفظة التدريب فتحت ${opened} صفقة تجريبية (${this.st.open.filter(t => t.src === this.RADAR).length} منها جاهزة من الرادار)`); } } if (S.market === 'trn') this.render(); },
   openCall(name, c, src0, ap) { const p = S.prices[c.sym]; if (!N(p) || !c.stop || c.sg * (p - c.stop) <= 0) return false; const src = src0 || 'قناة: ' + name; if (this.st.open.some(t => t.src === src && t.sym === c.sym)) return false;
     const R0 = Math.abs(p - c.stop), tp = c.tps.filter(x => c.sg * (x - p) > 0), tp1 = tp[0] || p + c.sg * 1.5 * R0, tp2 = tp.length > 1 ? tp[tp.length - 1] : p + c.sg * Math.max(3, 2 * Math.abs(tp1 - p) / R0) * R0;
     { const ck = PLANCHK.check(c.sg, p, c.stop, tp1, tp2, R0); if (!ck.ok) { PLANCHK.reject(src, ck.why); return false; } }
@@ -10570,7 +10608,7 @@ const CAP = { MIN: 65, busy: false, at: 0, rc: new Map(),
   async run() { if (this.busy) return; this.busy = true; let opened = 0;
     try { const L = this.list(); await pool(L, 2, async ({ name, c }) => { const r = await this.coin(c.sym); const v = this.judge(name, c, r); c.ap = v; if (!c.ap0) c.ap0 = { p: v.p, ok: v.ok ? 1 : 0, at: v.at };
         if (v.ok && !c.apPaper && Date.now() - c.t < 6 * 3600e3) { try { if (TRN.openCall(name, c, this.SRC, v)) { c.apPaper = 1; opened++; } } catch (e) {} } });
-      this.at = Date.now(); DREAM.save(); if (opened) toast(`📡 ${opened} توصية من القنوات عدّت شروطنا — اتفتحت في محفظة التدريب`); }
+      this.at = Date.now(); DREAM.save(); if (opened && !window.__HIDE_TRN) toast(`📡 ${opened} توصية من القنوات عدّت شروطنا — اتفتحت في محفظة التدريب`); }
     finally { this.busy = false; try { DREAM.render(); } catch (e) {} } },
   // does OUR approval add anything? finished calls split by the frozen first verdict
   proof() { const A = [], B = []; for (const ch of Object.values(CHN.st())) for (const c of ch.calls) if (c.ap0 && c.res && c.res.st === 'done') (c.ap0.ok ? A : B).push(c.res.R);
@@ -12103,7 +12141,7 @@ const UPD = { BASE: '3.0', BAKED: ['2.1.1', '2.1.2', '2.2', '2.2.1', '2.2.2', '2
 const HC = { log: [], hist: store.get('hc.hist', []), last: null, aiAt: 0, aiOk: null, aiMsg: '',
   RED: /key|token|secret|pass|proxy|auth|cookie|session/i,
   red(s) { return String(s).replace(/(sk-or-v1-|sk-ant-|sk-|gsk_|xai-|AIza)[A-Za-z0-9_\-]{8,}/g, '$1•••').replace(/[A-Za-z0-9_\-]{40,}/g, '•••'); },
-  capture() { const push = (k, a) => { try { const m = [...a].map(x => x && x.stack ? String(x.message || x) : typeof x === 'object' ? (() => { try { if (typeof Event !== 'undefined' && x instanceof Event) { const tg = x.target || {}; return 'event:' + x.type + ' ' + (tg.constructor && tg.constructor.name || '') + ' ' + String(tg.url || tg.src || tg.href || '').slice(0, 120); } const j = JSON.stringify(x); return j === '{}' ? Object.prototype.toString.call(x) + ' ' + String(x && (x.message || x.type || x.name) || '') : j.slice(0, 300); } catch (e) { return String(x); } })() : String(x)).join(' '); if (/WebSocket|net::ERR|Failed to fetch|NetworkError|AbortError|aborted/i.test(m) && k !== 'err') return; this.log.push({ t: Date.now(), k, m: this.red(m).slice(0, 400) }); if (this.log.length > 300) this.log.splice(0, this.log.length - 300); } catch (e) {} };
+  capture() { const push = (k, a) => { try { const m = [...a].map(x => x && x.stack ? String(x.message || x) : typeof x === 'object' ? (() => { try { if (typeof Event !== 'undefined' && x instanceof Event) { const tg = x.target || {}; return 'event:' + x.type + ' ' + (tg.constructor && tg.constructor.name || '') + ' ' + String(tg.url || tg.src || tg.href || '').slice(0, 120); } const j = JSON.stringify(x); return j === '{}' ? Object.prototype.toString.call(x) + ' ' + String(x && (x.message || x.type || x.name) || '') : j.slice(0, 300); } catch (e) { return String(x); } })() : String(x)).join(' '); if (/WebSocket|net::ERR|Failed to fetch|NetworkError|AbortError|aborted|Load failed|host-paused|solana-off|Network request failed|timed out/i.test(m)) { if (k !== 'err') return; k = 'net'; } this.log.push({ t: Date.now(), k, m: this.red(m).slice(0, 400) }); if (this.log.length > 300) this.log.splice(0, this.log.length - 300); } catch (e) {} };
     const w0 = console.warn.bind(console), e0 = console.error.bind(console); console.warn = (...a) => { push('warn', a); w0(...a); }; console.error = (...a) => { push('err', a); e0(...a); };
     window.addEventListener('error', e => push('err', [e.message + ' @' + (e.filename || '').split('/').pop() + ':' + e.lineno])); window.addEventListener('unhandledrejection', e => push('err', ['promise: ' + (e.reason && (e.reason.message || e.reason))])); },
   storage() { let b = 0, n = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); b += (k.length + (localStorage.getItem(k) || '').length) * 2; n++; } localStorage.setItem('hc.probe', String(Date.now())); localStorage.removeItem('hc.probe'); return { mb: +(b / 1048576).toFixed(2), n, ok: true }; } catch (e) { return { mb: +(b / 1048576).toFixed(2), n, ok: false, err: String(e.message || e) }; } },
@@ -12112,7 +12150,7 @@ const HC = { log: [], hist: store.get('hc.hist', []), last: null, aiAt: 0, aiOk:
   age(t) { if (!t) return 'أبدًا'; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'دلوقتي' : m < 60 ? `من ${m} د` : `من ${Math.round(m / 60)} س`; },
   async run() { try { await this.ai(); } catch (e) {} const C = [], add = (k, n, ok, t) => C.push({ k, n, ok, t }), now = Date.now();
     try { const a = S.lastScan ? now - S.lastScan : Infinity, tk = Math.max(S.lastTick || 0, S.lastTickDirect || 0); add('data', 'بيانات السوق', a < 10 * 60000 ? 'ok' : a < 30 * 60000 ? 'warn' : 'bad', `آخر فحص ${this.age(S.lastScan)} · ${S.results.length} عملة · الأسعار ${tk ? this.age(tk) : '—'}`); } catch (e) { add('data', 'بيانات السوق', 'bad', String(e.message)); }
-    try { const T = TRN.st; add('trn', 'محفظة التدريب', S.set.trnOff ? 'warn' : TRN.halt ? 'bad' : now - (T.last || 0) < 6 * 60000 ? 'ok' : 'warn', S.set.trnOff ? 'متوقفة يدوي' : TRN.halt || `آخر تحديث ${this.age(T.last)} · ${T.open.length} مفتوحة (${T.open.filter(t => t.rk > 0).length} بفلوس) · الرصيد $${T.eq.toFixed(0)}`); } catch (e) { add('trn', 'محفظة التدريب', 'bad', String(e.message)); }
+    try { const T = TRN.st; add('trn', 'محفظة التدريب', S.set.trnOff ? 'warn' : TRN.halt ? 'bad' : now - (T.last || 0) < 6 * 60000 ? 'ok' : 'warn', S.set.trnOff ? 'متوقفة يدوي' : TRN.halt || `شغالة في الخلفية · آخر تحديث ${this.age(T.last)} · صفقاتها مخفية وبتروح للتقارير بس (ملف التعلم)`); } catch (e) { add('trn', 'محفظة التدريب', 'bad', String(e.message)); }
     try { const d = BTR.fresh(), a = BTR.acc(); add('btr', 'اتجاه البيتكوين', d ? 'ok' : 'warn', d ? `${BTR.L[d.k]} · ${this.age(d.at)}${a ? ` · صدق ${Math.round(a.p * 100)}% في ${a.n} يوم` : ''}` : 'لسه ما اتحسبش (محتاج بيانات بينانس)'); } catch (e) { add('btr', 'اتجاه البيتكوين', 'bad', String(e.message)); }
     try { const s = RISKG.state(); add('risk', 'محرك المخاطرة', s.why ? 'warn' : 'ok', s.why ? 'الصفقات بفلوس واقفة: ' + s.why : `شغال · النهارده ${s.dp.toFixed(2)}% · الأسبوع ${s.wp.toFixed(2)}%`); } catch (e) { add('risk', 'محرك المخاطرة', 'bad', String(e.message)); }
     try { const r = BRAIN.st.rep, st = BRAIN.status(); add('brain', 'عقل القرار', !BRAIN.st.at ? (r && r.short ? 'warn' : 'warn') : now - BRAIN.st.at < 3 * 3600e3 ? 'ok' : 'warn', `${st[1]}${r && !r.short ? ` · AUC ${r.auc}` : ''} · اتدرب ${this.age(BRAIN.st.at)}`); } catch (e) { add('brain', 'عقل القرار', 'bad', String(e.message)); }
@@ -12721,7 +12759,7 @@ const JUDGE = { st: store.get('judge.st', { pend: [], hist: [] }), cache: new Ma
       if (now > p.exp) { p.st = 'exp'; p.end = now; ch = true; continue; }
       if (p.sg * (px - p.tp1) >= 0 && p.type === 'pull') { p.st = 'gone'; p.end = now; ch = true; continue; }
       let hit = false; if (p.type === 'pull') hit = p.sg > 0 ? px <= p.e : px >= p.e; else { try { const K = closedK(r.k1), c1 = K.c[K.c.length - 1]; hit = p.sg * (c1 - p.lvl) > 0 && K.t[K.t.length - 1] > PT(p); } catch (e) {} }
-      if (!hit) continue; if (PICK.today().length >= PICK.MAX_DAY || PICK.openN() >= PICK.MAX_OPEN) continue;
+      if (!hit) continue; if (PICK.st.list.some(y => y.sym === p.sym && now - y.t < 24 * 3600e3)) { p.st = 'exp'; p.end = now; p.skip = 'العملة اتاخد عليها قرار في آخر 24 ساعة'; ch = true; continue; } if (PICK.today().length >= PICK.MAX_DAY || PICK.openN() >= PICK.MAX_OPEN) continue;
       let ok = false; try { ok = TRN.openCall(PICK.SRC, { sym: p.sym, sg: p.sg, stop: p.stop, tps: [px * (1 + p.sg * .03), px * (1 + p.sg * .055)], raw: `⏳ أمر معلّق اتنفذ · ${p.grade} · ${p.eng.join(' + ')}` }, PICK.SRC); } catch (e) {}
       if (!ok) continue; p.st = 'fill'; p.end = now; ch = true; const sp = Math.abs(px - p.stop) / px * 100;
       PICK.st.list.unshift({ t: now, sym: p.sym, sg: p.sg, p: px, stop: p.stop, tp1: px * (1 + p.sg * .03), tp2: px * (1 + p.sg * .055), sp: +sp.toFixed(2), grade: p.grade, why: p.why.concat(['⏳ اتنفذت من أمر معلّق: ' + p.t]), eng: p.eng, pend: 1 }); store.set('pick.st', PICK.st);
@@ -12896,7 +12934,7 @@ details.v-det>summary{cursor:pointer;list-style:none;font-weight:600;padding:4px
     let E = []; try { const C = TRN.st.C; E = Object.keys(C).filter(k => k.startsWith('E|') && k.split('|').length === 2).map(k => { const s = k.slice(2), e = TRN.ev(C[k]), r = TRN.ev(C[k + '|R:' + reg]); const pv = PICK.proven(s, 1) || PICK.proven(s, -1); return { s, e, r, k: pv ? 0 : !e || e.n < 30 ? 2 : e.m > 0 ? 1 : 3 }; }).filter(x => x.e && x.e.n >= 10).sort((a, b) => a.k - b.k || b.e.t - a.e.t); } catch (e) {}
     const lab = ['✅ مثبت', '🟡 كسبان', '⏳ بيتجرب', '❌ خسران — بيكمل تجريب'], cnt = [0, 1, 2, 3].map(k => E.filter(x => x.k === k).length);
     const H = HIST.st, hr = HIST.rows().filter(x => x.pk === 'ours').sort((a, b) => b.m - a.m), chans = Object.keys(CHN.st()).map(n => [n, CHN.stats(n), CHSEG.of(n)]).filter(([, x]) => x && x.calls).sort((a, b) => (b[1].evaluated || 0) - (a[1].evaluated || 0)).slice(0, 14);
-    const old = [['🏠 القرار القديم', 'home'], ['✅ كل الجاهز', 'ready'], ['⚡ سريع', 'quick'], ['📆 سوينج', 'swing'], ['🪙 سبوت', 'spot'], ['🧠 Smart Money', 'smx'], ['📊 كل المحركات', 'all'], ['🛰 السوق من فوق', 'sky'], ['🎓 التدريب', 'trn'], ['🧪 المختبر', 'lab'], ['📈 اختبار تاريخي قديم', 'bt'], ['🔭 الكشّاف', 'scout'], ['🌙 Dream والقنوات', 'dream'], ['🤖 الذكاء الاصطناعي', 'ai'], ['🌐 المنصات التانية', 'ku'], ['☀️ سولانا', 'sol'], ['🎯 محاكي الهدف', 'goal'], ['⚙️ الإعدادات', 'set']];
+    const old = [['🏠 القرار القديم', 'home'], ['✅ كل الجاهز', 'ready'], ['⚡ سريع', 'quick'], ['📆 سوينج', 'swing'], ['🪙 سبوت', 'spot'], ['🧠 Smart Money', 'smx'], ['📊 كل المحركات', 'all'], ['🛰 السوق من فوق', 'sky'], ['🧪 المختبر', 'lab'], ['📈 اختبار تاريخي قديم', 'bt'], ['🔭 الكشّاف', 'scout'], ['🌙 Dream والقنوات', 'dream'], ['🤖 الذكاء الاصطناعي', 'ai'], ['🌐 المنصات التانية', 'ku'], ['🎯 محاكي الهدف', 'goal'], ['⚙️ الإعدادات', 'set']];
     w.innerHTML = `<div class="v-card v-hero"><div class="mu21" style="font-size:13px">إزاي العقل بيقرر</div><h1 style="font-size:21px">رأي واحد، مبني على اللي ثبت بالأرقام في ${esc(HIST.REGN[reg])}</h1>
       <p class="sub">كل المحركات والقنوات والاختبار التاريخي بيدّوا أدلة، والعقل بيوزنها: المحرك اللي كسب في <b>نفس حالة السوق</b> وفي <b>نفس الاتجاه</b> بيتسمع له، واللي خسر في السوق ده بيفضل يتجرب على الورق لحد ما يثبت نفسه تاني. القرار واحد من 3: ✅ ادخل دلوقتي · ⏳ ادخل عند سعر · ⛔ مفيش. والهدف اللي بنبني عليه: <b>من $1,000 لـ $1,000,000</b> — بنتعلم ونجرب ونصلّح القصور.</p>
       <div class="v-chips">${cnt.map((c, i) => `<span class="v-chip">${lab[i]} <b class="n">${c}</b></span>`).join('')}<span class="v-chip">B مسموح؟ <b>${JUDGE.bOK() ? 'أيوه' : 'لأ — A بس'}</b></span></div></div>
@@ -13611,7 +13649,7 @@ setTimeout(function () { try {
         <div class="v-row"><span class="grow">🔑 المفاتيح والإعدادات</span><button class="btn sm" data-c30old="set">افتح</button></div></div>`; },
     dev() { const L = DEV.L || []; return `<div class="c30rows">${L.map(([k, ok, d]) => `<div class="v-row"><span>${ok ? '✅' : '⚠️'} <b>${esc(k)}</b></span><span class="grow mu21" style="text-align:start">${esc(String(d))}</span></div>`).join('') || '<small class="mu21">بيفحص…</small>'}</div>
         <p class="mu21" style="font-size:13px;margin:8px 0 0">📲 <b>التشغيل على التابلت:</b> نزّل <b>Fully Kiosk Browser</b> من Google Play ← حط ملف Sonar في فولدر التطبيق ← افتحه بـ <code>file:///…/Sonar-Pro.html</code> ← من الإعدادات: الشاشة صاحية، يفتح مع تشغيل الجهاز، ويعيد التحميل لما النت يرجع، وفعّل JavaScript Alerts. رفع الملفات (تحميل ملف التعلم والتحديثات) محتاج <b>Fully PLUS</b> (حوالي 9 يورو مرة واحدة). وسيب التابلت على الشاحن.</p>`; },
-    oldPages() { const L = [['🎓 التدريب', 'trn'], ['🧪 المختبر', 'lab'], ['🌙 Dream والقنوات', 'dream'], ['☀️ سولانا', 'sol'], ['🔭 الكشّاف', 'scout'], ['📊 كل المحركات', 'all'], ['🌐 المنصات التانية', 'ku'], ['⚙️ الإعدادات', 'set']];
+    oldPages() { const L = [['🧪 المختبر', 'lab'], ['🌙 Dream والقنوات', 'dream'], ['🔭 الكشّاف', 'scout'], ['📊 كل المحركات', 'all'], ['🌐 المنصات التانية', 'ku'], ['⚙️ الإعدادات', 'set']];
       return `<div class="c30btns">${L.map(([t, k]) => `<button class="v-btn" data-c30old="${k}">${t}</button>`).join('')}</div>`; },
     html() { const ok = HC.last ? HC.last.C.filter(c => c.ok === 'ok').length : 0, all = HC.last ? HC.last.C.length : 0;
       return `<div class="v-card v-hero"><div class="mu21" style="font-size:13px">المركز</div><h1 style="font-size:22px;margin:4px 0">كل حاجة غير التداول — في مكان واحد</h1><div class="mu21">الفحص · الملفات · التحديثات · الصلاحيات · الاتصالات · أثر البرنامج على الجهاز</div></div>
@@ -13831,6 +13869,27 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.5', e); } }, 900);
 
 } catch (e) { console.warn("baked 3.0.5", e); }
+/* ===== baked update 3.0.6 ===== */
+try {
+/* Sonar 3.0.6 (Ashraf, 15 Nov 15:42: «ابدا واعمل التحديث · صفقات التعلم اخفها عني، فقط اعملي بها في تقارير»)
+   · training trades are hidden: no training page in the menus, no training toasts; they keep running in the background and go
+     into the learning / diagnosis files only (the reports) — the screen shows the brain's decisions and the pre-trade account
+   · the network saver (early306) shows what it saved in the Center, and goes into the diagnosis file */
+setTimeout(function () { try {
+  const N = window.NET306 || { hit: 0, saved: 0, blocked: 0, dead: {}, paused: {} };
+  const MBs = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.round(b / 1024) + ' KB';
+  const off = () => Object.entries(N.dead).filter(([, t]) => t > Date.now()).map(([h, t]) => [h.replace(/^(api|www|sapi)\./, ''), Math.ceil((t - Date.now()) / 60000)]);
+  window.P306 = { N, off,
+    line() { const o = off(); return `<div class="v-row" style="margin-top:8px"><span>💾 <b>توفير النت</b></span><span class="grow mu21" style="text-align:start">${N.hit} طلب اتجاوب من الذاكرة بدل النت · وفّر ${MBs(N.saved)}${N.blocked ? ` · ${N.blocked} طلب لمنصات واقفة ما اتبعتش` : ''}${o.length ? ` · متوقف مؤقتًا: ${o.map(([h, m]) => `${esc(h)} (${m} د)`).join('، ')}` : ''}</span></div>`; } };
+  // Center: the saver line under the device cost
+  try { const C = P30.C, p0 = C.perf.bind(C); C.perf = function () { return p0() + P306.line(); }; } catch (e) {}
+  // diagnosis file
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v306 = { hit: N.hit, saved: N.saved, blocked: N.blocked, cache: N.C ? N.C.size : 0, cacheMB: +(N.bytes / 1048576).toFixed(1), paused: off(), pausedCount: N.paused }; } catch (e) {} return o; }; } catch (e) {}
+  // a training page opened from an old link goes to the brain tab instead
+  try { const g0 = V21.oldPage.bind(V21); V21.oldPage = function (k) { if (k === 'trn') { V21.go('brain'); return; } return g0(k); }; } catch (e) {}
+} catch (e) { console.warn('3.0.6', e); } }, 1000);
+
+} catch (e) { console.warn("baked 3.0.6", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>

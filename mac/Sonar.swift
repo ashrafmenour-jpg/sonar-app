@@ -67,6 +67,9 @@ final class App: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUIDelegate
         let cfg = WKWebViewConfiguration()
         cfg.websiteDataStore = .default()
         cfg.preferences.javaScriptCanOpenWindowsAutomatically = true
+        // keep the page at full speed when the window is hidden or behind others (macOS 14+): the 15 Nov diagnosis showed
+        // timers firing ~1 s late on average (10 s at worst) while the window was closed to the menu bar
+        if #available(macOS 14.0, *) { cfg.preferences.inactiveSchedulingPolicy = .none }
         cfg.mediaTypesRequiringUserActionForPlayback = []
         let js = """
         window.SonarApp = { platform: function(){ return 'mac'; },
