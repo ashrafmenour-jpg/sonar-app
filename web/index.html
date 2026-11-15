@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.6';
+window.SONAR_WEB = '3.0.7';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -69,8 +69,9 @@ window.SONAR_WEB = '3.0.6';
   const now = () => Date.now(), f0 = window.fetch;
   const N = window.NET306 = { hit: 0, saved: 0, blocked: 0, C: new Map(), bytes: 0, dead: {}, fails: {}, paused: {} };
   const eco = () => { try { return !!(window.S && S.set && +S.set.eco); } catch (e) { return false; } };
+  const live = () => { try { return Date.now() - (S.lastTick || 0) < 15000; } catch (e) { return false; } };
   const TTL = u => {
-    if (/\/ticker\/24hr(\?|$)/.test(u) && !/symbol=/.test(u)) return eco() ? 15e3 : 55e3;
+    if (/\/ticker\/24hr(\?|$)/.test(u) && !/symbol=/.test(u)) return eco() || !live() ? 15e3 : 55e3;
     if (/premiumIndex(\?|$)/.test(u) && !/symbol=/.test(u)) return 55e3;
     if (/api\.bybit\.com.*tickers|okx\.com.*tickers|bitget\.com.*tickers|gateio\.ws.*tickers/.test(u)) return 110e3;
     if (/klines\?/.test(u)) { if (/endTime=/.test(u)) return 600e3; const iv = (/interval=(\w+)/.exec(u) || [])[1] || '1h'; return iv === '1m' ? 15e3 : /^(3m|5m)$/.test(iv) ? 30e3 : 60e3; }
@@ -13890,6 +13891,149 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.6', e); } }, 1000);
 
 } catch (e) { console.warn("baked 3.0.6", e); }
+/* ===== baked update 3.0.7 ===== */
+try {
+/* Sonar 3.0.7 (Ashraf, 15 Nov 17:01: «العقل اللي بيتعلم يبقى عنده المعلومة … إمتى يكمل شورت أو يسكت أو يبدأ ياخد موجة ارتداد»)
+   🧭 PHASE — the market's phase from BTC's hourly chart + funding, the same rules live and on 5 years of history:
+     📉 short   below the 200-day average and the hourly trend down (EMA80 < EMA200 ≈ 4h EMA20 < EMA50), no flush
+     ⏸ wait    a FLUSH just happened: −7% in 24 h (or −12% from the 3-day high) with volume ≥ 3× normal and negative funding
+               (or −15%). No new shorts (squeeze risk), no buys yet. Lasts until a bounce is confirmed or 36 h pass
+     📈 bounce  ≥ 12 h after the flush low: a higher low (6 h) and back above EMA80 → small, quick longs; stop under the flush low;
+               ends at EMA200 / +6–12 % / 72 h, or when the flush low breaks (→ short)
+     🔁 rally   below the 200-day average but the hourly trend up (a rally inside the downtrend) → wait for resistance to sell
+     🟢 normal  above the 200-day average — the phase does not apply
+   SHADOW: shown on home and in the brain tab, every 4-hour bar is logged and judged 48 h later with a short and a long test trade
+   (stop 3 %, target 4.5 %, fees), and the brain's own decisions are grouped by the phase they were taken in. It changes NO decision
+   until the history test and the live record prove it.
+   🚀 «فاتتنا» made honest: no blame for the time before the new rule was installed, today's thresholds in the reasons, the whole
+   alarm record next to the misses, and a near-miss log so a miss like AGT says what the detector actually saw. */
+setTimeout(function () { try {
+  const H = 3600e3, D = 24 * H, f2 = v => N(v) ? (v >= 0 ? '+' : '') + v.toFixed(2) + 'R' : '—', pcs = (v, d = 1) => N(v) ? (v >= 0 ? '+' : '') + v.toFixed(d) + '%' : '—';
+  const cls = v => v > 0 ? 'up21' : v < 0 ? 'dn21' : 'mu21', dayStr = t => new Date(t).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' });
+  const when = t => new Date(t).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const LAB = { short: ['📉', 'كمّل شورت', 'الهبوط ماشي: البيع عند الارتداد للمقاومة، والشراء ممنوع'], wait: ['⏸', 'اسكت', 'لسه حصل انهيار وتصفيات: ما تفتحش شورت جديد (السعر ممكن يقفز فجأة) وما تشتريش لسه — استنى تأكيد'],
+    bounce: ['📈', 'خد موجة الارتداد', 'بعد الانهيار السعر عمل قاع أعلى ورجع فوق متوسطه: شراء صغير وسريع، الوقف تحت قاع الانهيار، والهدف المقاومة الجاية'],
+    rally: ['🔁', 'ارتداد جوه الهبوط', 'السوق هابط بس السعر طالع على المدى القصير: استنى المقاومة عشان تبيع، وما تطاردش الطلوع'], normal: ['🟢', 'السوق مش في هبوط', 'البيتكوين فوق متوسط الـ200 يوم — المراحل دي مش بتنطبق'] };
+  const ORDER = ['short', 'wait', 'bounce', 'rally', 'normal'];
+
+  // ------------------------------------------------------------------ the classifier (pure: same code live and on history)
+  function classify(K, F, o) { o = o || {}; const n = K.c.length, e80 = ema(K.c, 80), e200 = ema(K.c, 200), out = new Array(n), info = new Array(n), flushes = [];
+    let s200f = o.s200; if (!s200f) { const dayC = [], dIdx = new Array(n); let last = -1; for (let i = 0; i < n; i++) { const d = Math.floor(K.t[i] / D); if (d !== last) { dayC.push(0); last = d; } dayC[dayC.length - 1] = K.c[i]; dIdx[i] = dayC.length - 1; }
+      const pre = [0]; for (const c of dayC) pre.push(pre[pre.length - 1] + c); s200f = i => { const d = dIdx[i]; return d >= 200 ? (pre[d] - pre[d - 200]) / 200 : NaN; }; }
+    let fp = 0, ph = 'normal', fl = null, bo = null; const i0 = Math.max(o.from || 0, 200);
+    for (let i = 0; i < n; i++) { while (fp < F.length - 1 && F[fp + 1].t <= K.t[i]) fp++; if (i < i0) continue;
+      const c = K.c[i], sm = s200f(i), bear = N(sm) && c < sm; let lo24 = Infinity, loI = i, hi72 = 0, mxV = 0, sv = 0;
+      for (let j = i - 23; j <= i; j++) { if (K.l[j] < lo24) { lo24 = K.l[j]; loI = j; } if (K.v[j] * K.c[j] > mxV) mxV = K.v[j] * K.c[j]; } for (let j = i - 71; j <= i; j++) if (K.h[j] > hi72) hi72 = K.h[j];
+      for (let j = i - 168; j < i - 24; j++) sv += K.v[j] * K.c[j]; const avgV = sv / 144, spike = avgV > 0 ? mxV / avgV : 0, r24 = c / K.c[i - 24] - 1, dd = lo24 / hi72 - 1, fr = F.length && F[fp].t <= K.t[i] ? F[fp].r : 0;
+      const isFl = (r24 <= -0.07 || dd <= -0.12) && spike >= 3 && (fr < 0 || dd <= -0.15);
+      if (isFl) { if (!fl || i - fl.i > 72) { fl = { i, t: K.t[i], low: lo24, lowT: K.t[loI], dd, r24, spike, fr }; flushes.push(fl); } else if (lo24 < fl.low) { fl.low = lo24; fl.lowT = K.t[loI]; fl.dd = Math.min(fl.dd, dd); } ph = 'wait'; bo = null; }
+      else if (ph === 'wait' && fl) { const since = (K.t[i] - fl.lowT) / H; let lo6 = Infinity; for (let j = i - 5; j <= i; j++) lo6 = Math.min(lo6, K.l[j]);
+        if (since >= 12 && lo6 > fl.low * 1.005 && c > e80[i]) { const tg = e200[i] > c * 1.02 ? Math.min(e200[i], c * 1.12) : c * 1.06; ph = 'bounce'; bo = { i, t: K.t[i], e: c, stop: fl.low, tg }; }
+        else if (since >= 36) ph = bear ? (e80[i] < e200[i] ? 'short' : 'rally') : 'normal'; }
+      else if (ph === 'bounce' && bo) { if (c < fl.low) ph = 'short'; else if (c >= bo.tg || K.t[i] - bo.t > 72 * H) { ph = bear ? (e80[i] < e200[i] ? 'short' : 'rally') : 'normal'; bo = null; } }
+      else ph = bear ? (e80[i] < e200[i] ? 'short' : 'rally') : 'normal';
+      out[i] = ph; if (o.info || i === n - 1) info[i] = { c, sm, bear, r24, dd, spike, fr, e80: e80[i], e200: e200[i], fl: fl && (i - fl.i <= 120) ? Object.assign({}, fl) : null, bo: bo ? Object.assign({}, bo) : null }; }
+    return { out, info, flushes }; }
+  // a test trade from bar i: stop / target in %, 48 h, the bad side of each candle first, 0.1 % fees each way
+  function trade(K, i, sg, st, tg, hz) { const e = K.c[i], stop = e * (1 - sg * st), tp = e * (1 + sg * tg), fee = 0.002 / st; for (let j = i + 1; j < K.c.length && j <= i + hz; j++) { if (sg > 0 ? K.l[j] <= stop : K.h[j] >= stop) return -1 - fee; if (sg > 0 ? K.h[j] >= tp : K.l[j] <= tp) return tg / st - fee; }
+    if (i + hz >= K.c.length) return null; return sg * (K.c[i + hz] / e - 1) / st - fee; }
+  // day-clustered t: one mean per UTC day, then t over the days (TARGET's lesson: bars of the same day are not independent)
+  function tday(rows) { const by = new Map(); for (const r of rows) { if (!N(r.v)) continue; const d = Math.floor(r.t / D); let a = by.get(d); if (!a) by.set(d, a = []); a.push(r.v); }
+    const M = [...by.values()].map(a => a.reduce((x, y) => x + y, 0) / a.length), nd = M.length; if (!nd) return { n: 0, nd: 0, m: null, t: null };
+    const m = M.reduce((a, b) => a + b, 0) / nd, sd = nd > 1 ? Math.sqrt(M.reduce((a, b) => a + (b - m) ** 2, 0) / (nd - 1)) : 0, all = rows.filter(r => N(r.v));
+    return { n: all.length, nd, m: all.reduce((a, r) => a + r.v, 0) / all.length, t: sd > 1e-6 ? m / (sd / Math.sqrt(nd)) : null }; }
+
+  const PH = { st: Object.assign({ at: 0, cur: null, chg: [], bars: [], hr: null }, store.get('p307.ph', {})), F: [], Fat: 0, busy: false, prog: '', LAB, classify, trade, tday,
+    save() { this.st.chg = this.st.chg.slice(-200); this.st.bars = this.st.bars.slice(-1500); store.set('p307.ph', this.st); },
+    async funding(force) { if (!force && Date.now() - this.Fat < H && this.F.length) return this.F; try { const a = await getJSON(`${FAPI}/fapi/v1/fundingRate?symbol=BTCUSDT&limit=200`); this.F = a.map(x => ({ t: +x.fundingTime, r: +x.fundingRate * 100 })).sort((x, y) => x.t - y.t); this.Fat = Date.now(); } catch (e) {} return this.F; },
+    async live() { if (S.mode !== 'futures') return; try { const K = closedK(await API.klines('BTCUSDT', '1h', 1000)), n = K.c.length; if (n < 400) return; const F = await this.funding(); let s200 = NaN; try { s200 = P30.BEAR.st.s200; } catch (e) {}
+        if (!N(s200)) { const Kd = closedK(await API.klines('BTCUSDT', '1d', 260)); const m = Kd.c.length; if (m >= 200) s200 = Kd.c.slice(m - 200).reduce((a, b) => a + b, 0) / 200; } if (!N(s200)) return;
+        const R = classify(K, F, { s200: () => s200, from: 300 }), k = R.out[n - 1], inf = R.info[n - 1]; let since = n - 1; while (since > 300 && R.out[since - 1] === k) since--;
+        const prev = this.st.cur && this.st.cur.k; this.st.cur = { k, at: Date.now(), since: K.t[since], c: K.c[n - 1], s200, info: inf };
+        if (prev !== k) { this.st.chg.push({ t: Date.now(), k, from: prev || null, c: K.c[n - 1] }); if (prev) { try { NEWS.add('BTCUSDT', `🧭 مرحلة السوق اتغيرت: ${LAB[prev][0]} ${LAB[prev][1]} ← ${LAB[k][0]} ${LAB[k][1]}`, 'info'); } catch (e) {} } }
+        // log every 4-hour bar (seeded from the last ~40 days the first time), and judge the ones that are 48 h old
+        const have = new Set(this.st.bars.map(b => b.t)); for (let i = 300; i < n; i++) { if (K.t[i] % (4 * H)) continue; if (!have.has(K.t[i])) this.st.bars.push({ t: K.t[i], k: R.out[i], c: K.c[i], seed: this.st.at ? 0 : 1 }); }
+        this.st.bars.sort((a, b) => a.t - b.t); const idx = new Map(K.t.map((t, i) => [t, i]));
+        for (const b of this.st.bars) { if (b.s != null) continue; const i = idx.get(b.t); if (i == null || i + 48 >= n) continue; b.s = trade(K, i, -1, .03, .045, 48); b.l = trade(K, i, 1, .03, .045, 48); b.f24 = K.c[i + 24] / K.c[i] - 1; }
+        this.st.at = Date.now(); this.save(); try { if (V21.tab === 'brain' || V21.tab === 'home') V21.refresh(); } catch (e) {} } catch (e) { console.warn('ph live', e); } },
+    at(t) { const B = this.st.bars; let lo = 0, hi = B.length - 1, r = null; while (lo <= hi) { const m = (lo + hi) >> 1; if (B[m].t <= t) { r = B[m]; lo = m + 1; } else hi = m - 1; } return r && t - r.t < 8 * H ? r.k : null; },
+    // the brain's decisions, grouped by the phase they were taken in
+    byPhase() { const O = {}; for (const k of ORDER) O[k] = { buy: [], sell: [] }; try { for (const x of PICK.st.list) { const q = PICK.res(x); if (!q || !q.done || !N(q.R)) continue; const k = this.at(x.t); if (!k) continue; O[k][x.sg > 0 ? 'buy' : 'sell'].push(q.R); } } catch (e) {} return O; },
+    liveStats() { const B = this.st.bars.filter(b => b.s != null), O = {}; for (const k of ORDER) { const A = B.filter(b => b.k === k); O[k] = { n: A.length, s: tday(A.map(b => ({ t: b.t, v: b.s }))), l: tday(A.map(b => ({ t: b.t, v: b.l }))) }; } return { n: B.length, from: B.length ? B[0].t : 0, O }; },
+    // ---------------------------------------------------------------- the history test: Nov 2021 → now (2022's whole bear, FTX, 2024–26 flushes)
+    async hist(onp) { if (this.busy) return; this.busy = true; const prog = s => { this.prog = s; try { onp && onp(s); } catch (e) {} };
+      try { const START = Date.UTC(2021, 3, 1), get = async (sym, from) => { let end = Date.now(), A = []; for (let k = 0; k < 60; k++) { const a = await getJSON(`${API.root()}/klines?symbol=${sym}&interval=1h&limit=1000&endTime=${end}`); if (!a || !a.length) break; A = a.concat(A); end = +a[0][0] - 1; prog(`بيحمّل ${base(sym)} · ${new Date(end).toLocaleDateString('en-CA')}`); if (end < from) break; await new Promise(z => setTimeout(z, 120)); }
+          const K = closedK(parseK(A.filter((r, i, s) => i === 0 || +r[0] > +s[i - 1][0]))); return K; };
+        const K = await get('BTCUSDT', START), Ke = await get('ETHUSDT', Date.UTC(2021, 11, 25)), Ks = await get('SOLUSDT', Date.UTC(2021, 11, 25)); let F = [], st = START - 30 * D; prog('بيحمّل التمويل');
+        for (let k = 0; k < 10; k++) { const a = await getJSON(`${FAPI}/fapi/v1/fundingRate?symbol=BTCUSDT&startTime=${st}&limit=1000`); if (!a || !a.length) break; F = F.concat(a.map(x => ({ t: +x.fundingTime, r: +x.fundingRate * 100 }))); if (a.length < 1000) break; st = +a[a.length - 1].fundingTime + 1; }
+        prog('بيحسب المراحل'); await new Promise(z => setTimeout(z, 30)); const R = classify(K, F, {}), ie = new Map(Ke.t.map((t, i) => [t, i])), is = new Map(Ks.t.map((t, i) => [t, i])), rows = [], t0 = Date.UTC(2022, 0, 1);
+        for (let i = 0; i < K.c.length - 48; i++) { if (K.t[i] < t0 || K.t[i] % (4 * H) || !R.out[i]) continue; const a = ie.get(K.t[i]), b = is.get(K.t[i]);
+          const alt = (sg, f) => { const v = [a != null ? trade(Ke, a, sg, .05, .075, 48) : null, b != null ? trade(Ks, b, sg, .05, .075, 48) : null].filter(N); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; };
+          rows.push({ t: K.t[i], k: R.out[i], s: trade(K, i, -1, .03, .045, 48), l: trade(K, i, 1, .03, .045, 48), as: alt(-1), al: alt(1), f24: K.c[i + 24] / K.c[i] - 1, sq: Math.max(...K.h.slice(i + 1, i + 25)) / K.c[i] - 1 }); }
+        const mid = rows.length ? rows[Math.floor(rows.length / 2)].t : 0, O = {};
+        for (const k of ORDER) { const A = rows.filter(r => r.k === k), T = f => tday(A.map(r => ({ t: r.t, v: r[f] }))), half = (f, h) => tday(A.filter(r => (r.t < mid) === (h === 1)).map(r => ({ t: r.t, v: r[f] })));
+          O[k] = { n: A.length, share: rows.length ? A.length / rows.length : 0, s: T('s'), l: T('l'), as: T('as'), al: T('al'), s1: half('s', 1).m, s2: half('s', 2).m, l1: half('l', 1).m, l2: half('l', 2).m, f24: A.length ? A.reduce((x, r) => x + r.f24, 0) / A.length : null, sq5: A.length ? A.filter(r => r.sq >= .05).length / A.length : null }; }
+        const FL = R.flushes.filter(f => f.t >= t0).map(f => ({ t: f.t, low: f.low, lowT: f.lowT, dd: +(f.dd * 100).toFixed(1), fr: +f.fr.toFixed(4), next: (() => { const i = K.t.indexOf(f.lowT); return i >= 0 && i + 72 < K.c.length ? +((Math.max(...K.h.slice(i + 1, i + 73)) / f.low - 1) * 100).toFixed(1) : null; })() }));
+        this.st.hr = { at: Date.now(), from: rows.length ? rows[0].t : 0, to: rows.length ? rows[rows.length - 1].t : 0, bars: rows.length, mid, O, flushes: FL.slice(-40), nFl: FL.length }; this.save(); prog('');
+      } catch (e) { prog('وقف: ' + (e.message || e)); console.warn('ph hist', e); } finally { this.busy = false; try { V21.refresh(); } catch (e) {} } },
+    verdict(hr) { if (!hr) return []; const O = hr.O, V = [], ok = (x, h1, h2) => x && N(x.m) && x.m > 0 && N(x.t) && x.t >= 2 && h1 > 0 && h2 > 0;
+      V.push(ok(O.short.s, O.short.s1, O.short.s2) ? ['✅', '«كمّل شورت» مثبت: البيع فيها كسبان على 5 سنين وفي النصين'] : ['⏳', `«كمّل شورت» لسه مش مثبت (شورت ${f2(O.short.s.m)} · t ${N(O.short.s.t) ? O.short.s.t.toFixed(1) : '—'})`]);
+      V.push(N(O.wait.s.m) && O.wait.s.m < (O.short.s.m || 0) ? ['✅', `«اسكت» صح: الشورت بعد الانهيار أسوأ (${f2(O.wait.s.m)}) — ${N(O.wait.sq5) ? Math.round(O.wait.sq5 * 100) + '% من المرات السعر قفز +5% في 24 ساعة' : ''}`] : ['⏳', `«اسكت» لسه مش واضح: الشورت بعد الانهيار ${f2(O.wait.s.m)}`]);
+      V.push(ok(O.bounce.l, O.bounce.l1, O.bounce.l2) ? ['✅', '«خد موجة الارتداد» مثبت: الشراء فيها كسبان على 5 سنين وفي النصين'] : ['⏳', `«خد موجة الارتداد» لسه مش مثبت (لونج ${f2(O.bounce.l.m)} · t ${N(O.bounce.l.t) ? O.bounce.l.t.toFixed(1) : '—'} · ${O.bounce.n} مرة)`]);
+      V.push(N(O.rally.s.m) ? [O.rally.s.m > 0 ? '🟡' : '⏳', `«ارتداد جوه الهبوط»: شورت ${f2(O.rally.s.m)} · لونج ${f2(O.rally.l.m)}`] : ['⏳', '«ارتداد جوه الهبوط»: مفيش بيانات']); return V; },
+    // ---------------------------------------------------------------- what the screen shows
+    line() { const c = this.st.cur; if (!c) return ''; const L = LAB[c.k], h = Math.max(1, Math.round((Date.now() - c.since) / H));
+      return `<div class="v-card c37ph" data-c37go="1" style="cursor:pointer;margin-top:10px;padding:12px 14px"><div class="v-row" style="align-items:center"><span style="font-size:22px">${L[0]}</span><div class="grow"><b>مرحلة السوق: ${L[1]}</b> <small class="mu21">من ${h} ساعة · ظِل — بيتقاس ولسه مش بيغيّر القرارات</small><br><small class="mu21">${esc(L[2])}</small></div><small class="mu21">التفاصيل ←</small></div></div>`; },
+    why(inf) { if (!inf) return ''; const r = (ok, t) => `<div class="v-row" style="padding:3px 0"><span>${ok ? '✓' : '·'}</span><span class="grow ${ok ? '' : 'mu21'}">${t}</span></div>`;
+      return r(inf.bear, `البيتكوين ${inf.bear ? 'تحت' : 'فوق'} متوسط الـ200 يوم (${fp(inf.sm)})`) + r(inf.e80 < inf.e200, `الاتجاه على الساعة ${inf.e80 < inf.e200 ? 'هابط' : 'طالع'} (متوسط 80 ساعة ${inf.e80 < inf.e200 ? 'تحت' : 'فوق'} متوسط 200 ساعة)`) +
+        r(inf.r24 <= -0.07, `التغير في 24 ساعة ${pcs(inf.r24 * 100)} (الانهيار: −7% أو أكتر)`) + r(inf.dd <= -0.12, `أقل سعر في 24 ساعة بعيد عن قمة 3 أيام ${pcs(inf.dd * 100)} (الانهيار: −12%)`) + r(inf.spike >= 3, `أعلى فوليوم ساعة ${inf.spike.toFixed(1)}× العادي (الانهيار: 3×)`) + r(inf.fr < 0, `التمويل ${inf.fr.toFixed(4)}% ${inf.fr < 0 ? '— البياعين زحمة' : ''}`) +
+        (inf.fl ? r(true, `آخر انهيار: القاع ${fp(inf.fl.low)} يوم ${when(inf.fl.lowT)} (${pcs(inf.fl.dd * 100)} من القمة)`) : '') + (inf.bo ? r(true, `موجة الارتداد: دخول ${fp(inf.bo.e)} · وقف تحت ${fp(inf.bo.stop)} · هدف ${fp(inf.bo.tg)}`) : ''); },
+    card() { const c = this.st.cur, L = c ? LAB[c.k] : null, ls = this.liveStats(), bp = this.byPhase(), hr = this.st.hr, mR = a => a.length ? `${a.length} · ${f2(a.reduce((x, y) => x + y, 0) / a.length)}` : '—';
+      const tcell = x => x && x.n ? `<b class="num ${cls(x.m)}">${f2(x.m)}</b> <small class="mu21">t ${N(x.t) ? x.t.toFixed(1) : '—'}</small>` : '<span class="mu21">—</span>';
+      const liveT = ls.n ? `<div class="t32tab"><table><thead><tr><th>المرحلة</th><th>عدد الـ4 ساعات</th><th>شورت تجريبي</th><th>لونج تجريبي</th><th>قرارات العقل: بيع</th><th>شراء</th></tr></thead><tbody>${ORDER.map(k => { const o = ls.O[k]; if (!o.n && !bp[k].buy.length && !bp[k].sell.length) return ''; return `<tr><td>${LAB[k][0]} ${LAB[k][1]}</td><td class="num">${o.n}</td><td>${tcell(o.s)}</td><td>${tcell(o.l)}</td><td class="num">${mR(bp[k].sell)}</td><td class="num">${mR(bp[k].buy)}</td></tr>`; }).join('')}</tbody></table></div>
+        <p class="mu21" style="font-size:12px;margin:6px 0 0">من ${dayStr(ls.from)} · كل 4 ساعات بنجرب صفقة شورت وصفقة لونج على البيتكوين (وقف 3% · هدف 4.5% · 48 ساعة · بالمصاريف). أول 40 يوم محسوبين من الشموع ساعة ما المرحلة اشتغلت، والباقي لايف.</p>` : '<p class="mu21">بيتجمع — أول حكم بعد 48 ساعة.</p>';
+      const hT = hr ? `<div class="t32tab"><table><thead><tr><th>المرحلة</th><th>من الوقت</th><th>شورت BTC</th><th>لونج BTC</th><th>شورت ETH/SOL</th><th>لونج ETH/SOL</th><th>النص الأول / التاني (شورت · لونج)</th></tr></thead><tbody>${ORDER.map(k => { const o = hr.O[k]; if (!o || !o.n) return ''; return `<tr><td>${LAB[k][0]} ${LAB[k][1]}</td><td class="num">${Math.round(o.share * 100)}% <small class="mu21">${o.s.nd} يوم</small></td><td>${tcell(o.s)}</td><td>${tcell(o.l)}</td><td>${tcell(o.as)}</td><td>${tcell(o.al)}</td><td class="num"><small>${f2(o.s1)} / ${f2(o.s2)} · ${f2(o.l1)} / ${f2(o.l2)}</small></td></tr>`; }).join('')}</tbody></table></div>
+        <div style="margin-top:8px">${this.verdict(hr).map(v => `<div class="v-row" style="padding:3px 0"><span>${v[0]}</span><span class="grow">${esc(v[1])}</span></div>`).join('')}</div>
+        <details class="v-card t32fold"><summary>الانهيارات اللي اتسجلت <small class="mu21">${hr.nFl} من ${dayStr(hr.from)} — وبعد كل قاع السعر ارتد قد إيه في 3 أيام</small></summary><div class="t32tab"><table><tbody>${hr.flushes.slice().reverse().map(f => `<tr><td>${dayStr(f.lowT)}</td><td class="num">القاع ${fp(f.low)}</td><td class="num dn21">${pcs(f.dd)}</td><td class="num">تمويل ${f.fr}%</td><td class="num ${cls(f.next)}">بعدها ${pcs(f.next)}</td></tr>`).join('')}</tbody></table></div></details>
+        <p class="mu21" style="font-size:12px;margin:6px 0 0">اتعمل ${when(hr.at)} · ${hr.bars} نقطة كل 4 ساعات من ${dayStr(hr.from)} لـ ${dayStr(hr.to)} · t محسوبة بالأيام مش بالنقط. المثبت = متوسط موجب + t ≥ 2 + النصين موجبين.</p>` : '';
+      return `<div class="v-sec" id="c37card"><h2>🧭 مرحلة السوق <small>ظِل — بيتقاس قبل ما يتحكم في أي قرار</small></h2>
+        <div class="v-card">${c ? `<div class="v-row" style="align-items:center"><span style="font-size:28px">${L[0]}</span><div class="grow"><b style="font-size:18px">${L[1]}</b> <small class="mu21">من ${when(c.since)} · البيتكوين ${fp(c.c)}</small><br><small class="mu21">${esc(L[2])}</small></div></div><div style="margin-top:8px">${this.why(c.info)}</div>` : '<b>بيحسب…</b>'}</div>
+        <div class="v-card" style="margin-top:10px"><b>📒 السجل اللايف</b>${liveT}</div>
+        <div class="v-card" style="margin-top:10px"><div class="v-row" style="align-items:center"><b class="grow">📚 الاختبار على التاريخ <small class="mu21">نفس القواعد من 2022 لدلوقتي: سوق 2022 الهابط، انهيار FTX، وانهيارات 2024–2026</small></b><button class="btn sm" type="button" id="c37hist" ${this.busy ? 'disabled' : ''}>${this.busy ? esc(this.prog || 'شغال…') : hr ? 'أعد الاختبار' : 'شغّل الاختبار (حوالي 20 MB)'}</button></div>${hT || '<p class="mu21" style="margin:6px 0 0">لسه ما اتعملش.</p>'}</div></div>`; } };
+  window.P307 = { PH };
+
+  // home line + brain card
+  { const h0 = V21.home.bind(V21); V21.home = function () { const v = h0(); try { const w = $('#v21-home'); if (w) { const o = w.querySelector('.c37ph'); if (o) o.remove(); const x = PH.line(); if (x) { const b = w.querySelector('.c30bear,.c30bull'), g = b || w.querySelector('.v-grid') || w.firstElementChild; if (g) g.insertAdjacentHTML('afterend', x); const e = w.querySelector('.c37ph'); if (e) e.onclick = () => { V21.go('brain'); setTimeout(() => { const c = $('#c37card'); if (c) c.scrollIntoView({ behavior: 'smooth' }); }, 300); }; } } } catch (e) { console.warn('c37 home', e); } return v; }; }
+  { const b0 = V21.brain.bind(V21); V21.brain = function () { const v = b0(); try { const w = $('#v21-brain'); if (w) { const o = w.querySelector('#c37card'); if (o) o.remove(); w.insertAdjacentHTML('afterbegin', PH.card()); const bt = $('#c37hist'); if (bt) bt.onclick = () => { PH.hist(s => { const b = $('#c37hist'); if (b) { b.textContent = s || 'خلص'; b.disabled = !!s; } }); const b = $('#c37hist'); if (b) { b.disabled = true; b.textContent = 'بيبدأ…'; } }; } } catch (e) { console.warn('c37 brain', e); } return v; }; }
+  setTimeout(() => PH.live(), 15000); setInterval(() => PH.live(), 15 * 60000);
+
+  // ------------------------------------------------------------------ 🚀 «فاتتنا»: honest reasons + the whole record
+  const T211 = (() => { try { const p = UPD.list().find(p => p.id === '2.1.1'); return (p && p.at) || 1794583703721; } catch (e) { return 1794583703721; } })(), T307 = store.get('p307.t0', 0) || (store.set('p307.t0', Date.now()), Date.now());
+  const SEEN = { m: store.get('p307.seen', {}), last: 0, PR: { fired: 5, cool: 4, ok: 3, vol: 2, pct: 1, liq: 0 },
+    look() { const now = Date.now(); if (now - this.last < 20000) return; this.last = now; const R = MOMO.R; let ch = 0;
+      for (const [sym, B] of MOMO.buf) { if (B.length < 20) continue; const cur = B[B.length - 1], a = MOMO.ago(B, 15 * 60000, now); if (!a) continue; const c15 = (cur.c / a.c - 1) * 100; if (Math.abs(c15) < R.up * 0.6) continue;
+        const v15 = Math.max(0, cur.q - a.q) / (15 * cur.q / 1440), cl = MOMO.cool.get(sym), why = !(cur.q >= R.minQ) ? 'liq' : Math.abs(c15) < R.up ? 'pct' : v15 < R.vx ? 'vol' : cl && now - cl < 90000 ? 'fired' : cl && now - cl < 2 * H ? 'cool' : 'ok';
+        const hk = Math.floor(now / H) * H, L = this.m[sym] || (this.m[sym] = []), e = L.find(x => x.t === hk); if (!e) { L.push({ t: hk, c: +c15.toFixed(1), v: +v15.toFixed(1), w: why }); ch++; } else if (this.PR[why] > this.PR[e.w] || (why === e.w && Math.abs(c15) > Math.abs(e.c))) { Object.assign(e, { c: +c15.toFixed(1), v: +v15.toFixed(1), w: why }); ch++; }
+        while (L.length > 30) L.shift(); }
+      if (ch) { for (const k of Object.keys(this.m)) { this.m[k] = this.m[k].filter(x => now - x.t < 48 * H); if (!this.m[k].length) delete this.m[k]; } const ks = Object.keys(this.m); if (ks.length > 600) for (const k of ks.slice(0, ks.length - 600)) delete this.m[k]; store.set('p307.seen', this.m); } },
+    at(sym, t) { if (t < T307) return 'قبل ما الكاشف يبدأ يسجّل اللي بيشوفه (3.0.7) — مش هنعرف السبب بالظبط'; const L = (this.m[sym] || []).filter(x => x.t >= t - 2 * H && x.t <= t + 2 * H); if (!L.length) return 'الكاشف ما شافش أي حركة للعملة وقتها — غالبًا البث كان واقع أو العملة مش فيه';
+      const b = L.sort((x, y) => this.PR[y.w] - this.PR[x.w] || Math.abs(y.c) - Math.abs(x.c))[0], R = MOMO.R;
+      return { fired: 'الكاشف نبّه عليها فعلًا', cool: 'كانت في فترة انتظار ساعتين بعد تنبيه قبلها على نفس العملة', ok: `الكاشف شافها ${pcs(b.c)} بفوليوم ${b.v}× بس ما نبّهش — محتاج مراجعة`, vol: `الكاشف شافها ${pcs(b.c)} في 15 دقيقة بس الفوليوم كان ${b.v}× (الشرط ${R.vx}×)`, pct: `أقصى حركة شافها الكاشف ${pcs(b.c)} في 15 دقيقة (الشرط ${R.up}%)`, liq: 'السيولة أقل من حد الكاشف' }[b.w]; } };
+  { const d0 = MOMO.detect.bind(MOMO); MOMO.detect = async function () { const v = await d0(); try { SEEN.look(); } catch (e) {} return v; }; }
+  const fix = x => { if (!x || !x.why || x.fx307) return x; const R = MOMO.R; let w = x.why.filter(s => !/\(الشرط 5%\)|\(الشرط 4×\)|محتاج مراجعة/.test(s));
+    if (N(x.m15) && x.m15 < R.up) w.push(`الحركة كانت تدريجية — أقصى شمعة 15 دقيقة ${x.m15}% (الشرط ${R.up}%)`); if (N(x.vmx) && x.vmx < R.vx) w.push(`الفوليوم أقصاه ${x.vmx}× العادي (الشرط ${R.vx}×)`);
+    const B = x.rules && x.rules.B; if (B && B.at < T211) w.push('الحركة بدأت قبل ما الشرط الجديد يتركب (13 نوفمبر 10:48 م) — الكاشف ماكانش عنده الشرط ده وقتها');
+    else if (B && !w.length) w.push(SEEN.at(x.sym, B.at)); if (!w.length) w.push('الشرط الجديد ماكانش هيمسكها'); x.why = w; x.fx307 = 1; return x; };
+  { const o0 = MISS.one.bind(MISS); MISS.one = async function (m) { return fix(await o0(m)); }; let ch = 0; for (const k of Object.keys(MISS.st.done)) { const x = MISS.st.done[k]; if (x && !x.fx307) { fix(x); ch++; } } if (ch) store.set('miss.st', MISS.st); }
+  { const h0 = MV.html.bind(MV); MV.html = function () { let h = h0(); try { const s = MISS.summary().rules.B, m = MOMO.stats(), a = s && s.alarms ? `${s.alarms} تنبيه في عملات عادية متوسطها <b class="${cls(s.alarmR)}">${f2(s.alarmR)}</b>` : '', p = m.n ? `صفقاته على الورق ${m.n} صفقة متوسطها <b class="${cls(m.avg)}">${f2(m.avg)}</b>` : '';
+        if (a || p) h = h.replace('<p class="mu21" style="font-size:12px;margin:8px 0 0">', `<div class="v-row" style="margin-top:8px;padding:8px 10px;background:var(--v-s2);border-radius:10px"><span>📊</span><small class="grow"><b>السجل كله مش الفايتة بس:</b> ${[a, p].filter(Boolean).join(' · ')} — لكل حركة حلوة فاتتنا فيه تنبيهات تانية خسرت، فالمهم المتوسط مش الحركة الكبيرة.</small></div><p class="mu21" style="font-size:12px;margin:8px 0 0">`); } catch (e) {} return h; }; }
+
+  // diagnosis file
+  { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { const ls = PH.liveStats(); o.v307 = { cur: PH.st.cur, chg: PH.st.chg.slice(-40), live: { n: ls.n, from: ls.from, O: ls.O }, byPhase: (() => { const b = PH.byPhase(), O = {}; for (const k of ORDER) O[k] = { buy: b[k].buy.length, buyR: b[k].buy.length ? b[k].buy.reduce((x, y) => x + y, 0) / b[k].buy.length : null, sell: b[k].sell.length, sellR: b[k].sell.length ? b[k].sell.reduce((x, y) => x + y, 0) / b[k].sell.length : null }; return O; })(), hist: PH.st.hr, seenCoins: Object.keys(SEEN.m).length, t307: T307 }; } catch (e) {} return o; }; }
+  window.P307.SEEN = SEEN; window.P307.fix = fix;
+} catch (e) { console.warn('3.0.7', e); } }, 1100);
+
+} catch (e) { console.warn("baked 3.0.7", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
