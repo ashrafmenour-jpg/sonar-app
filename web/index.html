@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.7';
+window.SONAR_WEB = '3.0.8';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14034,6 +14034,283 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.7', e); } }, 1100);
 
 } catch (e) { console.warn("baked 3.0.7", e); }
+/* ===== baked update 3.0.8 ===== */
+try {
+/* Sonar 3.0.8 (Ashraf, 15 Nov 23:45: «نفذ من 1 إلى 9»)
+   1 · ENG   engines whose loss is proven (60+ trades, average < 0, both halves < 0, t ≤ −2) stop opening trades; 1 in 5 of their
+             signals is still recorded so we know if one recovers. The list and the reason are in the brain tab.
+   2 · EXIT  exit lab: the last closed trades (brain decisions, the move detector, the engines) replayed on 15-minute candles
+             with 7 exit methods side by side (same entry, same first stop).
+   3 · BRAIN the decision brain's test is now PURGED (a trade only trains on trades that had already closed before the test trade
+             opened — closed-together trades share the same market move and inflated the score), and «live proof» needs
+             50 trades on each side and t ≥ 2 counted by days.
+   4–6 · PROOF «proven» now also needs: t counted by DAYS when we have ≥ 10 days of ledger (else a stricter t ≥ 3 on trades),
+             and to stay positive after an extra 0.15R cost per trade. The certificate gets the same two conditions.
+             Engine versions: changing an engine archives its old record under its old version (ENG.bump), so records never mix;
+             every new ledger row carries the app version.
+   7 · PHASE v2: test trades sized by the market's own daily range (not a fixed 3 %), three ways into the bounce after a flush,
+             and shorting a rally only at resistance (the 200-hour average) — on the same 2022→now history.
+   8 · WAVE  the long-wave short book on DAILY data from 2017 (the 2018 and 2022 bears): short the rally into the 20/50-day
+             average in a bear market, stop over the last 5 days' high, a third out at 1.5R / 3R, the rest out when the price closes
+             back over the 20-day average, funding paid or earned, ≤ 2× notional.
+   9 · CHN   Telegram channel scoreboard, and «all my data» from the old Firefox copy can now bring the CHANNELS only. */
+setTimeout(function () { try {
+  const H = 3600e3, D = 24 * H, f2 = v => N(v) ? (v >= 0 ? '+' : '') + v.toFixed(2) + 'R' : '—', pcs = (v, d = 1) => N(v) ? (v >= 0 ? '+' : '') + v.toFixed(d) + '%' : '—', cls = v => v > 0 ? 'up21' : v < 0 ? 'dn21' : 'mu21';
+  const dayStr = t => new Date(t).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' }), when = t => new Date(t).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const sleep = ms => new Promise(z => setTimeout(z, ms)), mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+  const tday = rows => { const by = new Map(); for (const r of rows) { if (!N(r.v)) continue; const d = Math.floor(r.t / D); let a = by.get(d); if (!a) by.set(d, a = []); a.push(r.v); }
+    const M = [...by.values()].map(a => a.reduce((x, y) => x + y, 0) / a.length), nd = M.length, all = rows.filter(r => N(r.v)); if (!nd) return { n: 0, nd: 0, m: null, t: null };
+    const m = M.reduce((a, b) => a + b, 0) / nd, sd = nd > 1 ? Math.sqrt(M.reduce((a, b) => a + (b - m) ** 2, 0) / (nd - 1)) : 0; return { n: all.length, nd, m: all.reduce((a, r) => a + r.v, 0) / all.length, t: sd > 1e-6 ? m / (sd / Math.sqrt(nd)) : null }; };
+  const halves = rows => { const A = rows.filter(r => N(r.v)).sort((a, b) => a.t - b.t), h = Math.floor(A.length / 2); return [mean(A.slice(0, h).map(r => r.v)), mean(A.slice(h).map(r => r.v))]; };
+  const tcell = x => x && x.n ? `<b class="num ${cls(x.m)}">${f2(x.m)}</b> <small class="mu21">${x.n}${N(x.t) ? ' · t ' + x.t.toFixed(1) : ''}</small>` : '<span class="mu21">—</span>';
+  const fold = (id, title, sub, body, open) => `<details class="v-card t32fold" id="${id}" ${open ? 'open' : ''} style="margin-top:10px"><summary>${title} <small class="mu21">${sub || ''}</small></summary>${body}</details>`;
+  const LED = P221.LED, ACC = P22.ACC, VER = window.SONAR_WEB || '3.0.8';
+
+  // ================================================================== 1 · 4 · 5 · 6 — engines: prune, prove honestly, freeze versions
+  const ENG = { st: Object.assign({ off: {}, smp: {}, arch: {}, at: 0 }, store.get('p308.eng', {})), COST: .15,
+    save() { store.set('p308.eng', this.st); },
+    led(src) { const L = (LED.st.L || []).filter(r => r[2] === src && (!this.st.arch[src] || r[0] >= this.st.arch[src].t)); return L.map(r => ({ t: r[0], v: r[5], sg: r[4] })); },
+    // the day-level test (when the ledger has ≥ 10 days of this engine), else a stricter trade-level t
+    proof(src, sg) { const e = TRN.ev(TRN.st.C['E|' + src]); if (!e) return null; const L = this.led(src).filter(r => !sg || r.sg === sg), d = tday(L);
+      const days = d.nd >= 10, tOK = days ? (N(d.t) && d.t >= 2) : e.t >= 3, cost = e.m - this.COST > 0; return { e, d, days, tOK, cost, ok: tOK && cost }; },
+    // proven loser: 60+ trades, average < 0, both halves < 0, t ≤ −2 (and by days too when we have them)
+    judgeAll() { const C = TRN.st.C, out = []; for (const k of Object.keys(C)) { if (!k.startsWith('E|') || k.split('|').length !== 2) continue; const src = k.slice(2); if (src === PICK.SRC) continue; const e = TRN.ev(C[k]); if (!e || e.n < 10) continue;
+        const d = tday(this.led(src)), lose = e.n >= 60 && e.m < 0 && e.ha < 0 && e.hb < 0 && e.t <= -2 && !(d.nd >= 10 && N(d.t) && d.t > -1.5); out.push({ src, e, d, lose }); }
+      const now = Date.now(); let ch = 0; for (const x of out) { if (x.lose && !this.st.off[x.src]) { this.st.off[x.src] = { t: now, n: x.e.n, m: +x.e.m.toFixed(3), tt: +x.e.t.toFixed(2) }; ch++; } else if (!x.lose && this.st.off[x.src] && x.e.m > 0) { delete this.st.off[x.src]; ch++; } }
+      this.st.at = now; if (ch) this.save(); this.list = out.sort((a, b) => a.e.t - b.e.t); return out; },
+    // a signal from a switched-off engine: only 1 in 5 is recorded (so a recovery can still be seen)
+    allow(src) { if (!this.st.off[src]) return true; const k = (this.st.smp[src] || 0) + 1; this.st.smp[src] = k; return k % 5 === 0; },
+    // a changed engine starts a new record; the old one is kept under its old version
+    bump(src, why) { const C = TRN.st.C, keep = {}; for (const k of Object.keys(C)) if (k === 'E|' + src || k.startsWith('E|' + src + '|')) { keep[k] = C[k]; delete C[k]; }
+      this.st.arch[src] = { t: Date.now(), why, v: VER, old: keep }; this.save(); try { TRN.save(); } catch (e) {} } };
+  { const s0 = TRN.scan.bind(TRN); TRN.scan = function (rows) { const id0 = this.st.id; const out = s0(rows); try { if (Object.keys(ENG.st.off).length) { let rm = 0; this.st.open = this.st.open.filter(t => { if (t.id > id0 && ENG.st.off[t.src] && !ENG.allow(t.src)) { rm++; return false; } return true; }); if (rm) { this.save(); ENG.skipped = (ENG.skipped || 0) + rm; } } } catch (e) {} return out; }; }
+  { const o0 = TRN.openCall.bind(TRN); TRN.openCall = function (src, ...a) { if (src !== PICK.SRC && ENG.st.off[src] && !ENG.allow(src)) { ENG.skipped = (ENG.skipped || 0) + 1; return false; } return o0(src, ...a); }; }
+  { const p0 = PICK.proven.bind(PICK); PICK.proven = function (src, sg) { const v = p0(src, sg); if (!v) return null; try { if (ENG.st.off[src]) return null; const p = ENG.proof(src, sg); if (!p || !p.ok) return null; v.p8 = p; } catch (e) {} return v; }; }
+  { const a0 = LED.add.bind(LED); LED.add = function (c) { const r = a0(c); try { if (r !== false) { const L = this.st.L, x = L[L.length - 1]; if (x && x.length === 11) x.push(VER); } } catch (e) {} return r; }; }
+  { const c0 = ACC.cert.bind(ACC); ACC.cert = function () { const o = c0(); try { const L = this.st.led, d = tday(L.map(l => ({ t: l.t, v: l.R }))), m = o.a.n ? o.a.m : NaN;
+      o.C.push(['t محسوبة بالأيام 2 أو أكتر (10 أيام على الأقل)', d.nd >= 10 && N(d.t) && d.t >= 2, d.nd ? `t ${N(d.t) ? d.t.toFixed(1) : '—'} على ${d.nd} يوم` : '—'], ['كسبان حتى بعد خصم 0.15R زيادة من كل قرار', N(m) && m - .15 > 0, N(m) ? f2(m - .15) : '—']);
+      o.ok = o.C.filter(c => c[1]).length; o.all = o.C.length; } catch (e) {} return o; }; }
+  setTimeout(() => { try { ENG.judgeAll(); } catch (e) { console.warn('eng', e); } }, 30000); setInterval(() => { try { ENG.judgeAll(); } catch (e) {} }, 3 * H);
+
+  // ================================================================== 3 · the decision brain: purged walk-forward + a live test by days
+  { const B = BRAIN; B.train = function () { const A = TRN.st.closed.filter(c => c && N(c.R) && c.src && c.x && c.sg && c.t).slice().sort((a, b) => a.t - b.t); if (A.length < 300) { this.st.rep = { n: A.length, short: true }; return this.st.rep; }
+      const n = A.length, start = Math.floor(n * .5), step = Math.max(1, Math.floor((n - start) / 4)), P = [], folds = [];
+      for (let k = 0; k < 4; k++) { const a = start + k * step, b = k === 3 ? n : Math.min(n, a + step); if (b <= a) continue; const t0 = A[a].t, TR = A.filter(c => c.x < t0).slice(-this.WIN); if (TR.length < 150) continue;
+        const M = this.fit(TR), Q = A.slice(a, b).map(c => ({ t: c.t, p: this.pOf(M, c), ev: this.evOf(M, c), R: c.R, y: c.R > 0 })); folds.push(+this.auc(Q).toFixed(3)); P.push(...Q); }
+      const avg = L => L.length ? L.reduce((x, q) => x + q.R, 0) / L.length : NaN, all = avg(P), pos = P.filter(x => x.ev > 0), neg = P.filter(x => x.ev <= 0), mp = avg(pos), mn = avg(neg);
+      const srt = P.slice().sort((a, b) => b.ev - a.ev), top = avg(srt.slice(0, Math.max(1, Math.floor(srt.length * .2)))), auc = folds.length ? folds.reduce((a, b) => a + b, 0) / folds.length : NaN;
+      const dd = tday(pos.map(q => ({ t: q.t, v: q.R })).concat(neg.map(q => ({ t: q.t, v: -q.R })))), lift = N(mp) && N(mn) ? mp - mn : NaN;
+      const F = this.fit(A.filter(c => c.x <= Date.now()).sort((a, b) => a.x - b.x).slice(-this.WIN)); Object.assign(this.st, { at: Date.now(), keys: F.keys, w: F.w, aw: F.aw, al: F.al }); this.st._i = null;
+      const imp = F.keys.map((k, i) => [k, F.w[i]]).filter(([k]) => k !== 'b').sort((a, b) => b[1] - a[1]), ok = auc >= .55 && lift >= .15 && pos.length >= 60 && neg.length >= 60 && folds.filter(x => x >= .52).length >= 3;
+      this.st.rep = { n, ntr: Math.min(this.WIN, n), nte: P.length, folds, auc: +auc.toFixed(3), all: +all.toFixed(3), mp: N(mp) ? +mp.toFixed(3) : null, mn: N(mn) ? +mn.toFixed(3) : null, npos: pos.length, top: +top.toFixed(3), lift: N(lift) ? +lift.toFixed(3) : null, ok, purged: 1, from: A[0].t, to: A[n - 1].t,
+        best: imp.slice(0, 6).map(([k, w]) => [k, +w.toFixed(2)]), worst: imp.slice(-6).reverse().map(([k, w]) => [k, +w.toFixed(2)]) };
+      { const keep = this.st._i; delete this.st._i; store.set('brain.st', this.st); this.st._i = keep; } return this.st.rep; };
+    B.live = function () { const C = (TRN.st.closed || []).filter(c => N(c.mb) && N(c.R)), P = C.filter(c => c.mb > 0), Q = C.filter(c => c.mb <= 0), by = new Map();
+      for (const c of C) { const d = Math.floor(c.t / D); let g = by.get(d); if (!g) by.set(d, g = { p: [], q: [] }); (c.mb > 0 ? g.p : g.q).push(c.R); }
+      const diffs = [...by.values()].filter(g => g.p.length && g.q.length).map(g => mean(g.p) - mean(g.q)), nd = diffs.length, m = mean(diffs) || 0, sd = nd > 1 ? Math.sqrt(diffs.reduce((a, b) => a + (b - m) ** 2, 0) / (nd - 1)) : 0, t = sd > 1e-6 ? m / (sd / Math.sqrt(nd)) : 0;
+      const p = { n: P.length, m: mean(P.map(c => c.R)) }, n = { n: Q.length, m: mean(Q.map(c => c.R)) }; return { p, n, nd, t, ok: P.length >= 50 && Q.length >= 50 && nd >= 10 && t >= 2 }; };
+    try { if (!(B.st.rep && B.st.rep.purged)) setTimeout(() => { try { B.train(); } catch (e) {} }, 45000); } catch (e) {} }
+
+  // ================================================================== 2 · the exit lab
+  const XL = { st: store.get('p308.xl', null), busy: false, prog: '',
+    M: { plan: 'الخطة الحالية (نص عند هدف 1 والباقي عند هدف 2)', fix2: 'هدف واحد 2R', tr2: 'وقف متحرك 2% بعد +1R', tr3: 'وقف متحرك 3% بعد +1R', atr: 'وقف متحرك 3×ATR بعد +1R', run: 'نص عند هدف 1 والباقي يجري بـ3×ATR', t24: 'خروج بعد 24 ساعة (بالوقف)' },
+    sim(K, i0, e, sg, R0, t1, t2, m) { const fee = .002 * e / R0, rr = v => sg * (v - e) / R0, n = K.c.length, end = Math.min(n - 1, i0 + 288); let stop = e - sg * R0, best = e, half = false, part = 0, atr = 0;
+      for (let j = Math.max(1, i0 - 14); j < i0; j++) atr += Math.max(K.h[j] - K.l[j], Math.abs(K.h[j] - K.c[j - 1]), Math.abs(K.l[j] - K.c[j - 1])); atr = atr / Math.max(1, Math.min(14, i0 - 1)) || e * .005;
+      for (let j = i0; j <= end; j++) { const hi = K.h[j], lo = K.l[j], adv = sg > 0 ? lo : hi, fav = sg > 0 ? hi : lo;
+        if (sg * (adv - stop) <= 0) return (half ? .5 * part + .5 * rr(stop) : rr(stop)) - fee;
+        if (m === 't24' && (K.t[j] - K.t[i0]) >= 24 * H) return rr(K.c[j]) - fee;
+        if (m === 'fix2' && sg * (fav - (e + sg * 2 * R0)) >= 0) return 2 - fee;
+        if ((m === 'plan' || m === 'run') && !half && sg * (fav - t1) >= 0) { half = true; part = rr(t1); stop = e; }
+        if (m === 'plan' && half && sg * (fav - t2) >= 0) return .5 * part + .5 * rr(t2) - fee;
+        if (sg * (fav - best) > 0) best = fav; const up = sg * (best - e) / R0;
+        if (m === 'tr2' || m === 'tr3' || m === 'atr') { if (up >= 1) { const d = m === 'tr2' ? best * .02 : m === 'tr3' ? best * .03 : 3 * atr; const s = best - sg * d; stop = sg > 0 ? Math.max(stop, e, s) : Math.min(stop, e, s); } }
+        if (m === 'run' && half) { const s = best - sg * 3 * atr; stop = sg > 0 ? Math.max(stop, s) : Math.min(stop, s); } }
+      return (half ? .5 * part + .5 * rr(K.c[end]) : rr(K.c[end])) - fee; },
+    pool() { const out = [], seen = new Set(), add = (g, o) => { const k = o.sym + '|' + Math.round(o.t / 9e5); if (seen.has(k) || !(o.R0 > 0) || !N(o.e)) return; seen.add(k); out.push(Object.assign({ g }, o)); };
+      for (const c of (TRN.st.closed || []).slice().reverse()) { if (!c.e || !c.st0 || Date.now() - c.t > 20 * D) continue; const R0 = Math.abs(c.e - c.st0); add(c.src === PICK.SRC ? 'brain' : 'eng', { sym: c.sym, sg: c.sg, t: c.t, e: c.e, R0, t1: c.t1 || c.e + c.sg * 1.5 * R0, t2: c.t2 || c.e + c.sg * 3 * R0, R: c.R }); }
+      try { for (const x of MOMO.st.al.slice().reverse()) { if (x.st !== 'done' || Date.now() - x.t0 > 20 * D) continue; add('momo', { sym: x.sym, sg: x.sg, t: x.t0, e: x.entry, R0: x.r0 || Math.abs(x.entry - x.stop), t1: x.tp1, t2: x.tp2, R: x.R }); } } catch (e) {}
+      const g = k => out.filter(o => o.g === k); return [...g('brain'), ...g('momo').slice(0, 120), ...g('eng').slice(0, 160)]; },
+    async run(onp) { if (this.busy) return; this.busy = true; const prog = s => { this.prog = s; try { onp && onp(s); } catch (e) {} }; try { const P = this.pool(), R = []; let k = 0;
+        for (const o of P) { k++; if (k % 5 === 0) prog(`بيعيد ${k} من ${P.length}`); try { const st = Math.floor(o.t / 9e5) * 9e5, a = await getJSON(`${API.root()}/klines?symbol=${o.sym}&interval=15m&startTime=${st}&limit=300`); if (!a || a.length < 20) continue; const K = parseK(a);
+            const row = { g: o.g, t: o.t, sym: o.sym, R: o.R }; for (const m of Object.keys(this.M)) row[m] = +this.sim(K, 1, o.e, o.sg, o.R0, o.t1, o.t2, m).toFixed(3); R.push(row); } catch (e) {} await sleep(60); }
+        const sum = {}; for (const g of ['all', 'brain', 'momo', 'eng']) { const A = g === 'all' ? R : R.filter(r => r.g === g); if (!A.length) continue; sum[g] = { n: A.length, rec: mean(A.map(r => r.R).filter(N)) }; for (const m of Object.keys(this.M)) { const d = tday(A.map(r => ({ t: r.t, v: r[m] }))), h = halves(A.map(r => ({ t: r.t, v: r[m] }))); sum[g][m] = { m: d.m, t: d.t, nd: d.nd, w: A.filter(r => r[m] > 0).length / A.length, h1: h[0], h2: h[1] }; } }
+        this.st = { at: Date.now(), n: R.length, sum }; store.set('p308.xl', this.st); prog(''); } catch (e) { prog('وقف: ' + (e.message || e)); } finally { this.busy = false; try { V21.refresh(); } catch (e) {} } },
+    html() { const s = this.st, G = { all: 'الكل', brain: 'قرارات العقل', momo: 'كاشف الحركات', eng: 'المحركات' }; let body = '';
+      if (s) { const ms = Object.keys(this.M); body = `<div class="t32tab"><table><thead><tr><th>طريقة الخروج</th>${Object.keys(G).filter(g => s.sum[g]).map(g => `<th>${G[g]} <small class="mu21">${s.sum[g].n}</small></th>`).join('')}</tr></thead><tbody>${ms.map(m => `<tr><td>${esc(this.M[m])}</td>${Object.keys(G).filter(g => s.sum[g]).map(g => { const x = s.sum[g][m]; const best = ms.every(k => !(s.sum[g][k].m > x.m)); return `<td>${best ? '⭐ ' : ''}<b class="num ${cls(x.m)}">${f2(x.m)}</b> <small class="mu21">كسب ${Math.round(x.w * 100)}% · ${f2(x.h1)} / ${f2(x.h2)}</small></td>`; }).join('')}</tr>`).join('')}
+          <tr><td class="mu21">اللي اتسجل فعلًا</td>${Object.keys(G).filter(g => s.sum[g]).map(g => `<td class="mu21">${f2(s.sum[g].rec)}</td>`).join('')}</tr></tbody></table></div>
+          <p class="mu21" style="font-size:12px;margin:6px 0 0">${s.n} صفقة من آخر 20 يوم اتعادت على شموع 15 دقيقة من نفس الدخول ونفس الوقف الأول، لحد 72 ساعة، بالمصاريف · ⭐ = الأحسن في العمود · الرقمين الصغيرين = النص الأول / التاني. طريقة الخروج تتغير بس لو كسبت في النصين. اتعمل ${when(s.at)}.</p>`; }
+      return fold('c38xl', '🚪 معمل الخروج', s ? `${s.n} صفقة · 7 طرق خروج جنب بعض` : 'نفس الدخول — طرق خروج مختلفة', `${body}<div style="margin-top:8px"><button class="btn sm" type="button" id="c38xlb" ${this.busy ? 'disabled' : ''}>${this.busy ? esc(this.prog || 'شغال…') : s ? 'أعد المعمل' : 'شغّل المعمل (حوالي 8 MB)'}</button></div>`, !!s); } };
+
+  // ================================================================== 7 · phase v2: daily-range stops, three bounce entries, rally short at resistance
+  const PH2 = { st: store.get('p308.ph2', null), busy: false, prog: '',
+    async data(prog) { const get = async (sym, from) => { let end = Date.now(), A = []; for (let k = 0; k < 70; k++) { const a = await getJSON(`${API.root()}/klines?symbol=${sym}&interval=1h&limit=1000&endTime=${end}`); if (!a || !a.length) break; A = a.concat(A); end = +a[0][0] - 1; prog(`بيحمّل ${base(sym)} · ${new Date(end).toLocaleDateString('en-CA')}`); if (end < from) break; await sleep(100); }
+        return closedK(parseK(A.filter((r, i, s) => i === 0 || +r[0] > +s[i - 1][0]))); };
+      const K = await get('BTCUSDT', Date.UTC(2021, 3, 1)), Ke = await get('ETHUSDT', Date.UTC(2021, 11, 20)), Ks = await get('SOLUSDT', Date.UTC(2021, 11, 20)); let F = [], st = Date.UTC(2021, 2, 1);
+      for (let k = 0; k < 12; k++) { const a = await getJSON(`${FAPI}/fapi/v1/fundingRate?symbol=BTCUSDT&startTime=${st}&limit=1000`); if (!a || !a.length) break; F = F.concat(a.map(x => ({ t: +x.fundingTime, r: +x.fundingRate * 100 }))); if (a.length < 1000) break; st = +a[a.length - 1].fundingTime + 1; } return { K, Ke, Ks, F }; },
+    adr(K, i) { let s = 0, n = 0; for (let d = 1; d <= 14; d++) { const a = i - d * 24 + 1, b = i - (d - 1) * 24; if (a < 1) break; let hi = 0, lo = Infinity; for (let j = a; j <= b; j++) { hi = Math.max(hi, K.h[j]); lo = Math.min(lo, K.l[j]); } s += hi / lo - 1; n++; } return n ? s / n : .04; },
+    tr(K, i, sg, stop, tg, hz) { const e = K.c[i], R0 = Math.abs(e - stop); if (!(R0 > 0)) return null; const fee = .002 * e / R0; for (let j = i + 1; j < K.c.length && j <= i + hz; j++) { if (sg > 0 ? K.l[j] <= stop : K.h[j] >= stop) return -1 - fee; if (sg > 0 ? K.h[j] >= tg : K.l[j] <= tg) return Math.abs(tg - e) / R0 - fee; } if (i + hz >= K.c.length) return null; return sg * (K.c[i + hz] - e) / R0 - fee; },
+    async run(onp) { if (this.busy) return; this.busy = true; const prog = s => { this.prog = s; try { onp && onp(s); } catch (e) {} };
+      try { const PH = P307.PH, { K, Ke, Ks, F } = await this.data(prog); prog('بيحسب'); await sleep(30); const R = PH.classify(K, F, {}), t0 = Date.UTC(2022, 0, 1), e200 = ema(K.c, 200), ie = new Map(Ke.t.map((t, i) => [t, i])), is = new Map(Ks.t.map((t, i) => [t, i]));
+        // (a) the phases again, with stops sized by the daily range (0.75 × the 14-day average daily range, target 1.5×)
+        const rows = []; for (let i = 400; i < K.c.length - 48; i++) { if (K.t[i] < t0 || K.t[i] % (4 * H) || !R.out[i]) continue; const a = this.adr(K, i) * .75, e = K.c[i]; rows.push({ t: K.t[i], k: R.out[i], s: this.tr(K, i, -1, e * (1 + a), e * (1 - 1.5 * a), 48), l: this.tr(K, i, 1, e * (1 - a), e * (1 + 1.5 * a), 48) }); }
+        const phases = {}; for (const k of ['short', 'wait', 'bounce', 'rally', 'normal']) { const A = rows.filter(r => r.k === k); phases[k] = { s: tday(A.map(r => ({ t: r.t, v: r.s }))), l: tday(A.map(r => ({ t: r.t, v: r.l }))), sh: halves(A.map(r => ({ t: r.t, v: r.s }))), lh: halves(A.map(r => ({ t: r.t, v: r.l }))) }; }
+        // (b) three ways into the bounce after each flush — on BTC, and on ETH/SOL at the same moment with their own lows
+        const idx = new Map(K.t.map((t, i) => [t, i])), fl = R.flushes.filter(f => f.lowT >= t0), V = { early: [], reclaim: [], fund: [] }; let fp = 0;
+        const fAt = t => { while (fp < F.length - 1 && F[fp + 1].t <= t) fp++; return F[fp] && F[fp].t <= t ? F[fp].r : 0; };
+        for (const f of fl) { const li = idx.get(f.lowT); if (li == null || li < 30) continue; const low = f.low, lvl = K.c[li - 24], done = {};
+          for (let j = li + 3; j <= li + 96 && j < K.c.length - 1; j++) { fp = 0; const c = K.c[j]; if (c < low) break;
+            const hit = { early: !done.early && K.l[j] > low * 1.003 && c > K.h[j - 1], reclaim: !done.reclaim && c > lvl, fund: !done.fund && j >= li + 6 && fAt(K.t[j]) >= 0 && c > low * 1.01 };
+            for (const v of Object.keys(hit)) { if (!hit[v]) continue; done[v] = 1; const st = low * .995, one = (KK, ii) => { if (ii == null) return null; let lo = Infinity; for (let q = Math.max(0, ii - (j - li) - 24); q <= ii; q++) lo = Math.min(lo, KK.l[q]); const s2 = lo * .995, e2 = KK.c[ii]; return e2 > s2 ? this.tr(KK, ii, 1, s2, e2 + 1.5 * (e2 - s2), 72) : null; };
+              const b = this.tr(K, j, 1, st, c + 1.5 * (c - st), 72), alt = [one(Ke, ie.get(K.t[j])), one(Ks, is.get(K.t[j]))].filter(N); V[v].push({ t: K.t[j], v: b, a: alt.length ? mean(alt) : null, risk: (c / st - 1) * 100 }); } if (done.early && done.reclaim && done.fund) break; } }
+        const bounce = {}; for (const v of Object.keys(V)) { const A = V[v]; bounce[v] = { b: tday(A.map(x => ({ t: x.t, v: x.v }))), a: tday(A.map(x => ({ t: x.t, v: x.a }))), h: halves(A.map(x => ({ t: x.t, v: x.v }))), risk: mean(A.map(x => x.risk)) }; }
+        // (c) short a rally only at resistance: below the 200-day average, the hour touches the 200-hour average and closes red under it
+        const RS = []; let last = 0; for (let i = 400; i < K.c.length - 72; i++) { if (K.t[i] < t0) continue; const inf = R.info[i]; const sm = (() => { let s = 0; const d0 = Math.floor(K.t[i] / D); return null; })();
+          if (R.out[i] !== 'rally' && R.out[i] !== 'short') continue; if (K.t[i] - last < D) continue; const e = e200[i]; if (!(K.h[i] >= e * .997 && K.c[i] < e && K.c[i] < K.o[i])) continue;
+          let hi = 0; for (let q = i - 23; q <= i; q++) hi = Math.max(hi, K.h[q]); const stop = Math.max(hi, e) * 1.005, c = K.c[i], rp = stop / c - 1; if (rp < .01 || rp > .06) continue; last = K.t[i];
+          RS.push({ t: K.t[i], v: this.tr(K, i, -1, stop, c - 1.5 * (stop - c), 72) }); }
+        const rally = { r: tday(RS), h: halves(RS) };
+        this.st = { at: Date.now(), phases, bounce, nFl: fl.length, rally, from: rows.length ? rows[0].t : 0, to: rows.length ? rows[rows.length - 1].t : 0 }; store.set('p308.ph2', this.st); prog(''); }
+      catch (e) { prog('وقف: ' + (e.message || e)); console.warn('ph2', e); } finally { this.busy = false; try { V21.refresh(); } catch (e) {} } },
+    ok(x, h) { return x && N(x.m) && x.m > 0 && N(x.t) && x.t >= 2 && h && h[0] > 0 && h[1] > 0; },
+    html() { const s = this.st, L = P307.PH.LAB, VN = { early: 'بدري: أول قاع أعلى + إغلاق فوق قمة الساعة اللي قبلها', reclaim: 'بعد ما يرجع فوق السعر اللي كان عليه قبل القاع بيوم', fund: 'بعد ما التمويل يرجع موجب' }; let body = '';
+      if (s) body = `<b>المراحل بوقف على قد حركة السوق</b> <small class="mu21">(0.75 × متوسط المدى اليومي، هدف 1.5×)</small><div class="t32tab"><table><thead><tr><th>المرحلة</th><th>شورت</th><th>لونج</th><th>النصين (شورت · لونج)</th></tr></thead><tbody>${Object.entries(s.phases).filter(([, x]) => x.s.n).map(([k, x]) => `<tr><td>${L[k][0]} ${L[k][1]}</td><td>${tcell(x.s)}</td><td>${tcell(x.l)}</td><td class="num"><small>${f2(x.sh[0])} / ${f2(x.sh[1])} · ${f2(x.lh[0])} / ${f2(x.lh[1])}</small></td></tr>`).join('')}</tbody></table></div>
+        <b style="display:block;margin-top:10px">دخول موجة الارتداد بعد الانهيار <small class="mu21">${s.nFl} انهيار · الوقف تحت قاع الانهيار · هدف 1.5×</small></b><div class="t32tab"><table><thead><tr><th>طريقة الدخول</th><th>BTC</th><th>ETH/SOL</th><th>النصين</th><th>متوسط الوقف</th><th></th></tr></thead><tbody>${Object.entries(s.bounce).map(([v, x]) => `<tr><td>${VN[v]}</td><td>${tcell(x.b)}</td><td>${tcell(x.a)}</td><td class="num"><small>${f2(x.h[0])} / ${f2(x.h[1])}</small></td><td class="num">${N(x.risk) ? x.risk.toFixed(1) + '%' : '—'}</td><td>${this.ok(x.b, x.h) ? '✅ مثبت' : '⏳'}</td></tr>`).join('')}</tbody></table></div>
+        <b style="display:block;margin-top:10px">بيع الارتداد عند المقاومة بس <small class="mu21">(لمس متوسط الـ200 ساعة وقفل أحمر تحته · مرة في اليوم بالكتير)</small></b><p style="margin:4px 0">${tcell(s.rally.r)} <small class="mu21">النصين ${f2(s.rally.h[0])} / ${f2(s.rally.h[1])} — ${this.ok(s.rally.r, s.rally.h) ? '✅ مثبت' : '⏳ مش مثبت'} · مقارنة: البيع في أي طلوع كان −0.10R</small></p>
+        <p class="mu21" style="font-size:12px;margin:6px 0 0">من ${dayStr(s.from)} لـ ${dayStr(s.to)} · t بالأيام · اتعمل ${when(s.at)}. المثبت = موجب + t ≥ 2 + النصين موجبين.</p>`;
+      return fold('c38ph2', '🧭 مرحلة السوق — النسخة التانية', s ? 'وقف على قد السوق · 3 طرق للارتداد · البيع عند المقاومة' : 'لسه ما اتعملتش', `${body}<div style="margin-top:8px"><button class="btn sm" type="button" id="c38ph2b" ${this.busy ? 'disabled' : ''}>${this.busy ? esc(this.prog || 'شغال…') : s ? 'أعد الاختبار' : 'شغّل الاختبار (حوالي 20 MB)'}</button></div>`, !!s); } };
+
+  // ================================================================== 8 · the long-wave short book on daily data (2017 → now)
+  const WAVE = { st: store.get('p308.wave', null), busy: false, prog: '',
+    async daily(sym) { let st = Date.UTC(2017, 7, 1), A = []; for (let k = 0; k < 6; k++) { const a = await getJSON(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=1000&startTime=${st}`); if (!a || !a.length) break; A = A.concat(a); if (a.length < 1000) break; st = +a[a.length - 1][0] + D; await sleep(150); } return closedK(parseK(A)); },
+    async fund(sym) { let st = Date.UTC(2019, 8, 1), F = []; for (let k = 0; k < 12; k++) { let a; try { a = await getJSON(`${FAPI}/fapi/v1/fundingRate?symbol=${sym}&startTime=${st}&limit=1000`); } catch (e) { break; } if (!a || !a.length) break; F = F.concat(a.map(x => ({ t: +x.fundingTime, r: +x.fundingRate }))); if (a.length < 1000) break; st = +a[a.length - 1].fundingTime + 1; await sleep(120); } return F; },
+    book(K, F) { const n = K.c.length, s200 = sma(K.c, 200), s50 = sma(K.c, 50), e20 = ema(K.c, 20), T = []; let i = 210;
+      const fsum = (a, b) => { let s = 0, any = false; for (const f of F) if (f.t > a && f.t <= b) { s += f.r; any = true; } if (!any && a < Date.UTC(2019, 8, 10)) s = .0001 * 3 * (b - a) / D; return s; };
+      while (i < n - 1) { const c = K.c[i], bear = c < s200[i] && s50[i] < s200[i], lvl = e20[i] < s50[i] ? [e20[i], s50[i]] : [s50[i]], touch = lvl.some(v => K.h[i] >= v * .995 && c < v), red = c < K.o[i];
+        if (!(bear && touch && red)) { i++; continue; } let hi = 0; for (let q = i - 4; q <= i; q++) hi = Math.max(hi, K.h[q]); const stop0 = hi * 1.02, rp = stop0 / c - 1; if (rp < .03 || rp > .15) { i++; continue; }
+        const e = c, R0 = stop0 - e, t1 = e - 1.5 * R0, t2 = e - 3 * R0; let stop = stop0, left = 1, got = 0, j = i + 1, why = 'time';
+        for (; j < n && j <= i + 60; j++) { if (K.h[j] >= stop) { got += left * (e - stop) / R0; left = 0; why = got > 0 ? 'be+' : 'sl'; break; }
+          if (left > .67 && K.l[j] <= t1) { got += (1 / 3) * 1.5; left -= 1 / 3; stop = e; } if (left > .34 && K.l[j] <= t2) { got += (1 / 3) * 3; left -= 1 / 3; }
+          if (left < .99 && K.c[j] > e20[j]) { got += left * (e - K.c[j]) / R0; left = 0; why = 'ema20'; break; } }
+        if (left > 0) { const q = Math.min(j, n - 1); got += left * (e - K.c[q]) / R0; }
+        const xT = K.t[Math.min(j, n - 1)], fr = fsum(K.t[i], xT) * (e / R0), fee = .002 * e / R0, notional = .01 / (R0 / e); T.push({ t: K.t[i], x: xT, e, rp: +(rp * 100).toFixed(1), R: +(got + fr - fee).toFixed(3), fr: +fr.toFixed(3), why, lev: +notional.toFixed(2) }); i = Math.min(j, n - 1) + 1; }
+      return T; },
+    async run(onp) { if (this.busy) return; this.busy = true; const prog = s => { this.prog = s; try { onp && onp(s); } catch (e) {} };
+      try { const out = {}; for (const sym of ['BTCUSDT', 'ETHUSDT']) { prog(`بيحمّل ${base(sym)} اليومي من 2017`); const K = await this.daily(sym); prog(`بيحمّل تمويل ${base(sym)}`); const F = await this.fund(sym); out[sym] = this.book(K, F); }
+        const all = [...out.BTCUSDT, ...out.ETHUSDT].sort((a, b) => a.t - b.t), yr = {}; for (const x of all) { const y = new Date(x.t).getUTCFullYear(); (yr[y] = yr[y] || []).push(x.R); }
+        let eq = 0, pk = 0, dd = 0; for (const x of all) { eq += x.R; pk = Math.max(pk, eq); dd = Math.max(dd, pk - eq); }
+        const s = R => ({ n: R.length, m: mean(R), w: R.length ? R.filter(v => v > 0).length / R.length : null, sum: R.reduce((a, b) => a + b, 0) });
+        this.st = { at: Date.now(), all: s(all.map(x => x.R)), btc: s(out.BTCUSDT.map(x => x.R)), eth: s(out.ETHUSDT.map(x => x.R)), years: Object.fromEntries(Object.entries(yr).map(([y, R]) => [y, s(R)])), dd, h: halves(all.map(x => ({ t: x.t, v: x.R }))), fr: mean(all.map(x => x.fr)), maxLev: Math.max(0, ...all.map(x => x.lev)), last: all.slice(-12) }; store.set('p308.wave', this.st); prog(''); }
+      catch (e) { prog('وقف: ' + (e.message || e)); console.warn('wave', e); } finally { this.busy = false; try { V21.refresh(); } catch (e) {} } },
+    html() { const s = this.st, row = (l, x) => x && x.n ? `<tr><td>${l}</td><td class="num">${x.n}</td><td class="num">${Math.round(x.w * 100)}%</td><td class="num ${cls(x.m)}"><b>${f2(x.m)}</b></td><td class="num ${cls(x.sum)}">${x.sum >= 0 ? '+' : ''}${x.sum.toFixed(1)}R</td></tr>` : ''; let body = '';
+      if (s) body = `<div class="t32tab"><table><thead><tr><th></th><th>صفقات</th><th>كسب</th><th>متوسط</th><th>المجموع</th></tr></thead><tbody>${row('الكل', s.all)}${row('BTC', s.btc)}${row('ETH', s.eth)}${Object.entries(s.years).map(([y, x]) => row('سنة ' + y, x)).join('')}</tbody></table></div>
+        <p style="margin:6px 0 0">النص الأول ${f2(s.h[0])} · التاني ${f2(s.h[1])} · أقصى تراجع ${s.dd.toFixed(1)}R · متوسط التمويل ${f2(s.fr)} للصفقة · أقصى حجم ${s.maxLev}× الرصيد (عند مخاطرة 1%) — ${s.h[0] > 0 && s.h[1] > 0 && s.all.m > .15 ? '✅ ينفع يبقى دفتر ظِل لايف' : '⏳ مش كفاية لسه'}</p>
+        <p class="mu21" style="font-size:12px;margin:6px 0 0">بيع الارتداد لمتوسط 20 أو 50 يوم في سوق هابط (تحت متوسط 200 يوم و50 تحت 200) لما الشمعة اليومية تقفل حمرا تحته · الوقف فوق أعلى 5 أيام بـ2% (من 3 لـ15%) · تلت عند 1.5R والوقف للدخول، تلت عند 3R، والباقي يخرج لما يقفل فوق متوسط 20 يوم · لحد 60 يوم · التمويل محسوب (قبل سبتمبر 2019 مفترض 0.01%) · اتعمل ${when(s.at)}.</p>`;
+      return fold('c38wv', '🐻 دفتر الموجات الطويلة (شورت يومي)', s ? `${s.all.n} صفقة من 2017 · ${f2(s.all.m)}` : 'سوق 2018 و2022 الهابط', `${body}<div style="margin-top:8px"><button class="btn sm" type="button" id="c38wvb" ${this.busy ? 'disabled' : ''}>${this.busy ? esc(this.prog || 'شغال…') : s ? 'أعد الاختبار' : 'شغّل الاختبار (حوالي 1 MB)'}</button></div>`, !!s); } };
+
+  // ================================================================== 9 · Telegram channels: scoreboard + bring the channels from the old copy
+  const CHS = { html() { let L = []; try { L = Object.keys(CHN.st()).map(name => ({ name, s: CHN.stats(name) })).filter(x => x.s); } catch (e) {}
+      let sel = {}; try { sel = (DREAM.st.tg && DREAM.st.tg.sel) || {}; } catch (e) {} const selN = Object.keys(sel).length;
+      L.sort((a, b) => (b.s.evaluated || 0) - (a.s.evaluated || 0)); const st = x => { const n = x.s.evaluated || 0, m = x.s.avgR; return n < 10 ? ['⏳ بتتجرب', 'mu21'] : m <= -.1 && n >= 20 ? ['❌ خسرانة — توصياتها مش بتتفتح', 'dn21'] : m > 0 ? ['🟢 كسبانة', 'up21'] : ['🟡 قريبة من الصفر', 'mu21']; };
+      const body = `${L.length ? `<div class="t32tab"><table><thead><tr><th>القناة</th><th>توصيات اتقيّمت</th><th>متوسطها</th><th>الحالة</th></tr></thead><tbody>${L.map(x => { const s2 = st(x); return `<tr><td>${esc(x.name)}</td><td class="num">${x.s.evaluated || 0}</td><td class="num ${cls(x.s.avgR)}">${f2(x.s.avgR)}</td><td class="${s2[1]}">${s2[0]}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="mu21">مفيش قنوات ليها سجل لسه.</p>'}
+        <p class="mu21" style="font-size:12px;margin:6px 0 0">القناة اللي عندها 20 توصية أو أكتر ومتوسطها −0.1R أو أقل توصياتها بتترفض لوحدها. متابَع دلوقتي: ${selN} قناة. لو عايز ترجّع القنوات اللي كانت في نسخة Firefox: صدّر «كل بياناتي» من Firefox، وهنا في «المركز» ← «الملفات» استورده واختار «القنوات بس».</p>`;
+      return fold('c38ch', '📡 قنوات تليجرام', `${L.length} قناة ليها سجل · متابَع ${selN}`, body, false); } };
+  { const i0 = MIG.import.bind(MIG); MIG.import = async function (file) { let o; try { o = JSON.parse(await file.text()); } catch (e) { return i0(file); }
+      const raw = o && o.app === 'sonar-pro-all' && o.keys && o.keys['sonarpro.dream.st']; if (raw && confirm('الملف فيه قنوات تليجرام.\n\nأيوه = خد القنوات المتابَعة وسجلها بس (وكل حاجة تانية هنا تفضل زي ما هي)\nلأ = كمّل الاستيراد العادي')) {
+        try { const F = JSON.parse(raw.startsWith('LZ1:') ? LZ.d16(raw.slice(4)) : raw), T = DREAM.st; T.tg = T.tg || {}; const s0 = Object.keys(T.tg.sel || {}).length; T.tg.sel = Object.assign({}, (F.tg && F.tg.sel) || {}, T.tg.sel || {}); T.tg.last = Object.assign({}, (F.tg && F.tg.last) || {}, T.tg.last || {}); if (!T.tg.base && F.tg && F.tg.base) T.tg.base = F.tg.base;
+          let nc = 0; T.ch = T.ch || {}; for (const [k, v] of Object.entries(F.ch || {})) { const cur = T.ch[k]; if (!cur || (v.calls || []).length > (cur.calls || []).length) { T.ch[k] = v; nc++; } }
+          DREAM.save(); try { store.flushAll && store.flushAll(); } catch (e) {} toast(`✅ اتنقلت ${Object.keys(T.tg.sel).length - s0} قناة متابَعة و${nc} سجل قناة — بيعيد التحميل…`, 'info'); setTimeout(() => location.reload(), 1200); return; } catch (e) { toast('مقدرتش أقرا القنوات من الملف: ' + e.message, 'warn'); return; } }
+      return i0(file); }; }
+
+  // ================================================================== the brain tab
+  const engHtml = () => { const L = ENG.list || [], off = Object.entries(ENG.st.off), pv = L.filter(x => { try { return PICK.proven(x.src, 1) || PICK.proven(x.src, -1); } catch (e) { return false; } });
+    const body = `<p style="margin:0 0 6px">✅ مثبت بالقواعد الجديدة: <b>${pv.length}</b> محرك · ⛔ اتقفل لأن خسارته مثبتة: <b>${off.length}</b>${ENG.skipped ? ` · إشارات اتشالت من ساعة ما اشتغل: ${ENG.skipped}` : ''}</p>
+      ${off.length ? `<div class="t32tab"><table><thead><tr><th>المحرك المقفول</th><th>صفقات</th><th>متوسط</th><th>t</th><th>من</th></tr></thead><tbody>${off.map(([s, x]) => `<tr><td>${esc(s)}</td><td class="num">${x.n}</td><td class="num dn21">${f2(x.m)}</td><td class="num">${x.tt}</td><td class="mu21">${when(x.t)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      ${pv.length ? `<div class="t32tab" style="margin-top:8px"><table><thead><tr><th>المثبت</th><th>صفقات</th><th>متوسط</th><th>بعد خصم 0.15R</th><th>t</th></tr></thead><tbody>${pv.map(x => `<tr><td>${esc(x.src)}</td><td class="num">${x.e.n}</td><td class="num up21">${f2(x.e.m)}</td><td class="num ${cls(x.e.m - .15)}">${f2(x.e.m - .15)}</td><td class="num">${x.d.nd >= 10 && N(x.d.t) ? x.d.t.toFixed(1) + ' (أيام)' : x.e.t.toFixed(1) + ' (صفقات)'}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      <p class="mu21" style="font-size:12px;margin:6px 0 0">المقفول = 60 صفقة أو أكتر، متوسط سالب، النصين سالبين، و t −2 أو أقل. واحدة من كل 5 إشارات منه بتتسجل عشان لو اتحسن نشوف. المثبت دلوقتي محتاج كمان: t بالأيام 2 أو أكتر (لما يبقى عندنا 10 أيام في الدفتر، وقبلها t بالصفقات 3 أو أكتر) ويفضل كسبان بعد خصم 0.15R زيادة من كل صفقة. أي محرك يتعدّل سجله يبدأ من الأول، والقديم بيتحفظ باسم نسخته.</p>`;
+    let b = ''; try { const lv = BRAIN.live(), r = BRAIN.st.rep; b = `<p style="margin:8px 0 0">🧠 <b>فلتر العقل:</b> ${r && r.purged ? `اختبار «من غير تسريب»: AUC ${r.auc} · الفرق بين «ادخل» و«لأ» ${f2(r.lift)} · ${r.ok ? 'عدّى' : 'ما عدّاش'}` : 'بيتعاد اختباره من غير تسريب…'} · لايف بالأيام: t ${lv.t.toFixed(1)} على ${lv.nd} يوم — ${BRAIN.active() ? '🟢 بيتحكم' : '⏸ مش بيتحكم في أي قرار لحد ما يثبت'}</p>`; } catch (e) {}
+    return fold('c38eng', '🧹 المحركات: المقفول والمثبت', `مثبت ${pv.length} · مقفول ${off.length}`, body + b, false); };
+  { const b0 = V21.brain.bind(V21); V21.brain = function () { const v = b0(); try { const w = $('#v21-brain'); if (w) { const o = w.querySelector('#c38wrap'); if (o) o.remove(); const html = `<div class="v-sec" id="c38wrap"><h2>🔬 المعامل <small>كل حاجة هنا بتتقاس قبل ما تتحكم في قرار</small></h2>${engHtml()}${XL.html()}${PH2.html()}${WAVE.html()}${CHS.html()}</div>`;
+        const c37 = w.querySelector('#c37card'); if (c37) c37.insertAdjacentHTML('afterend', html); else w.insertAdjacentHTML('afterbegin', html);
+        const hook = (id, M) => { const b = $('#' + id); if (b) b.onclick = () => { b.disabled = true; b.textContent = 'بيبدأ…'; M.run(s => { const x = $('#' + id); if (x) { x.textContent = s || 'خلص'; x.disabled = !!s; } }); }; };
+        hook('c38xlb', XL); hook('c38ph2b', PH2); hook('c38wvb', WAVE); } } catch (e) { console.warn('c38 brain', e); } return v; }; }
+
+  // ================================================================== diagnosis file
+  { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v308 = { off: ENG.st.off, skipped: ENG.skipped || 0, arch: Object.fromEntries(Object.entries(ENG.st.arch).map(([k, v]) => [k, { t: v.t, why: v.why, v: v.v }])),
+      proven: (ENG.list || []).filter(x => { try { return PICK.proven(x.src, 1) || PICK.proven(x.src, -1); } catch (e) { return false; } }).map(x => ({ src: x.src, n: x.e.n, m: +x.e.m.toFixed(3), t: +x.e.t.toFixed(2), dn: x.d.nd, dt: x.d.t })),
+      losers: (ENG.list || []).slice(0, 25).map(x => ({ src: x.src, n: x.e.n, m: +x.e.m.toFixed(3), t: +x.e.t.toFixed(2), ha: x.e.ha, hb: x.e.hb, off: !!ENG.st.off[x.src] })),
+      brain: (() => { try { return { rep: BRAIN.st.rep, live: BRAIN.live(), active: BRAIN.active() }; } catch (e) { return null; } })(), cert: (() => { try { const c = ACC.cert(); return { ok: c.ok, all: c.all, C: c.C.map(x => [x[0], !!x[1], x[2]]) }; } catch (e) { return null; } })(),
+      exit: XL.st, phase2: PH2.st, wave: WAVE.st, channels: (() => { try { return Object.keys(CHN.st()).map(n => { const s = CHN.stats(n); return { n, ev: s && s.evaluated, m: s && s.avgR }; }); } catch (e) { return null; } })() }; } catch (e) {} return o; }; }
+  window.P308 = { ENG, XL, PH2, WAVE, CHS, tday };
+} catch (e) { console.warn('3.0.8', e); } }, 1300);
+
+} catch (e) { console.warn("baked 3.0.8", e); }
+/* ===== baked update 3.0.8u ===== */
+try {
+/* Sonar 3.0.8 · «صفقاتي» (Ashraf, 15 Nov 23:51: «صفقاتي تتعرض فوق … صفقات العقل أصلًا مش عاوز أشوفها، بس تتسجل في الريكوردز
+   والإحصائيات … المكسب والخسارة اليومي والأسبوعي يتعاد تصميمها بشكل أحسن»)
+   · YOUR trades first: one clean summary (today big; week, month, all-time; open and floating), a 14-day bar strip, then your
+     open trades. The old long blocks (P&L table + chart + CSV, the risk rules) are folded under it — still there, still updated.
+   · The brain's paper decisions are not shown as cards any more: one folded line «قرارات العقل — بتتسجل بس» with its record. */
+setTimeout(function () { try {
+  const D = 864e5, usd2 = v => (v < 0 ? '−$' : '+$') + Math.abs(v).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), cls = v => v > 0 ? 'up21' : v < 0 ? 'dn21' : 'mu21', pc = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + '%';
+  const ME = { mode() { return (S.set && S.set.meMode) || 'all'; }, ok(x) { const m = this.mode(); return m === 'all' || (m === 'sim' ? x.mode === 'sim' : x.mode !== 'sim'); },
+    agg(L) { const n = L.length, net = L.reduce((a, x) => a + (+x.pnl || 0), 0), w = L.filter(x => x.pnl > 0).length, gp = L.reduce((a, x) => a + Math.max(0, +x.pnl || 0), 0), gl = -L.reduce((a, x) => a + Math.min(0, +x.pnl || 0), 0); return { n, net, w, wr: n ? w / n : null, pf: gl > 0 ? gp / gl : gp > 0 ? Infinity : null }; },
+    html() { const J = (S.journal || []).filter(x => this.ok(x)), now = Date.now(), cap = +S.set.capital || 1000, key = (t, p) => periodKey(t, p);
+      const P = { day: this.agg(J.filter(x => key(x.closed, 'day') === key(now, 'day'))), week: this.agg(J.filter(x => key(x.closed, 'week') === key(now, 'week'))), month: this.agg(J.filter(x => key(x.closed, 'month') === key(now, 'month'))), all: this.agg(J) };
+      const O = (S.trades || []).filter(t => this.ok(t)), fl = O.reduce((a, t) => { try { return a + tradePnl(t, S.prices[t.sym] || t.entry); } catch (e) { return a; } }, 0);
+      const tile = (l, g, big) => `<div class="c38t ${big ? 'big' : ''}"><small>${l}</small><b class="num ${cls(g.net)}" dir="ltr">${g.n ? usd2(g.net) : '$0.00'}</b><em>${g.n ? `${pc(g.net / cap * 100)} من الرصيد · ${g.n} صفقة · كسب ${Math.round(g.wr * 100)}%` : 'مفيش صفقات مقفولة'}</em></div>`;
+      const seg = ['all', 'real', 'sim'].map(k => `<button type="button" data-c38m="${k}" class="${this.mode() === k ? 'on' : ''}">${{ all: 'الكل', real: 'حقيقي', sim: 'محاكاة' }[k]}</button>`).join('');
+      return `<div class="v-sec" id="c38me"><div class="c38h"><h2>💼 صفقاتي</h2><div class="c38seg">${seg}</div></div>
+        <div class="c38grid">${tile('النهارده', P.day, 1)}${tile('الأسبوع ده', P.week)}${tile('الشهر ده', P.month)}${tile('من الأول', P.all)}</div>
+        <div class="v-card c38row"><div><small>مفتوحة دلوقتي</small><b class="num">${O.length}</b></div><div><small>مكسب / خسارة مفتوح</small><b class="num ${cls(fl)}" dir="ltr">${O.length ? usd2(fl) : '—'}</b></div><div><small>معامل الربح (من الأول)</small><b class="num">${P.all.pf == null ? '—' : isFinite(P.all.pf) ? P.all.pf.toFixed(2) : '∞'}</b></div>
+          <div><small>نسبة الكسب (من الأول)</small><b class="num">${P.all.n ? Math.round(P.all.wr * 100) + '%' : '—'}</b></div></div>${this.chart(J)}</div>`; },
+    // the period chart: bars = net of each period, line = running total; time runs left → right like every trading chart
+    chart(J) { const pp = (S.set && S.set.meP) || 'day', now = Date.now(), N0 = pp === 'day' ? 30 : 12, keys = [], seen = new Set();
+      for (let i = 0; keys.length < N0 && i < 400; i++) { const t = pp === 'day' ? now - i * D : pp === 'week' ? now - i * 7 * D : new Date(new Date(now).getFullYear(), new Date(now).getMonth() - i, 15).getTime(), k = periodKey(t, pp); if (!seen.has(k)) { seen.add(k); keys.push(k); } }
+      keys.reverse(); const G = keys.map(k => { const L = J.filter(x => periodKey(x.closed, pp) === k); return { k, ...this.agg(L) }; }), first = keys[0];
+      let run = J.filter(x => periodKey(x.closed, pp) < first).reduce((a, x) => a + (+x.pnl || 0), 0); for (const g of G) { run += g.net; g.cum = run; }
+      const W = 640, H = 200, padL = 52, padR = 10, padT = 12, padB = 26, iw = W - padL - padR, ih = H - padT - padB, mxB = Math.max(1, ...G.map(g => Math.abs(g.net))), cm = G.map(g => g.cum), lo = Math.min(0, ...cm), hi = Math.max(0, ...cm), rng = Math.max(1, hi - lo);
+      const yB = v => padT + ih / 2 - v / mxB * (ih / 2 - 4), yC = v => padT + ih - (v - lo) / rng * ih, step = iw / G.length, bw = Math.max(3, Math.min(18, step * .62)), money = v => (v < 0 ? '−$' : '+$') + (Math.abs(v) >= 1000 ? (Math.abs(v) / 1000).toFixed(1) + 'k' : Math.abs(v).toFixed(Math.abs(v) < 10 ? 2 : 0));
+      const lab = k => { const d = new Date((pp === 'month' ? k + '-01' : k) + 'T00:00:00'); return pp === 'month' ? d.toLocaleDateString('ar-EG', { month: 'short' }) : d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }); };
+      const bars = G.map((g, i) => { const x = padL + i * step + (step - bw) / 2, y0 = yB(0), y = yB(g.net), h = Math.abs(y - y0); return `<rect x="${x.toFixed(1)}" y="${Math.min(y, y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(g.n ? 1.5 : 0, h).toFixed(1)}" rx="2.5" class="${g.net >= 0 ? 'c38up' : 'c38dn'}"><title>${lab(g.k)} · ${g.n ? money(g.net) + ' · ' + g.n + ' صفقة' : 'مفيش صفقات'}</title></rect>`; }).join('');
+      const line = G.map((g, i) => `${i ? 'L' : 'M'}${(padL + i * step + step / 2).toFixed(1)},${yC(g.cum).toFixed(1)}`).join(' '), every = Math.ceil(G.length / 6);
+      const xl = G.map((g, i) => i % every && i !== G.length - 1 ? '' : `<text x="${(padL + i * step + step / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle">${lab(g.k)}</text>`).join('');
+      const seg = [['day', 'يومي'], ['week', 'أسبوعي'], ['month', 'شهري']].map(([k, l]) => `<button type="button" data-c38p="${k}" class="${pp === k ? 'on' : ''}">${l}</button>`).join(''), sum = G.reduce((a, g) => a + g.net, 0), act = G.filter(g => g.n), up = act.filter(g => g.net > 0).length;
+      const rows = G.slice().reverse().filter(g => g.n).slice(0, 10).map(g => `<tr><td>${lab(g.k)}</td><td class="num">${g.n}</td><td class="num">${g.w} / ${g.n - g.w}</td><td class="num ${cls(g.net)}"><b dir="ltr">${usd2(g.net)}</b></td><td class="num ${cls(g.cum)}" dir="ltr">${usd2(g.cum)}</td></tr>`).join('');
+      return `<div class="v-card c38chart"><div class="c38h"><b>المكسب والخسارة <small class="mu21">${{ day: 'آخر 30 يوم', week: 'آخر 12 أسبوع', month: 'آخر 12 شهر' }[pp]} · <span dir="ltr" class="${cls(sum)}">${usd2(sum)}</span> · ${act.length ? `${up} من ${act.length} ${pp === 'day' ? 'يوم' : pp === 'week' ? 'أسبوع' : 'شهر'} كسبان` : 'مفيش صفقات'}</small></b><div class="c38seg">${seg}</div></div>
+        <div dir="ltr"><svg viewBox="0 0 ${W} ${H}" class="c38svg" role="img" aria-label="المكسب والخسارة"><line x1="${padL}" x2="${W - padR}" y1="${yB(0)}" y2="${yB(0)}" class="c38zero"/><text x="${padL - 6}" y="${(yB(mxB) + 4).toFixed(1)}" text-anchor="end">${money(mxB)}</text><text x="${padL - 6}" y="${(yB(0) + 4).toFixed(1)}" text-anchor="end">$0</text><text x="${padL - 6}" y="${(yB(-mxB) + 4).toFixed(1)}" text-anchor="end">${money(-mxB)}</text>${bars}<path d="${line}" class="c38cum"/>${xl}</svg></div>
+        <div class="c38leg"><span><i class="c38up"></i> مكسب</span><span><i class="c38dn"></i> خسارة</span><span><i class="c38ln"></i> المجموع التراكمي</span><button type="button" class="btn sm" id="c38csv">⬇️ تصدير CSV</button></div>
+        ${rows ? `<div class="t32tab" style="margin-top:6px"><table><thead><tr><th>الفترة</th><th>صفقات</th><th>كسب / خسارة</th><th>الصافي</th><th>التراكمي</th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}</div>`; },
+    fold() { // the old long blocks go under one fold (they keep their ids, so the old code still fills them)
+      try { const host = $('#v21old'); if (!host) return; let f = $('#c38more'); if (!f) { f = document.createElement('details'); f.id = 'c38more'; f.className = 'v-card t32fold'; f.innerHTML = '<summary>🛡️ قواعد المخاطرة والكشف القديم</summary><div id="c38moreIn"></div>'; host.parentNode.insertBefore(f, host.nextSibling); f.addEventListener('toggle', () => store.set('c38.more', f.open ? 1 : 0)); if (store.get('c38.more', 0)) f.open = true; }
+        const inn = $('#c38moreIn'); for (const id of ['riskBox', 'pnlSec']) { const e = $('#' + id); if (e && e.parentNode !== inn) inn.appendChild(e); } let cf = $('#c38closed'); const tc = $('#tClosed'), sec = tc && tc.closest('.sec'); if (sec) { if (!cf) { cf = document.createElement('details'); cf.id = 'c38closed'; cf.className = 'v-card t32fold'; cf.innerHTML = '<summary>📜 سجل صفقاتك المقفولة</summary><div id="c38closedIn"></div>'; host.parentNode.appendChild(cf); cf.addEventListener('toggle', () => store.set('c38.cl', cf.open ? 1 : 0)); if (store.get('c38.cl', 0)) cf.open = true; } const ci = $('#c38closedIn'); if (sec.parentNode !== ci) ci.appendChild(sec); const sm = cf.querySelector('summary'); if (sm) sm.innerHTML = `📜 سجل صفقاتك المقفولة <small class="mu21">${(S.journal || []).length} صفقة</small>`; } const ts = $('#tStats'); if (ts) ts.style.display = 'none'; const ch = $('#chalBox'); if (ch) ch.style.display = 'none'; } catch (e) {} },
+    render() { const sec = $('#v21-trades'); if (!sec) return; let me = $('#c38me'); const h = this.html(); if (me) me.outerHTML = h; else sec.insertAdjacentHTML('afterbegin', h);
+      // your open trades right under the summary, the brain's record last
+      try { const old = $('#v21old'), box = old && old.closest('.v-sec'), tr = $('#v21tr'); if (box) { const hh = box.querySelector('h2'); if (hh) hh.innerHTML = '📂 صفقاتك المفتوحة <small>متابعة وإغلاق</small>'; const me2 = $('#c38me'); if (me2 && me2.nextSibling !== box) me2.after(box); if (tr && box.nextSibling !== tr) box.after(tr); } } catch (e) {}
+      this.fold(); $$('[data-c38p]').forEach(b => b.onclick = () => { S.set.meP = b.dataset.c38p; store.set('settings', S.set); this.render(); }); { const c = $('#c38csv'); if (c) c.onclick = () => { try { pnlCsv(); } catch (e) {} }; } $$('[data-c38m]').forEach(b => b.onclick = () => { S.set.meMode = b.dataset.c38m; store.set('settings', S.set); this.render(); }); } };
+  const BR = { render() { const w = $('#v21tr'); if (!w) return; const T = window.P302; if (!T) return; let o = [], c = []; try { o = T.open(); c = T.closed(); } catch (e) {}
+      const n = c.length, wr = n ? c.filter(z => z.q.R > 0).length / n : 0, m = n ? c.reduce((a, z) => a + z.q.R, 0) / n : 0, f2 = v => (v >= 0 ? '+' : '') + v.toFixed(2) + 'R'; let acc = null; try { acc = P22.ACC.m(); } catch (e) {}
+      const openRows = o.length ? `<div class="t32tab"><table><thead><tr><th>العملة</th><th>الاتجاه</th><th>دخول</th><th>دلوقتي</th></tr></thead><tbody>${o.map(x => { const p = S.prices[x.sym], ch = N(p) ? x.sg * (p / x.p - 1) * 100 : null; return `<tr data-v21sym="${esc(x.sym)}" style="cursor:pointer"><td><b>${esc(base(x.sym))}</b> <small class="mu21">${x.grade === 'A' ? '⭐ A' : 'B'}</small></td><td class="${x.sg > 0 ? 'up21' : 'dn21'}">${x.sg > 0 ? 'شراء' : 'بيع'}</td><td class="num">${fp(x.p)}</td><td class="num ${cls(ch)}">${N(ch) ? pc(ch) : '—'}</td></tr>`; }).join('')}</tbody></table></div>` : '';
+      let inner = ''; try { inner = T.kpi(o, c) + (openRows ? `<b style="display:block;margin:10px 0 4px">مفتوحة على الورق</b>${openRows}` : '') + T.rec(c) + T.pend(); } catch (e) {}
+      w.innerHTML = `<details class="v-card t32fold" id="c38br" ${store.get('c38.br', 0) ? 'open' : ''} style="margin-top:14px"><summary>🧠 قرارات العقل — على الورق، بتتسجل بس <small class="mu21">${n ? `${n} مقفولة · كسب ${Math.round(wr * 100)}% · متوسط ${f2(m)}` : 'لسه'}${o.length ? ` · ${o.length} مفتوحة` : ''}${acc ? ` · حساب ما قبل التداول $${Math.round(acc.eq).toLocaleString('en')}` : ''}</small></summary><div style="margin-top:8px">${inner}</div></details>`;
+      const d = $('#c38br'); if (d) d.addEventListener('toggle', () => store.set('c38.br', d.open ? 1 : 0)); try { const r = $('#t32rec'); if (r) r.addEventListener('toggle', () => store.set('t32.rec', r.open ? 1 : 0)); } catch (e) {} } };
+  V21.trades = function () { try { ME.render(); } catch (e) { console.warn('c38 me', e); } try { BR.render(); } catch (e) { console.warn('c38 br', e); } };
+  const st = document.createElement('style'); st.textContent = `
+#c38me .c38h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}#c38me .c38h h2{margin:0}
+.c38seg{display:inline-flex;background:var(--v-s2);border:1px solid var(--v-line);border-radius:10px;padding:3px;gap:2px}.c38seg button{border:0;background:transparent;color:var(--v-mu);padding:6px 12px;border-radius:8px;font:inherit;cursor:pointer}.c38seg button.on{background:var(--v-s1,#1b2230);color:inherit;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.c38grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:10px;margin:10px 0}@media(max-width:820px){.c38grid{grid-template-columns:1fr 1fr}}
+.c38t{background:var(--v-card,var(--v-s2));border:1px solid var(--v-line);border-radius:14px;padding:14px 16px}.c38t small{display:block;color:var(--v-fa);font-size:12px}.c38t b{display:block;font-size:22px;margin:4px 0 2px}.c38t.big b{font-size:32px}.c38t em{display:block;font-style:normal;font-size:12px;color:var(--v-mu)}
+.c38chart{margin-top:10px;padding:14px 16px}.c38chart .c38h b small{font-weight:400}.c38svg{display:block;width:100%;height:auto;margin-top:8px}.c38svg text{fill:var(--v-fa);font-size:11px;font-family:inherit}.c38zero{stroke:var(--v-line);stroke-width:1}
+.c38svg .c38up,.c38leg i.c38up{fill:#34d399;background:#34d399}.c38svg .c38dn,.c38leg i.c38dn{fill:#f87171;background:#f87171}.c38cum{fill:none;stroke:#60a5fa;stroke-width:2;stroke-linejoin:round;opacity:.9}
+.c38leg{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--v-mu);margin-top:6px}.c38leg i{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle;margin-inline-end:4px}.c38leg i.c38ln{height:3px;background:#60a5fa;border-radius:2px}.c38leg .btn{margin-inline-start:auto}
+#pnlChart{direction:ltr}
+.t32tab td.num,.t32tab th.num{display:table-cell;text-align:start}.t32tab td{vertical-align:middle}
+.c38row{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:12px 16px}.c38row>div small{display:block;color:var(--v-fa);font-size:12px}.c38row>div b{font-size:18px}.c38spark{min-width:200px}.c38spark svg{display:block;width:100%;height:46px;margin-top:4px}
+`; document.head.appendChild(st);
+  if (V21.tab === 'trades') V21.trades(); window.P308U = { ME, BR };
+} catch (e) { console.warn('3.0.8u', e); } }, 1400);
+
+} catch (e) { console.warn("baked 3.0.8u", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
