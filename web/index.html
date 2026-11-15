@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.9.1';
+window.SONAR_WEB = '3.0.9.2';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14476,6 +14476,71 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.9.1', e); } }, 1600);
 
 } catch (e) { console.warn("baked 3.0.9.1", e); }
+/* ===== baked update 3.0.9.2 ===== */
+try {
+/* Sonar 3.0.9.2 (Ashraf, 16 Nov 00:51: «بدل ما نقفلهم نجربهم تباديل وتوافيق مع بعض، اتنين أو تلاتة … مع مثبتة أو غير مثبتة أو حتى
+   خسرانة؛ إذا لم تضف جديد أو تنفع خلاص نسقطها»)
+   🧩 COMBO — every training trade remembers which engines agreed with it when it opened («sup»). So «A when B agrees» and
+   «A when B and C agree» can be measured from what is already recorded — losers and switched-off engines included (a switched-off
+   engine still computes its signal; only its own trades stop).
+     · the combo ledger keeps every closed training trade (beyond the 1,500 the training book keeps), so the test grows every day
+     · a promising combo (20+ trades, average > +0.10R, both halves positive) becomes its own paper engine «توليفة: A + B»
+     · a switched-off engine whose every combo (20+ trades) is ≤ 0 is DROPPED for good: no sampling, no combos. */
+setTimeout(function () { try {
+  const H = 3600e3, D = 24 * H, f2 = v => N(v) ? (v >= 0 ? '+' : '') + v.toFixed(2) + 'R' : '—', cls = v => v > 0 ? 'up21' : v < 0 ? 'dn21' : 'mu21', mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null, tday = P308.tday, ENG = P308.ENG;
+  const when = t => new Date(t).toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const CB = { st: Object.assign({ names: [], L: [], ids: {}, res: null, live: [], drop: {}, last: {} }, store.get('p3092.cb', {})), MAXL: 20000,
+    save() { if (this.st.L.length > this.MAXL) this.st.L = this.st.L.slice(-this.MAXL); store.set('p3092.cb', this.st); },
+    ix(name) { let i = this.st.names.indexOf(name); if (i < 0) { this.st.names.push(name); i = this.st.names.length - 1; } return i; },
+    // [t, src#, sg, R, [sup#...]]
+    ingest() { let ch = 0; for (const c of TRN.st.closed || []) { if (!c || !N(c.R) || !c.src || !c.t) continue; const key = c.id + '|' + c.src; if (this.st.ids[key]) continue; this.st.ids[key] = 1;
+        const sup = (c.sup || []).map(k => TRN.nm(k)).filter(Boolean).map(n => this.ix(n)); this.st.L.push([c.t, this.ix(c.src), c.sg, +(+c.R).toFixed(3), sup]); ch++; }
+      const ks = Object.keys(this.st.ids); if (ks.length > this.MAXL * 1.2) { const keep = new Set(ks.slice(-this.MAXL)); for (const k of ks) if (!keep.has(k)) delete this.st.ids[k]; } if (ch) this.save(); return ch; },
+    stat(rows) { const d = tday(rows), A = rows.slice().sort((a, b) => a.t - b.t), h = Math.floor(A.length / 2), h1 = mean(A.slice(0, h).map(r => r.v)), h2 = mean(A.slice(h).map(r => r.v)); return { n: rows.length, m: d.m, t: d.t, nd: d.nd, h1, h2, w: rows.length ? rows.filter(r => r.v > 0).length / rows.length : null }; },
+    proven(x) { return !!x && x.n >= 30 && x.m > 0 && x.h1 > 0 && x.h2 > 0 && x.m - .15 > 0 && (x.nd >= 10 ? N(x.t) && x.t >= 2 : N(x.tt) && x.tt >= 3); },
+    tTrade(rows) { const v = rows.map(r => r.v), n = v.length, m = mean(v) || 0, s = n > 1 ? Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (n - 1)) : 0; return s > 1e-9 ? m / (s / Math.sqrt(n)) : null; },
+    analyze() { this.ingest(); const L = this.st.L, nm = this.st.names, drop = this.st.drop, by = new Map(), solo = new Map();
+      for (const [t, a, sg, R, sup] of L) { if (drop[nm[a]]) continue; (solo.get(a) || solo.set(a, []).get(a)).push({ t, v: R }); const S2 = sup.filter(b => b !== a && !drop[nm[b]]);
+        for (const b of S2) { const k = a + '|' + b; (by.get(k) || by.set(k, []).get(k)).push({ t, v: R }); } }
+      const pairs = []; for (const [k, rows] of by) { if (rows.length < 20) continue; const [a, b] = k.split('|').map(Number), x = this.stat(rows); x.tt = this.tTrade(rows); pairs.push({ a: nm[a], b: [nm[b]], x }); }
+      // triples on the 40 busiest pairs
+      const top = pairs.slice().sort((p, q) => q.x.n - p.x.n).slice(0, 40), tri = []; const IX = new Map(nm.map((n, i) => [n, i]));
+      for (const p of top) { const a = IX.get(p.a), b = IX.get(p.b[0]), m3 = new Map(); for (const [t, s, sg, R, sup] of L) { if (s !== a || !sup.includes(b)) continue; for (const c of sup) { if (c === a || c === b || drop[nm[c]]) continue; (m3.get(c) || m3.set(c, []).get(c)).push({ t, v: R }); } }
+        for (const [c, rows] of m3) { if (rows.length < 20) continue; const x = this.stat(rows); x.tt = this.tTrade(rows); tri.push({ a: p.a, b: [p.b[0], nm[c]], x }); } }
+      const soloS = {}; for (const [a, rows] of solo) { const x = this.stat(rows); x.tt = this.tTrade(rows); soloS[nm[a]] = x; }
+      // the same trades under a longer name add nothing: keep the shortest name for each identical set of trades, and a triple only when it filters its pair
+      const pn = new Map(pairs.map(p => [p.a + '|' + p.b[0], p.x.n])), seen = new Map(), all = [];
+      for (const c of pairs.concat(tri.filter(t => !(pn.get(t.a + '|' + t.b[0]) === t.x.n))).filter(c => !c.b.some(b => c.a.includes(b)) && !(N(c.lift) && Math.abs(c.lift) < .02 && c.b.length === 1))) { const sig = c.x.n + '|' + (c.x.m || 0).toFixed(4) + '|' + (c.x.h1 || 0).toFixed(4); const o = seen.get(sig); if (o && o.b.length <= c.b.length) continue; if (o) all.splice(all.indexOf(o), 1); seen.set(sig, c); all.push(c); } for (const c of all) { const s = soloS[c.a]; c.lift = s && N(s.m) && N(c.x.m) ? c.x.m - s.m : null; c.ok = this.proven(c.x); c.prom = c.x.n >= 20 && c.x.m > .1 && c.x.h1 > 0 && c.x.h2 > 0; }
+      // the switched-off engines: any combo that helps? if none (every combo with 20+ trades ≤ 0) → dropped for good
+      const off = Object.keys(ENG.st.off || {}), offR = {}; for (const e of off) { const mine = all.filter(c => c.a === e || c.b.includes(e)); const best = mine.slice().sort((p, q) => (q.x.m || -9) - (p.x.m || -9))[0], good = mine.filter(c => c.prom || c.ok);
+        offR[e] = { n: mine.length, best: best ? { a: best.a, b: best.b, m: best.x.m, n: best.x.n } : null, good: good.length, solo: soloS[e] ? soloS[e].m : null };
+        if (mine.length >= 3 && !good.length && mine.every(c => !(c.x.m > 0))) { if (!drop[e]) { drop[e] = { t: Date.now(), combos: mine.length, best: best ? +best.x.m.toFixed(3) : null }; } } }
+      // the live paper engines: the 12 best promising/proven combos
+      const live = all.filter(c => c.prom || c.ok).sort((p, q) => (q.x.m || 0) - (p.x.m || 0)).slice(0, 12).map(c => [c.a, ...c.b]);
+      this.st.live = live; this.st.res = { at: Date.now(), rows: L.length, from: L.length ? L[0][0] : 0, pairs: pairs.length, tri: tri.length, best: all.filter(c => c.x.n >= 20).sort((p, q) => (q.x.m || -9) - (p.x.m || -9)).slice(0, 15).map(c => ({ a: c.a, b: c.b, x: c.x, lift: c.lift, ok: c.ok, prom: c.prom })), off: offR, solo: Object.fromEntries(Object.entries(soloS).map(([k, v]) => [k, { n: v.n, m: v.m }])) };
+      this.save(); return this.st.res; },
+    // live: after every training scan, a combo whose engines all point the same way on a coin opens its own paper trade
+    tick() { const L = this.st.live || []; if (!L.length) return 0; let k = 0; const now = Date.now(), last = this.st.last;
+      for (const [sym, Dm] of Object.entries(TRN.prev || {})) { const r = S.bySym && S.bySym.get(sym); if (!r) continue;
+        for (const c of L) { const sg = Dm[c[0]]; if (!sg || !c.every(e => Dm[e] === sg)) continue; const src = 'توليفة: ' + c.join(' + '), key = src + '|' + sym; if (last[key] && now - last[key] < 12 * H) continue;
+          let P = null; try { P = TRN.plan(r, sg, src); } catch (e) {} if (!P || !N(P.stop)) continue; let ok = false; try { ok = TRN.openCall(src, { sym, sg, stop: P.stop, tps: [P.tp1, P.tp2], raw: 'متفقين: ' + c.join(' + ') }, src); } catch (e) {} last[key] = now; if (ok) k++; } }
+      for (const x of Object.keys(last)) if (now - last[x] > 3 * D) delete last[x]; if (k) this.save(); return k; },
+    html() { const r = this.st.res, row = c => `<tr><td>${esc(c.a)} <b>+</b> ${c.b.map(esc).join(' <b>+</b> ')}</td><td class="num">${c.x.n}</td><td><b class="num ${cls(c.x.m)}">${f2(c.x.m)}</b> <small class="mu21">${N(c.x.tt) ? 't ' + c.x.tt.toFixed(1) : ''}</small></td><td class="num ${cls(c.lift)}"><small>${f2(c.lift)}</small></td><td class="num"><small>${f2(c.x.h1)} / ${f2(c.x.h2)}</small></td><td>${c.ok ? '✅ مثبتة' : c.prom ? '🟡 بتتجرب لايف' : '⏳'}</td></tr>`;
+      let body = '<p class="mu21">بيتحسب أول ما يبقى فيه صفقات كفاية…</p>'; if (r) { const off = Object.entries(r.off || {}), drop = Object.entries(this.st.drop || {});
+        body = `<div class="t32tab"><table><thead><tr><th>التوليفة (المحرك + اللي اتفقوا معاه)</th><th>صفقات</th><th>المتوسط</th><th>زيادة عن المحرك لوحده</th><th>النصين</th><th>الحكم</th></tr></thead><tbody>${r.best.map(row).join('') || '<tr><td colspan="6" class="mu21">لسه مفيش توليفة ليها 20 صفقة</td></tr>'}</tbody></table></div>
+          ${off.length ? `<b style="display:block;margin-top:10px">⛔ المحركات المقفولة في توافيق</b><div class="t32tab"><table><tbody>${off.map(([e, o]) => `<tr><td>${esc(e)} <small class="mu21">لوحده ${f2(o.solo)}</small></td><td>${o.best ? `أحسن توليفة: ${esc(o.best.a)} + ${o.best.b.map(esc).join(' + ')} · ${o.best.n} صفقة · <b class="${cls(o.best.m)}">${f2(o.best.m)}</b>` : 'لسه مفيش توافيق كفاية'}</td><td>${this.st.drop[e] ? '🗑️ اتشال نهائي — ولا توليفة نفعت' : o.good ? `🟡 ${o.good} توليفة واعدة — فاضل كتأكيد` : '⏳ بيتقاس'}</td></tr>`).join('')}</tbody></table></div>` : ''}
+          <p class="mu21" style="font-size:12px;margin:6px 0 0">${r.rows} صفقة تدريب من ${when(r.from)} · ${r.pairs} توليفة اتنين و${r.tri} توليفة تلاتة ليهم 20 صفقة أو أكتر · الواعدة (20 صفقة أو أكتر، متوسط فوق +0.10R، والنصين موجبين) بتشتغل لايف على الورق كمحرك لوحدها «توليفة: …» (${(this.st.live || []).length} دلوقتي) · المثبتة لازم تعدّي نفس شروط أي محرك · المحرك المقفول اللي كل توافيقه سالبة بيتشال نهائي${drop.length ? ` (اتشال: ${drop.map(([e]) => esc(e)).join('، ')})` : ''} · اتحسب ${when(r.at)}.</p>`; }
+      return `<details class="v-card t32fold" id="c392" ${r ? 'open' : ''} style="margin-top:10px"><summary>🧩 توافيق المحركات <small class="mu21">${r ? `${r.best.filter(c => c.ok).length} مثبتة · ${(this.st.live || []).length} بتتجرب لايف` : 'اتنين أو تلاتة مع بعض — حتى المقفولين'}</small></summary>${body}</details>`; } };
+  // dropped engines: no 1-in-5 sampling any more
+  { const a0 = ENG.allow.bind(ENG); ENG.allow = function (src) { if (CB.st.drop[src]) return false; return a0(src); }; }
+  { const s0 = TRN.scan.bind(TRN); TRN.scan = function (rows) { const out = s0(rows); try { CB.tick(); } catch (e) { console.warn('cb tick', e); } return out; }; }
+  setTimeout(() => { try { CB.analyze(); } catch (e) { console.warn('cb', e); } }, 40000); setInterval(() => { try { CB.analyze(); } catch (e) {} }, 2 * H);
+  { const b0 = V21.brain.bind(V21); V21.brain = function () { const v = b0(); try { const w = $('#c38wrap'); if (w) { const o = $('#c392'); if (o) o.remove(); const e = $('#c38eng'); const h = CB.html(); if (e) e.insertAdjacentHTML('afterend', h); else w.insertAdjacentHTML('beforeend', h); } } catch (e) { console.warn('c392', e); } return v; }; }
+  { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v3092 = { res: CB.st.res, live: CB.st.live, drop: CB.st.drop, ledger: CB.st.L.length, engines: (CB.st.live || []).map(c => { const src = 'توليفة: ' + c.join(' + '), e = TRN.ev(TRN.st.C['E|' + src]); return { src, n: e ? e.n : 0, m: e ? +e.m.toFixed(3) : null }; }) }; } catch (e) {} return o; }; }
+  window.P3092 = { CB };
+} catch (e) { console.warn('3.0.9.2', e); } }, 1700);
+
+} catch (e) { console.warn("baked 3.0.9.2", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
