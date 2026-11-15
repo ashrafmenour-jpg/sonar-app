@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.9';
+window.SONAR_WEB = '3.0.9.1';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14136,7 +14136,7 @@ setTimeout(function () { try {
         const sum = {}; for (const g of ['all', 'brain', 'momo', 'eng']) { const A = g === 'all' ? R : R.filter(r => r.g === g); if (!A.length) continue; sum[g] = { n: A.length, rec: mean(A.map(r => r.R).filter(N)) }; for (const m of Object.keys(this.M)) { const d = tday(A.map(r => ({ t: r.t, v: r[m] }))), h = halves(A.map(r => ({ t: r.t, v: r[m] }))); sum[g][m] = { m: d.m, t: d.t, nd: d.nd, w: A.filter(r => r[m] > 0).length / A.length, h1: h[0], h2: h[1] }; } }
         this.st = { at: Date.now(), n: R.length, sum }; store.set('p308.xl', this.st); prog(''); } catch (e) { prog('وقف: ' + (e.message || e)); } finally { this.busy = false; try { V21.refresh(); } catch (e) {} } },
     html() { const s = this.st, G = { all: 'الكل', brain: 'قرارات العقل', momo: 'كاشف الحركات', eng: 'المحركات' }; let body = '';
-      if (s) { const ms = Object.keys(this.M); body = `<div class="t32tab"><table><thead><tr><th>طريقة الخروج</th>${Object.keys(G).filter(g => s.sum[g]).map(g => `<th>${G[g]} <small class="mu21">${s.sum[g].n}</small></th>`).join('')}</tr></thead><tbody>${ms.map(m => `<tr><td>${esc(this.M[m])}</td>${Object.keys(G).filter(g => s.sum[g]).map(g => { const x = s.sum[g][m]; const best = ms.every(k => !(s.sum[g][k].m > x.m)); return `<td>${best ? '⭐ ' : ''}<b class="num ${cls(x.m)}">${f2(x.m)}</b> <small class="mu21">كسب ${Math.round(x.w * 100)}% · ${f2(x.h1)} / ${f2(x.h2)}</small></td>`; }).join('')}</tr>`).join('')}
+      if (s) { const ms = Object.keys(this.M).filter(m => s.sum.all && s.sum.all[m]); body = `<div class="t32tab"><table><thead><tr><th>طريقة الخروج</th>${Object.keys(G).filter(g => s.sum[g]).map(g => `<th>${G[g]} <small class="mu21">${s.sum[g].n}</small></th>`).join('')}</tr></thead><tbody>${ms.map(m => `<tr><td>${esc(this.M[m])}</td>${Object.keys(G).filter(g => s.sum[g]).map(g => { const x = s.sum[g][m]; if (!x) return '<td>—</td>'; const best = ms.every(k => !(s.sum[g][k] && s.sum[g][k].m > x.m)); return `<td>${best ? '⭐ ' : ''}<b class="num ${cls(x.m)}">${f2(x.m)}</b> <small class="mu21">كسب ${Math.round(x.w * 100)}% · ${f2(x.h1)} / ${f2(x.h2)}</small></td>`; }).join('')}</tr>`).join('')}
           <tr><td class="mu21">اللي اتسجل فعلًا</td>${Object.keys(G).filter(g => s.sum[g]).map(g => `<td class="mu21">${f2(s.sum[g].rec)}</td>`).join('')}</tr></tbody></table></div>
           <p class="mu21" style="font-size:12px;margin:6px 0 0">${s.n} صفقة من آخر 20 يوم اتعادت على شموع 15 دقيقة من نفس الدخول ونفس الوقف الأول، لحد 72 ساعة، بالمصاريف · ⭐ = الأحسن في العمود · الرقمين الصغيرين = النص الأول / التاني. طريقة الخروج تتغير بس لو كسبت في النصين. اتعمل ${when(s.at)}.</p>`; }
       return fold('c38xl', '🚪 معمل الخروج', s ? `${s.n} صفقة · 7 طرق خروج جنب بعض` : 'نفس الدخول — طرق خروج مختلفة', `${body}<div style="margin-top:8px"><button class="btn sm" type="button" id="c38xlb" ${this.busy ? 'disabled' : ''}>${this.busy ? esc(this.prog || 'شغال…') : s ? 'أعد المعمل' : 'شغّل المعمل (حوالي 8 MB)'}</button></div>`, !!s); } };
@@ -14460,6 +14460,22 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.9', e); } }, 1500);
 
 } catch (e) { console.warn("baked 3.0.9", e); }
+/* ===== baked update 3.0.9.1 ===== */
+try {
+/* Sonar 3.0.9.1 — the one bounce entry the history liked goes live on paper.
+   Phase v2 (2022→now, real data): after a flush, the EARLY entry (first higher low + a close above the previous hour's high,
+   stop under the flush low) made +0.37R on BTC (31 times, t 2.2, both halves +) and +0.32R on ETH/SOL. Still few cases →
+   it runs in the hidden training book as «مرحلة: دخول الارتداد بدري» on BTC, ETH and SOL, one trade per flush per coin. */
+setTimeout(function () { try {
+  const H = 3600e3, SRC = 'مرحلة: دخول الارتداد بدري', st = store.get('p3091.eb', { done: {} });
+  const l0 = P307.PH.live.bind(P307.PH); P307.PH.live = async function () { const v = await l0(); try { const c = this.st.cur, fl = c && c.info && c.info.fl; if (!fl || !(c.k === 'wait' || c.k === 'bounce')) return v; if (Date.now() - fl.lowT > 96 * H || Date.now() - fl.lowT < 3 * H) return v;
+      for (const sym of ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']) { const key = sym + '|' + fl.lowT; if (st.done[key]) continue; const K = closedK(await API.klines(sym, '1h', 150)), n = K.c.length; if (n < 30) continue;
+        let lo = Infinity; for (let i = 0; i < n; i++) if (K.t[i] >= fl.lowT - 24 * H) lo = Math.min(lo, K.l[i]); const j = n - 1, e = K.c[j]; if (!(K.l[j] > lo * 1.003 && e > K.h[j - 1] && e < lo * 1.15)) continue;
+        const stop = lo * .995, R0 = e - stop; let ok = false; try { ok = TRN.openCall(SRC, { sym, sg: 1, stop, tps: [e + R0, e + 1.5 * R0], raw: `بعد انهيار قاعه ${fp(lo)} — أول قاع أعلى وقفل فوق قمة الساعة اللي قبلها` }, SRC); } catch (e) {} st.done[key] = Date.now(); if (ok) st.n = (st.n || 0) + 1; }
+      for (const k of Object.keys(st.done)) if (Date.now() - st.done[k] > 20 * 24 * H) delete st.done[k]; store.set('p3091.eb', st); } catch (e) { console.warn('3.0.9.1', e); } return v; };
+} catch (e) { console.warn('3.0.9.1', e); } }, 1600);
+
+} catch (e) { console.warn("baked 3.0.9.1", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
