@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.9.9';
+window.SONAR_WEB = '3.0.9.10';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14403,7 +14403,7 @@ setTimeout(function () { try {
     run1(K, f, from) { const out = []; let busy = -1; for (let i = Math.max(from, 60); i < K.c.length - 1; i++) { if (i <= busy) continue; let s = null; try { s = f(K, i); } catch (e) {} if (!s) continue; const v = trade(K, i, s); if (v == null) continue; out.push({ t: K.t[i], v, sg: s.sg }); busy = i + s.hz; } return out; },
     async run(onp) { if (this.busy) return; this.busy = true; const prog = s => { this.prog = s; try { onp && onp(s); } catch (e) {} };
       try { const coins = this.coins(25), R = {}; for (const s of SL) R[s.id] = []; for (const p of PUMP) R[p[0]] = []; R.accumUp = []; R.accumDn = [];
-        if (!coins.length) throw new Error('لسه السوق ما اتحمّلش'); prog('بيحمّل البيتكوين'); const B = await this.hist('BTCUSDT', '1h', DAYS['1h']), be80 = ema(B.c, 80), be200 = ema(B.c, 200), bIdx = new Map(B.t.map((t, i) => [t, i])); const BD = await this.hist('BTCUSDT', '1d', 1300), bd50 = ema(BD.c, 50), bd200 = ema(BD.c, 200), regAt = t => { let lo = 0, hi = BD.ct.length - 1, r = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (BD.ct[m] < t) { r = m; lo = m + 1; } else hi = m - 1; } return r < 200 ? null : regOf(BD.c[r], bd50[r], bd200[r]); };
+        if (!coins.length) throw new Error('لسه السوق ما اتحمّلش'); prog('بيحمّل البيتكوين'); const B = await this.hist('BTCUSDT', '1h', DAYS['1h']), be80 = ema(B.c, 80), be200 = ema(B.c, 200), bIdx = new Map(B.t.map((t, i) => [t, i])); let BD = await this.hist('BTCUSDT', '1d', 1300); if (!BD || BD.c.length < 260) { try { const b2 = closedK(await API.klines('BTCUSDT', '1d', 1000)); if (b2 && (!BD || b2.c.length > BD.c.length)) BD = b2; } catch (e) {} } const bd50 = ema(BD.c, 50), bd200 = ema(BD.c, 200), regAt = t => { let lo = 0, hi = BD.ct.length - 1, r = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (BD.ct[m] < t) { r = m; lo = m + 1; } else hi = m - 1; } return r < 200 ? null : regOf(BD.c[r], bd50[r], bd200[r]); };
         let k = 0; for (const sym of coins) { k++; const need = [...new Set(SL.map(s => s.iv))].filter(iv => iv !== '3m' || k <= 10), K = {};
           for (const iv of need) { prog(`${k}/${coins.length} · ${base(sym)} · ${iv}`); try { K[iv] = await this.hist(sym, iv, DAYS[iv]); } catch (e) {} }
           const SG = {}; for (const s of SL) { const KK = K[s.iv]; if (!KK || KK.c.length < 120 || s.id === 'bbl15L' || s.id === 'whale5') continue; const L = []; for (let i = 60; i < KK.c.length - 1; i++) { let x = null; try { x = s.f(KK, i); } catch (e) {} if (x) L.push({ t: KK.ct[i], sg: x.sg }); } SG[s.id] = L; }
@@ -14422,11 +14422,11 @@ setTimeout(function () { try {
         const sum = {}, one = (id, rows) => { const d = tday(rows.map(r => ({ t: r.t, v: r.v }))), h = halves(rows), span = rows.length ? (Math.max(...rows.map(r => r.t)) - Math.min(...rows.map(r => r.t))) / D : 0;
           sum[id] = { n: rows.length, m: d.m, t: d.t, nd: d.nd, w: rows.length ? rows.filter(r => r.v > 0).length / rows.length : null, h1: h[0], h2: h[1], pd: span > 0 ? rows.length / span : null, long: mean(rows.filter(r => r.sg > 0).map(r => r.v)), short: mean(rows.filter(r => r.sg < 0).map(r => r.v)), reg: Object.fromEntries(['up', 'down', 'side'].map(g => { const q = rows.filter(r => regAt(r.t) === g), h2 = halves(q); return [g, { n: q.length, m: mean(q.map(r => r.v)), h1: h2[0], h2: h2[1] }]; })) }; };
         for (const [id, rows] of Object.entries(R)) one(id, rows);
-        this.st = { at: Date.now(), coins: coins.length, sum }; store.set('p309.cs', this.st); prog(''); }
+        this.st = { at: Date.now(), coins: coins.length, sum, regInfo: { bd: BD.c.length, from: BD.t[0], now: regAt(Date.now()) } }; store.set('p309.cs', this.st); prog(''); }
       catch (e) { prog('وقف: ' + (e.message || e)); console.warn('cs', e); } finally { this.busy = false; try { V21.refresh(); } catch (e) {} } },
     // a channel rule that clearly lost in the lab (40+ trades, both halves below zero, and average ≤ -0.15R or t ≤ -2) stops trading live — no data spent on it
     bad(id, g) { const x = this.st && this.st.sum && this.st.sum[id]; if (!x) return false; g = g || this.reg; const r = x.reg && g && x.reg[g];
-      if (r) return r.n >= 40 && r.h1 < 0 && r.h2 < 0 && N(r.m) && r.m <= -.15;  // judged only in the market it's facing now
+      const tagged = x.reg ? ['up', 'down', 'side'].reduce((a, k) => a + ((x.reg[k] || {}).n || 0), 0) : 0; if (r && tagged >= x.n * .5) return r.n >= 40 && r.h1 < 0 && r.h2 < 0 && N(r.m) && r.m <= -.15;  // judged only in the market it's facing now
       return x.n >= 40 && x.h1 < 0 && x.h2 < 0 && N(x.m) && (x.m <= -.15 || (N(x.t) && x.t <= -2)); },
     async regNow() { try { const B = closedK(await API.klines('BTCUSDT', '1d', 260)), j = B.c.length - 1, a = ema(B.c, 50), b = ema(B.c, 200); this.reg = regOf(B.c[j], a[j], b[j]) || this.reg; } catch (e) {} return this.reg; },
     ok(x) { return x && x.n >= 30 && N(x.m) && x.m > 0 && N(x.t) && x.t >= 2 && x.h1 > 0 && x.h2 > 0 && x.m - .15 > 0; },
@@ -14473,7 +14473,7 @@ setTimeout(function () { try {
         const b = $('#c39csb'); if (b) b.onclick = () => { b.disabled = true; b.textContent = 'بيبدأ…'; CS.run(s => { const x = $('#c39csb'); if (x) { x.textContent = s || 'خلص'; x.disabled = !!s; } }); };
         const l = $('#c39lv'); if (l) l.onchange = () => { CS.live.on = l.checked ? 1 : 0; store.set('p309.live', CS.live); }; } } catch (e) { console.warn('c39', e); } return v; }; }
   setTimeout(() => CS.tick(), 90000); setInterval(() => CS.tick(), 15 * 60000);
-  { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v309 = { lab: CS.st, live: { on: CS.live.on, at: CS.live.at, opened: CS.live.opened }, engines: SL.map(s => s.src).concat(['قناة: طبقتين متفقين', 'قناة: 3 طبقات متفقين']).map(src => { const e = TRN.ev(TRN.st.C['E|' + src]); return { src, n: e ? e.n : 0, m: e ? +e.m.toFixed(3) : null }; }) }; } catch (e) {} return o; }; }
+  { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v309 = { lab: CS.st, reg: CS.reg || null, bench: SL.filter(q => CS.bad(q.id)).map(q => q.id), live: { on: CS.live.on, at: CS.live.at, opened: CS.live.opened }, engines: SL.map(s => s.src).concat(['قناة: طبقتين متفقين', 'قناة: 3 طبقات متفقين']).map(src => { const e = TRN.ev(TRN.st.C['E|' + src]); return { src, n: e ? e.n : 0, m: e ? +e.m.toFixed(3) : null }; }) }; } catch (e) {} return o; }; }
   window.P309 = { CS, SIG, S: SL, trade, I };
 } catch (e) { console.warn('3.0.9', e); } }, 1500);
 
