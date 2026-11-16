@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.9.2';
+window.SONAR_WEB = '3.0.9.3';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14368,7 +14368,7 @@ setTimeout(function () { try {
       while (k < s.T.length && (sg > 0 ? K.h[j] >= s.T[k] : K.l[j] <= s.T[k])) { got += s.W[k] * sg * (s.T[k] - e) / R0; left -= s.W[k]; k++; if (s.be && k === 1) stop = e; }
       if (left <= 1e-9) return got - fee; } if (i + s.hz >= K.c.length) return null; return got + left * sg * (K.c[i + s.hz] - e) / R0 - fee; }
   // ------------------------------------------------------------------ the strategy list
-  const S = [
+  const SL = [
     { id: 'bbrsi3', src: 'قناة: Scalping ROBOT · بولينجر+RSI 3د', ch: 'Scalping ROBOT', iv: '3m', f: (K, i) => SIG.bbrsi(K, i) },
     { id: 'macd30', src: 'قناة: Cyclone · MACD 30د', ch: 'Cyclone', iv: '30m', f: (K, i) => SIG.macd(K, i, 0) },
     { id: 'macd4', src: 'قناة: Cyclone · MACD 4س', ch: 'Cyclone', iv: '4h', f: (K, i) => SIG.macd(K, i, 0) },
@@ -14391,11 +14391,11 @@ setTimeout(function () { try {
       return closedK(parseK(A.filter((r, i, s) => i === 0 || +r[0] > +s[i - 1][0]))); },
     run1(K, f, from) { const out = []; let busy = -1; for (let i = Math.max(from, 60); i < K.c.length - 1; i++) { if (i <= busy) continue; let s = null; try { s = f(K, i); } catch (e) {} if (!s) continue; const v = trade(K, i, s); if (v == null) continue; out.push({ t: K.t[i], v, sg: s.sg }); busy = i + s.hz; } return out; },
     async run(onp) { if (this.busy) return; this.busy = true; const prog = s => { this.prog = s; try { onp && onp(s); } catch (e) {} };
-      try { const coins = this.coins(25), R = {}; for (const s of S) R[s.id] = []; for (const p of PUMP) R[p[0]] = []; R.accumUp = []; R.accumDn = [];
+      try { const coins = this.coins(25), R = {}; for (const s of SL) R[s.id] = []; for (const p of PUMP) R[p[0]] = []; R.accumUp = []; R.accumDn = [];
         if (!coins.length) throw new Error('لسه السوق ما اتحمّلش'); prog('بيحمّل البيتكوين'); const B = await this.hist('BTCUSDT', '1h', DAYS['1h']), be80 = ema(B.c, 80), be200 = ema(B.c, 200), bIdx = new Map(B.t.map((t, i) => [t, i]));
-        let k = 0; for (const sym of coins) { k++; const need = [...new Set(S.map(s => s.iv))].filter(iv => iv !== '3m' || k <= 10), K = {};
+        let k = 0; for (const sym of coins) { k++; const need = [...new Set(SL.map(s => s.iv))].filter(iv => iv !== '3m' || k <= 10), K = {};
           for (const iv of need) { prog(`${k}/${coins.length} · ${base(sym)} · ${iv}`); try { K[iv] = await this.hist(sym, iv, DAYS[iv]); } catch (e) {} }
-          const SG = {}; for (const s of S) { const KK = K[s.iv]; if (!KK || KK.c.length < 120 || s.id === 'bbl15L' || s.id === 'whale5') continue; const L = []; for (let i = 60; i < KK.c.length - 1; i++) { let x = null; try { x = s.f(KK, i); } catch (e) {} if (x) L.push({ t: KK.ct[i], sg: x.sg }); } SG[s.id] = L; }
+          const SG = {}; for (const s of SL) { const KK = K[s.iv]; if (!KK || KK.c.length < 120 || s.id === 'bbl15L' || s.id === 'whale5') continue; const L = []; for (let i = 60; i < KK.c.length - 1; i++) { let x = null; try { x = s.f(KK, i); } catch (e) {} if (x) L.push({ t: KK.ct[i], sg: x.sg }); } SG[s.id] = L; }
           { const K15 = K['15m']; if (K15 && K15.c.length > 200) { const at = I.atr(K15), idx = t => { let lo = 0, hi = K15.ct.length - 1, r = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (K15.ct[m] >= t) { r = m; hi = m - 1; } else lo = m + 1; } return r; };
               const plan = (t, sg) => { const j = idx(t); if (j < 20 || !N(at[j])) return null; const c = K15.c[j], R0 = 3 * at[j]; const v = trade(K15, j, { sg, stop: c - sg * R0, T: [c + sg * 2 * R0], W: [1], hz: 96 }); return v == null ? null : { t: K15.t[j], v, sg, sym }; };
               const ids = Object.keys(SG), t0 = K15.ct[20], t1 = K15.ct[K15.ct.length - 1];
@@ -14404,7 +14404,7 @@ setTimeout(function () { try {
                 for (const x of SG[a]) { if (x.t < t0 || x.t > t1) continue; const y = SG[b].find(y => y.sg === x.sg && Math.abs(y.t - x.t) <= 4 * H); if (!y) continue; const t = Math.max(x.t, y.t); if (t < busy) continue; const r = plan(t, x.sg); if (r) { (R[key] = R[key] || []).push(r); busy = t + D; } } }
               { const all = []; for (const id of ids) for (const x of SG[id]) all.push(Object.assign({ id }, x)); all.sort((p, q) => p.t - q.t); let busy = 0;
                 for (const x of all) { if (x.t < t0 || x.t > t1 || x.t < busy) continue; const ag = new Set(all.filter(y => y.sg === x.sg && y.t <= x.t && x.t - y.t <= 4 * H).map(y => y.id)); if (ag.size < 3) continue; const r = plan(x.t, x.sg); if (r) { (R.three = R.three || []).push(r); busy = x.t + D; } } } } }
-          for (const s of S) { const KK = K[s.iv]; if (!KK || KK.c.length < 120) continue; const rows = this.run1(KK, s.f, 0); for (const r of rows) r.sym = sym; R[s.id].push(...rows);
+          for (const s of SL) { const KK = K[s.iv]; if (!KK || KK.c.length < 120) continue; const rows = this.run1(KK, s.f, 0); for (const r of rows) r.sym = sym; R[s.id].push(...rows);
             if (s.id === 'accum') for (const r of rows) { const bi = bIdx.get(r.t); if (bi == null) continue; (be80[bi] < be200[bi] ? R.accumDn : R.accumUp).push(r); } }
           const K15 = K['15m']; if (K15 && K15.c.length > 200) for (const p of PUMP) for (const sg of [1, -1]) { let from = K15.t[120]; for (let g = 0; g < 400; g++) { const i = MISS.trig(K15, sg, p, from, Infinity); if (i < 0) break; const v = MISS.paper(K15, i, sg); if (v != null) R[p[0]].push({ t: K15.t[i], v, sg, sym }); from = K15.t[Math.min(K15.c.length - 1, i + 24)] + 1; } }
           await sleep(50); }
@@ -14418,20 +14418,20 @@ setTimeout(function () { try {
     async tick() { if (!this.live.on || S.mode !== 'futures' || this.ticking) return; this.ticking = true; let opened = 0;
       try { const now = Date.now(), coins = this.coins(25), last = this.live.last;
         for (const [n, sym] of coins.entries()) { const K = {}; for (const iv of ['15m', '30m', '1h', '4h', '3m']) { if (iv === '3m' && n >= 10) continue; try { K[iv] = closedK(await API.klines(sym, iv, iv === '3m' ? 150 : 260)); } catch (e) {} }
-          for (const s of S) { const KK = K[s.iv]; if (!KK || KK.c.length < 120) continue; const i = KK.c.length - 1; if (now - KK.ct[i] > MS[s.iv] + 120000) continue; const key = s.id + '|' + sym; if (last[key] && now - last[key] < (MS[s.iv] * 24)) continue;
+          for (const s of SL) { const KK = K[s.iv]; if (!KK || KK.c.length < 120) continue; const i = KK.c.length - 1; if (now - KK.ct[i] > MS[s.iv] + 120000) continue; const key = s.id + '|' + sym; if (last[key] && now - last[key] < (MS[s.iv] * 24)) continue;
             let x = null; try { x = s.f(KK, i); } catch (e) {} if (!x) continue; try { const G = this.live.sig || (this.live.sig = {}), A = G[sym] || (G[sym] = []); if (!A.some(y => y.id === s.id && y.t === KK.ct[i])) A.push({ id: s.id, sg: x.sg, t: KK.ct[i] }); } catch (e) {} const e = KK.c[i], R0 = Math.abs(e - x.stop); if (!(R0 > 0)) continue; const t2 = x.T[x.T.length - 1], t1 = x.T.length > 1 ? x.T[0] : e + x.sg * Math.min(1, Math.abs(t2 - e) / R0) * R0;
             let ok = false; try { ok = TRN.openCall(s.src, { sym, sg: x.sg, stop: x.stop, tps: [t1, t2], raw: `${s.ch} — نفس قاعدة القناة على فريم ${s.iv}` }, s.src); } catch (e) {} if (ok) { last[key] = now; opened++; } }
           try { const A = ((this.live.sig || {})[sym] || []).filter(y => now - y.t < 4 * H); this.live.sig[sym] = A; for (const sg of [1, -1]) { const ids = new Set(A.filter(y => y.sg === sg && y.id !== 'bbl15L' && y.id !== 'whale5').map(y => y.id)); if (ids.size < 2) continue;
               const src = ids.size >= 3 ? 'قناة: 3 طبقات متفقين' : 'قناة: طبقتين متفقين', key = src + '|' + sym; if (last[key] && now - last[key] < D) continue; const K15 = K['15m']; if (!K15 || K15.c.length < 30) continue; const at = I.atr(K15), j = K15.c.length - 1, c = K15.c[j], R0 = 3 * at[j]; if (!(R0 > 0)) continue;
-              let ok = false; try { ok = TRN.openCall(src, { sym, sg, stop: c - sg * R0, tps: [c + sg * R0, c + sg * 2 * R0], raw: 'متفقين: ' + [...ids].map(id => (S.find(q => q.id === id) || {}).ch || id).join(' + ') }, src); } catch (e) {} if (ok) { last[key] = now; opened++; } } } catch (e) {}
+              let ok = false; try { ok = TRN.openCall(src, { sym, sg, stop: c - sg * R0, tps: [c + sg * R0, c + sg * 2 * R0], raw: 'متفقين: ' + [...ids].map(id => (SL.find(q => q.id === id) || {}).ch || id).join(' + ') }, src); } catch (e) {} if (ok) { last[key] = now; opened++; } } } catch (e) {}
           await sleep(40); }
         for (const k of Object.keys(this.live.sig || {})) if (!(this.live.sig[k] || []).length) delete this.live.sig[k];
         for (const k of Object.keys(last)) if (now - last[k] > 7 * D) delete last[k]; this.live.at = now; this.live.opened += opened; store.set('p309.live', this.live); } catch (e) { console.warn('cs live', e); } finally { this.ticking = false; } },
     html() { const s = this.st, rec = src => { try { const e = TRN.ev(TRN.st.C['E|' + src]); return e ? `${e.n} · ${f2(e.m)}` : '—'; } catch (e) { return '—'; } }, cell = x => x && x.n ? `<b class="num ${cls(x.m)}">${f2(x.m)}</b>` : '<span class="mu21">—</span>';
       const row = (name, ch, x, live) => `<tr><td>${esc(name)}<br><small class="mu21">${esc(ch)}</small></td><td class="num">${x ? x.n : 0}<br><small class="mu21">${x && N(x.pd) ? x.pd.toFixed(1) + ' في اليوم' : ''}</small></td><td>${cell(x)}<br><small class="mu21">${x && N(x.t) ? 't ' + x.t.toFixed(1) : ''}${x && N(x.w) ? ' · كسب ' + Math.round(x.w * 100) + '%' : ''}</small></td><td class="num"><small>${x ? f2(x.h1) + ' / ' + f2(x.h2) : '—'}</small></td><td class="num ${x ? cls(x.m - .15) : ''}"><small>${x && N(x.m) ? f2(x.m - .15) : '—'}</small></td><td>${x ? (this.ok(x) ? '✅ مثبت' : x.n >= 30 && x.m < 0 && x.h1 < 0 && x.h2 < 0 ? '❌ خسران' : '⏳') : '—'}</td><td class="num"><small>${live || '—'}</small></td></tr>`;
-      let body = '<p class="mu21">لسه ما اتعملش.</p>'; if (s) { const X = s.sum, L = n => S.find(q => q.id === n);
+      let body = '<p class="mu21">لسه ما اتعملش.</p>'; if (s) { const X = s.sum, L = n => SL.find(q => q.id === n);
         body = `<div class="t32tab"><table><thead><tr><th>الاستراتيجية</th><th>صفقات</th><th>المتوسط</th><th>النصين</th><th>بعد خصم 0.15R</th><th>الحكم</th><th>لايف في التدريب</th></tr></thead><tbody>
-          ${S.map(q => row(q.src.replace('قناة: ', ''), `${q.ch} · ${q.iv}`, X[q.id], rec(q.src))).join('')}${row('طبقتين متفقين (لايف)', 'أي استراتيجيتين في 4 ساعات', null, rec('قناة: طبقتين متفقين'))}${row('3 طبقات متفقين (لايف)', 'أي 3', null, rec('قناة: 3 طبقات متفقين'))}
+          ${SL.map(q => row(q.src.replace('قناة: ', ''), `${q.ch} · ${q.iv}`, X[q.id], rec(q.src))).join('')}${row('طبقتين متفقين (لايف)', 'أي استراتيجيتين في 4 ساعات', null, rec('قناة: طبقتين متفقين'))}${row('3 طبقات متفقين (لايف)', 'أي 3', null, rec('قناة: 3 طبقات متفقين'))}
           ${PUMP.map(p => row('كاشف الحركات: ' + p[1], 'Pump Detector · 15د', X[p[0]], '')).join('')}
           ${row('تجميع — البيتكوين طالع', 'FishTheWhales · 1س', X.accumUp, '')}${row('تجميع — البيتكوين نازل', 'FishTheWhales · 1س', X.accumDn, '')}</tbody></table></div>
           ${(() => { const nm = id => (L(id) || { src: id }).src.replace('قناة: ', ''), one = Object.keys(X).filter(k => k.startsWith('one|')), two = Object.keys(X).filter(k => k.startsWith('two|') && X[k].n >= 15).sort((a, b) => (X[b].m || -9) - (X[a].m || -9)).slice(0, 10);
@@ -14440,7 +14440,7 @@ setTimeout(function () { try {
               ${row('3 استراتيجيات أو أكتر متفقين', 'أي 3', X.three, '')}${two.map(k => { const [a, b] = k.slice(4).split('+'); return row(nm(a) + ' + ' + nm(b), 'طبقتين', X[k], ''); }).join('')}
               <tr><td colspan="7" class="mu21" style="font-size:12px">للمقارنة — كل استراتيجية لوحدها بنفس الخطة:</td></tr>${one.map(k => row(nm(k.slice(4)), 'لوحدها', X[k], '')).join('')}</tbody></table></div>`; })()}
           <p class="mu21" style="font-size:12px;margin:6px 0 0">أكبر ${s.coins} عملة · فريم 3 دقايق: 10 أيام على أكبر 10 · 15 دقيقة: 45 يوم · 30 دقيقة: 60 · ساعة: 120 · 4 ساعات: سنة · بالمصاريف · صفقة واحدة لكل عملة في نفس الوقت · t بالأيام · المثبت = 30 صفقة أو أكتر + موجب + t ≥ 2 + النصين موجبين + يفضل موجب بعد خصم 0.15R · اتعمل ${when(s.at)}.</p>`; }
-      const lv = this.live; return `<details class="v-card t32fold" id="c39cs" ${s ? 'open' : ''} style="margin-top:10px"><summary>📡 استراتيجيات القنوات <small class="mu21">${S.length} استراتيجية من القنوات اللي بعتها — القاعدة بس، مش القناة</small></summary>${body}
+      const lv = this.live; return `<details class="v-card t32fold" id="c39cs" ${s ? 'open' : ''} style="margin-top:10px"><summary>📡 استراتيجيات القنوات <small class="mu21">${SL.length} استراتيجية من القنوات اللي بعتها — القاعدة بس، مش القناة</small></summary>${body}
         <div class="v-row" style="margin-top:8px;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn sm" type="button" id="c39csb" ${this.busy ? 'disabled' : ''}>${this.busy ? esc(this.prog || 'شغال…') : s ? 'أعد الاختبار' : 'شغّل الاختبار (حوالي 50 MB · من 5 لـ10 دقايق)'}</button>
         <label class="mu21" style="font-size:12px"><input type="checkbox" id="c39lv" ${lv.on ? 'checked' : ''}> شغّالة لايف في التدريب (على الورق، كل 15 دقيقة على أكبر 25 عملة)</label><small class="mu21">${lv.at ? 'آخر لفة ' + when(lv.at) + ' · اتفتح ' + lv.opened : ''}</small></div></details>`; } };
 
@@ -14455,8 +14455,8 @@ setTimeout(function () { try {
         const b = $('#c39csb'); if (b) b.onclick = () => { b.disabled = true; b.textContent = 'بيبدأ…'; CS.run(s => { const x = $('#c39csb'); if (x) { x.textContent = s || 'خلص'; x.disabled = !!s; } }); };
         const l = $('#c39lv'); if (l) l.onchange = () => { CS.live.on = l.checked ? 1 : 0; store.set('p309.live', CS.live); }; } } catch (e) { console.warn('c39', e); } return v; }; }
   setTimeout(() => CS.tick(), 90000); setInterval(() => CS.tick(), 15 * 60000);
-  { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v309 = { lab: CS.st, live: { on: CS.live.on, at: CS.live.at, opened: CS.live.opened }, engines: S.map(s => s.src).concat(['قناة: طبقتين متفقين', 'قناة: 3 طبقات متفقين']).map(src => { const e = TRN.ev(TRN.st.C['E|' + src]); return { src, n: e ? e.n : 0, m: e ? +e.m.toFixed(3) : null }; }) }; } catch (e) {} return o; }; }
-  window.P309 = { CS, SIG, S, trade, I };
+  { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v309 = { lab: CS.st, live: { on: CS.live.on, at: CS.live.at, opened: CS.live.opened }, engines: SL.map(s => s.src).concat(['قناة: طبقتين متفقين', 'قناة: 3 طبقات متفقين']).map(src => { const e = TRN.ev(TRN.st.C['E|' + src]); return { src, n: e ? e.n : 0, m: e ? +e.m.toFixed(3) : null }; }) }; } catch (e) {} return o; }; }
+  window.P309 = { CS, SIG, S: SL, trade, I };
 } catch (e) { console.warn('3.0.9', e); } }, 1500);
 
 } catch (e) { console.warn("baked 3.0.9", e); }
