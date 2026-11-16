@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.9.4';
+window.SONAR_WEB = '3.0.9.5';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14320,7 +14320,7 @@ try {
      S3 Klondike / TechCryptoAnalyst (+ KuCoinArab, BullFrog, Globe)  1h / 4h · chart patterns:
         a) flag / pennant: a pole (≥ 6 % on 1h, ≥ 10 % on 4h) → a tight pause (≤ half the pole) → a close beyond the pause;
            stop at the other side of the pause, target = the pole's length from the breakout
-        b) trendline break (wedges, triangles): close through the line over the last two swing highs (lows) with 1.5× volume
+        b) trendline break (wedges, triangles): close through the line over the last two swing highs (lows) with 1.5× volume — also DAILY (Zayk Charts), stop up to 20 %, up to 20 days
      S4 harmonicshark       15m · back inside the lower Bollinger band with the MACD histogram turning up → long;
                             exit as THEY do: 5 staged targets (20 % each at 0.5 / 1 / 1.5 / 2 / 3R, stop to entry after the first)
      S5 Whale Hunter        15m · net taker flow in one candle ≥ 2 % (and ≥ 5 %) of the coin's 24 h volume, coins ≥ $5M a day
@@ -14352,10 +14352,10 @@ setTimeout(function () { try {
           let hi = -Infinity, lo = Infinity; for (let q = j + 1; q < i; q++) { hi = Math.max(hi, K.h[q]); lo = Math.min(lo, K.l[q]); } if (!(hi - lo <= .5 * ph)) continue;
           if (sg > 0 ? lo < K.c[j] - .5 * ph : hi > K.c[j] + .5 * ph) continue; if (sg > 0 ? !(c > hi && K.c[i - 1] <= hi) : !(c < lo && K.c[i - 1] >= lo)) continue;
           const stop = sg > 0 ? lo : hi, R0 = Math.abs(c - stop); if (!(R0 > 0) || R0 / c > .12) continue; return { sg, stop, T: [c + sg * ph], W: [1], hz: 48 }; } } return null; },
-    tline(K, i) { const P = prep(K), w = 3, c = K.c[i]; if (!N(P.v20[i]) || K.v[i] < 1.5 * P.v20[i]) return null;
+    tline(K, i, hz) { const P = prep(K), w = 3, c = K.c[i]; if (!N(P.v20[i]) || K.v[i] < 1.5 * P.v20[i]) return null;
       for (const sg of [1, -1]) { const hi = sg > 0, pts = []; for (let j = i - w - 1; j >= Math.max(w, i - 60) && pts.length < 2; j--) if (I.piv(K, j, w, hi)) pts.push(j); if (pts.length < 2) continue; const [b, a] = pts, va = hi ? K.h[a] : K.l[a], vb = hi ? K.h[b] : K.l[b];
         if (hi ? !(vb < va) : !(vb > va)) continue; const sl = (vb - va) / (b - a), L = x => vb + sl * (x - b); if (hi ? !(c > L(i) && K.c[i - 1] <= L(i - 1)) : !(c < L(i) && K.c[i - 1] >= L(i - 1))) continue;
-        let ex = hi ? Infinity : -Infinity; for (let q = b; q <= i; q++) ex = hi ? Math.min(ex, K.l[q]) : Math.max(ex, K.h[q]); const R0 = Math.abs(c - ex); if (R0 / c < .01 || R0 / c > .08) continue; return { sg, stop: ex, T: [c + sg * 2 * R0], W: [1], hz: 48 }; } return null; },
+        let ex = hi ? Infinity : -Infinity; for (let q = b; q <= i; q++) ex = hi ? Math.min(ex, K.l[q]) : Math.max(ex, K.h[q]); const R0 = Math.abs(c - ex); if (R0 / c < .01 || R0 / c > (hz ? .2 : .08)) continue; return { sg, stop: ex, T: [c + sg * 2 * R0], W: [1], hz: hz || 48 }; } return null; },
     bblow(K, i, ladder) { const P = prep(K), b = P.bb, h = P.mc.h, a = P.atr[i], c = K.c[i]; if (!N(a) || !N(b.lo[i - 1])) return null; if (!(K.c[i - 1] < b.lo[i - 1] && c > b.lo[i] && h[i] > h[i - 1])) return null;
       const stop = Math.min(Math.min(K.l[i - 1], K.l[i]) - .2 * a, c - a), R0 = c - stop; return ladder ? { sg: 1, stop, T: [.5, 1, 1.5, 2, 3].map(r => c + r * R0), W: [.2, .2, .2, .2, .2], be: 1, hz: 48 } : { sg: 1, stop, T: [c + 1.5 * R0], W: [1], hz: 48 }; },
     whale(K, i, thr) { const P = prep(K), a = P.atr[i]; if (!N(a) || i < 96 || !K.tb) return null; let v24 = 0; for (let j = i - 95; j <= i; j++) v24 += K.v[j] * K.c[j]; if (v24 < 5e6) return null;
@@ -14377,13 +14377,14 @@ setTimeout(function () { try {
     { id: 'flag4', src: 'قناة: علم/راية 4س', ch: 'Klondike', iv: '4h', f: (K, i) => SIG.flag(K, i, .10) },
     { id: 'tl1', src: 'قناة: كسر خط ترند 1س', ch: 'TechCryptoAnalyst', iv: '1h', f: (K, i) => SIG.tline(K, i) },
     { id: 'tl4', src: 'قناة: كسر خط ترند 4س', ch: 'TechCryptoAnalyst', iv: '4h', f: (K, i) => SIG.tline(K, i) },
+    { id: 'tl1d', src: 'قناة: كسر خط ترند يومي', ch: 'Zayk Charts', iv: '1d', f: (K, i) => SIG.tline(K, i, 20) },
     { id: 'bbl15', src: 'قناة: harmonicshark · بولينجر تحت 15د', ch: 'harmonicshark', iv: '15m', f: (K, i) => SIG.bblow(K, i, 0) },
     { id: 'bbl15L', src: 'قناة: harmonicshark · بولينجر تحت 15د + 5 أهداف', ch: 'harmonicshark', iv: '15m', f: (K, i) => SIG.bblow(K, i, 1) },
     { id: 'whale2', src: 'قناة: Whale Hunter · فلو 2% 15د', ch: 'Whale Hunter', iv: '15m', f: (K, i) => SIG.whale(K, i, .02) },
     { id: 'whale5', src: 'قناة: Whale Hunter · فلو 5% 15د', ch: 'Whale Hunter', iv: '15m', f: (K, i) => SIG.whale(K, i, .05) },
     { id: 'accum', src: 'قناة: FishTheWhales · تجميع 1س', ch: 'FishTheWhales', iv: '1h', f: (K, i) => SIG.accum(K, i) }];
   const PUMP = [['p3', '3% في 15د + فوليوم 2.5×', 1, 3, 2.5], ['p7', '7% في ساعة + فوليوم 2×', 4, 7, 2], ['p12', '12% في 4 ساعات + فوليوم 1.5×', 16, 12, 1.5]];
-  const DAYS = { '3m': 10, '15m': 45, '30m': 60, '1h': 120, '4h': 365 }, MS = { '3m': 18e4, '15m': 9e5, '30m': 18e5, '1h': H, '4h': 4 * H };
+  const DAYS = { '3m': 10, '15m': 45, '30m': 60, '1h': 120, '4h': 365, '1d': 1000 }, MS = { '3m': 18e4, '15m': 9e5, '30m': 18e5, '1h': H, '4h': 4 * H, '1d': D };
 
   const CS = { st: store.get('p309.cs', null), busy: false, prog: '', live: store.get('p309.live', { on: 1, at: 0, opened: 0, last: {} }),
     coins(n) { let L = []; try { L = [...S.tick24.values()].filter(x => isCrypto(x.symbol) && /USDT$/.test(x.symbol) && +x.quoteVolume >= 2e7).sort((a, b) => b.quoteVolume - a.quoteVolume).map(x => x.symbol); } catch (e) {} return L.slice(0, n); },
@@ -14417,7 +14418,7 @@ setTimeout(function () { try {
     // ---------------------------------------------------------------- live: the same rules on the newest closed candle, paper only (training)
     async tick() { if (!this.live.on || S.mode !== 'futures' || this.ticking) return; this.ticking = true; let opened = 0;
       try { const now = Date.now(), coins = this.coins(25), last = this.live.last;
-        for (const [n, sym] of coins.entries()) { const K = {}; for (const iv of ['15m', '30m', '1h', '4h', '3m']) { if (iv === '3m' && n >= 10) continue; try { K[iv] = closedK(await API.klines(sym, iv, iv === '3m' ? 150 : 260)); } catch (e) {} }
+        for (const [n, sym] of coins.entries()) { const K = {}; for (const iv of ['15m', '30m', '1h', '4h', '1d', '3m']) { if (iv === '3m' && n >= 10) continue; try { K[iv] = closedK(await API.klines(sym, iv, iv === '3m' ? 150 : 260)); } catch (e) {} }
           for (const s of SL) { const KK = K[s.iv]; if (!KK || KK.c.length < 120) continue; const i = KK.c.length - 1; if (now - KK.ct[i] > MS[s.iv] + 120000) continue; const key = s.id + '|' + sym; if (last[key] && now - last[key] < (MS[s.iv] * 24)) continue;
             let x = null; try { x = s.f(KK, i); } catch (e) {} if (!x) continue; try { const G = this.live.sig || (this.live.sig = {}), A = G[sym] || (G[sym] = []); if (!A.some(y => y.id === s.id && y.t === KK.ct[i])) A.push({ id: s.id, sg: x.sg, t: KK.ct[i] }); } catch (e) {} const e = KK.c[i], R0 = Math.abs(e - x.stop); if (!(R0 > 0)) continue; const t2 = x.T[x.T.length - 1], t1 = x.T.length > 1 ? x.T[0] : e + x.sg * Math.min(1, Math.abs(t2 - e) / R0) * R0;
             let ok = false; try { ok = TRN.openCall(s.src, { sym, sg: x.sg, stop: x.stop, tps: [t1, t2], raw: `${s.ch} — نفس قاعدة القناة على فريم ${s.iv}` }, s.src); } catch (e) {} if (ok) { last[key] = now; opened++; } }
@@ -14427,7 +14428,7 @@ setTimeout(function () { try {
           await sleep(40); }
         for (const k of Object.keys(this.live.sig || {})) if (!(this.live.sig[k] || []).length) delete this.live.sig[k];
         for (const k of Object.keys(last)) if (now - last[k] > 7 * D) delete last[k]; this.live.at = now; this.live.opened += opened; store.set('p309.live', this.live); } catch (e) { console.warn('cs live', e); } finally { this.ticking = false; } },
-    html() { const s = this.st, rec = src => { try { const e = TRN.ev(TRN.st.C['E|' + src]); return e ? `${e.n} · ${f2(e.m)}` : '—'; } catch (e) { return '—'; } }, cell = x => x && x.n ? `<b class="num ${cls(x.m)}">${f2(x.m)}</b>` : '<span class="mu21">—</span>';
+    html() { const s = this.st, rec0 = 0, rec = src => { try { const e = TRN.ev(TRN.st.C['E|' + src]); return e ? `${e.n} · ${f2(e.m)}` : '—'; } catch (e) { return '—'; } }, cell = x => x && x.n ? `<b class="num ${cls(x.m)}">${f2(x.m)}</b>` : '<span class="mu21">—</span>';
       const row = (name, ch, x, live) => `<tr><td>${esc(name)}<br><small class="mu21">${esc(ch)}</small></td><td class="num">${x ? x.n : 0}<br><small class="mu21">${x && N(x.pd) ? x.pd.toFixed(1) + ' في اليوم' : ''}</small></td><td>${cell(x)}<br><small class="mu21">${x && N(x.t) ? 't ' + x.t.toFixed(1) : ''}${x && N(x.w) ? ' · كسب ' + Math.round(x.w * 100) + '%' : ''}</small></td><td class="num"><small>${x ? f2(x.h1) + ' / ' + f2(x.h2) : '—'}</small></td><td class="num ${x ? cls(x.m - .15) : ''}"><small>${x && N(x.m) ? f2(x.m - .15) : '—'}</small></td><td>${x ? (this.ok(x) ? '✅ مثبت' : x.n >= 30 && x.m < 0 && x.h1 < 0 && x.h2 < 0 ? '❌ خسران' : '⏳') : '—'}</td><td class="num"><small>${live || '—'}</small></td></tr>`;
       let body = '<p class="mu21">لسه ما اتعملش.</p>'; if (s) { const X = s.sum, L = n => SL.find(q => q.id === n);
         body = `<div class="t32tab"><table><thead><tr><th>الاستراتيجية</th><th>صفقات</th><th>المتوسط</th><th>النصين</th><th>بعد خصم 0.15R</th><th>الحكم</th><th>لايف في التدريب</th></tr></thead><tbody>
