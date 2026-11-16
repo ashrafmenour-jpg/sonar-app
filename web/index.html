@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.9.3';
+window.SONAR_WEB = '3.0.9.4';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14541,6 +14541,24 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.9.2', e); } }, 1700);
 
 } catch (e) { console.warn("baked 3.0.9.2", e); }
+/* ===== baked update 3.0.9.4 ===== */
+try {
+/* Sonar 3.0.9.4 — the channel reader learns the «ربح التراكمي Scalp #bingx» format (and channels like it):
+     ⚓ BUY : 0.0685 - 0.070        → entry zone (before, «BUY :» was not read as an entry)
+     Target🎯 : then 1️⃣: 0.0715 … 5️⃣: 0.0890 on their own lines   → five targets (before: none — the keycap lines were skipped)
+     Target: T1: 0.152 T2: 0.155 …  → targets without the «1, 2, 3» of the labels being read as prices
+     🔴STOP 0.068 اغلاق 4ساعات اقل من → stop 0.068 (the channel means a 4-hour CLOSE under it; we still use the price touching it) */
+setTimeout(function () { try {
+  const norm = T => String(T || '')
+    .replace(/([0-9])️?⃣\s*[:：.\-]?/g, '\nTarget: ')
+    .replace(/\b(?:T|TP)\s*\d{1,2}\s*[:：=]/gi, ' Target: ')
+    .replace(/\b(buy|long|sell|short)\s*[:：]\s*(?=[\d.])/gi, '$1 Entry: ')
+    .replace(/(اغلاق|إغلاق)\s*\d+\s*(ساعات|ساعه|ساعة|س)/g, '$1 $2');
+  const p0 = CHN.parse.bind(CHN); CHN.parse = function (text, t) { const r = p0(norm(text), t); if (r) r.raw = String(text || '').slice(0, 220); return r; };
+  window.P3094 = { norm };
+} catch (e) { console.warn('3.0.9.4', e); } }, 1750);
+
+} catch (e) { console.warn("baked 3.0.9.4", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
