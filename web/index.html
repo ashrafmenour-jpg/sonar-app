@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.9.5';
+window.SONAR_WEB = '3.0.9.6';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14321,6 +14321,7 @@ try {
         a) flag / pennant: a pole (≥ 6 % on 1h, ≥ 10 % on 4h) → a tight pause (≤ half the pole) → a close beyond the pause;
            stop at the other side of the pause, target = the pole's length from the breakout
         b) trendline break (wedges, triangles): close through the line over the last two swing highs (lows) with 1.5× volume — also DAILY (Zayk Charts), stop up to 20 %, up to 20 days
+        c) RSI divergence (Mfanni) 1h / 4h: new swing low (high) with RSI higher low (lower high) by 3+, RSI < 40 (> 60), stop past the swing, 2R
      S4 harmonicshark       15m · back inside the lower Bollinger band with the MACD histogram turning up → long;
                             exit as THEY do: 5 staged targets (20 % each at 0.5 / 1 / 1.5 / 2 / 3R, stop to entry after the first)
      S5 Whale Hunter        15m · net taker flow in one candle ≥ 2 % (and ≥ 5 %) of the coin's 24 h volume, coins ≥ $5M a day
@@ -14356,6 +14357,11 @@ setTimeout(function () { try {
       for (const sg of [1, -1]) { const hi = sg > 0, pts = []; for (let j = i - w - 1; j >= Math.max(w, i - 60) && pts.length < 2; j--) if (I.piv(K, j, w, hi)) pts.push(j); if (pts.length < 2) continue; const [b, a] = pts, va = hi ? K.h[a] : K.l[a], vb = hi ? K.h[b] : K.l[b];
         if (hi ? !(vb < va) : !(vb > va)) continue; const sl = (vb - va) / (b - a), L = x => vb + sl * (x - b); if (hi ? !(c > L(i) && K.c[i - 1] <= L(i - 1)) : !(c < L(i) && K.c[i - 1] >= L(i - 1))) continue;
         let ex = hi ? Infinity : -Infinity; for (let q = b; q <= i; q++) ex = hi ? Math.min(ex, K.l[q]) : Math.max(ex, K.h[q]); const R0 = Math.abs(c - ex); if (R0 / c < .01 || R0 / c > (hz ? .2 : .08)) continue; return { sg, stop: ex, T: [c + sg * 2 * R0], W: [1], hz: hz || 48 }; } return null; },
+    div(K, i) { const P = prep(K), r = P.rsi, a = P.atr[i], c = K.c[i], w = 3, j = i - w; if (!N(a) || j < 50) return null;
+      for (const sg of [1, -1]) { const lo = sg > 0, X = lo ? K.l : K.h; if (!I.piv(K, j, w, !lo) || !N(r[j])) continue; if (lo ? !(r[j] < 40 && c > K.c[j]) : !(r[j] > 60 && c < K.c[j])) continue;
+        for (let k = j - 6; k >= j - 40 && k > w; k--) { if (!I.piv(K, k, w, !lo) || !N(r[k])) continue; const px = lo ? X[j] < X[k] : X[j] > X[k], rx = lo ? r[j] > r[k] + 3 : r[j] < r[k] - 3; if (!(px && rx)) break;
+          const stop = X[j] - sg * .2 * a, R0 = Math.abs(c - stop); if (R0 / c < .006 || R0 / c > .08) break; return { sg, stop, T: [c + sg * 2 * R0], W: [1], hz: 48 }; } }
+      return null; },
     bblow(K, i, ladder) { const P = prep(K), b = P.bb, h = P.mc.h, a = P.atr[i], c = K.c[i]; if (!N(a) || !N(b.lo[i - 1])) return null; if (!(K.c[i - 1] < b.lo[i - 1] && c > b.lo[i] && h[i] > h[i - 1])) return null;
       const stop = Math.min(Math.min(K.l[i - 1], K.l[i]) - .2 * a, c - a), R0 = c - stop; return ladder ? { sg: 1, stop, T: [.5, 1, 1.5, 2, 3].map(r => c + r * R0), W: [.2, .2, .2, .2, .2], be: 1, hz: 48 } : { sg: 1, stop, T: [c + 1.5 * R0], W: [1], hz: 48 }; },
     whale(K, i, thr) { const P = prep(K), a = P.atr[i]; if (!N(a) || i < 96 || !K.tb) return null; let v24 = 0; for (let j = i - 95; j <= i; j++) v24 += K.v[j] * K.c[j]; if (v24 < 5e6) return null;
@@ -14378,6 +14384,8 @@ setTimeout(function () { try {
     { id: 'tl1', src: 'قناة: كسر خط ترند 1س', ch: 'TechCryptoAnalyst', iv: '1h', f: (K, i) => SIG.tline(K, i) },
     { id: 'tl4', src: 'قناة: كسر خط ترند 4س', ch: 'TechCryptoAnalyst', iv: '4h', f: (K, i) => SIG.tline(K, i) },
     { id: 'tl1d', src: 'قناة: كسر خط ترند يومي', ch: 'Zayk Charts', iv: '1d', f: (K, i) => SIG.tline(K, i, 20) },
+    { id: 'div1', src: 'قناة: دايفرجنس RSI 1س', ch: 'Mfanni', iv: '1h', f: (K, i) => SIG.div(K, i) },
+    { id: 'div4', src: 'قناة: دايفرجنس RSI 4س', ch: 'Mfanni', iv: '4h', f: (K, i) => SIG.div(K, i) },
     { id: 'bbl15', src: 'قناة: harmonicshark · بولينجر تحت 15د', ch: 'harmonicshark', iv: '15m', f: (K, i) => SIG.bblow(K, i, 0) },
     { id: 'bbl15L', src: 'قناة: harmonicshark · بولينجر تحت 15د + 5 أهداف', ch: 'harmonicshark', iv: '15m', f: (K, i) => SIG.bblow(K, i, 1) },
     { id: 'whale2', src: 'قناة: Whale Hunter · فلو 2% 15د', ch: 'Whale Hunter', iv: '15m', f: (K, i) => SIG.whale(K, i, .02) },
