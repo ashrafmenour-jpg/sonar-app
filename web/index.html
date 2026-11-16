@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.9.7';
+window.SONAR_WEB = '3.0.9.8';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14404,7 +14404,7 @@ setTimeout(function () { try {
         if (!coins.length) throw new Error('لسه السوق ما اتحمّلش'); prog('بيحمّل البيتكوين'); const B = await this.hist('BTCUSDT', '1h', DAYS['1h']), be80 = ema(B.c, 80), be200 = ema(B.c, 200), bIdx = new Map(B.t.map((t, i) => [t, i]));
         let k = 0; for (const sym of coins) { k++; const need = [...new Set(SL.map(s => s.iv))].filter(iv => iv !== '3m' || k <= 10), K = {};
           for (const iv of need) { prog(`${k}/${coins.length} · ${base(sym)} · ${iv}`); try { K[iv] = await this.hist(sym, iv, DAYS[iv]); } catch (e) {} }
-          const SG = {}; for (const s of SL) { const KK = K[s.iv]; if (!KK || KK.c.length < 120 || s.id === 'bbl15L' || s.id === 'whale5') continue; const L = []; for (let i = 60; i < KK.c.length - 1; i++) { let x = null; try { x = s.f(KK, i); } catch (e) {} if (x) L.push({ t: KK.ct[i], sg: x.sg }); } SG[s.id] = L; }
+          const SG = {}; for (const s of SL) { if (this.bad(s.id)) continue; const KK = K[s.iv]; if (!KK || KK.c.length < 120 || s.id === 'bbl15L' || s.id === 'whale5') continue; const L = []; for (let i = 60; i < KK.c.length - 1; i++) { let x = null; try { x = s.f(KK, i); } catch (e) {} if (x) L.push({ t: KK.ct[i], sg: x.sg }); } SG[s.id] = L; }
           { const K15 = K['15m']; if (K15 && K15.c.length > 200) { const at = I.atr(K15), idx = t => { let lo = 0, hi = K15.ct.length - 1, r = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (K15.ct[m] >= t) { r = m; hi = m - 1; } else lo = m + 1; } return r; };
               const plan = (t, sg) => { const j = idx(t); if (j < 20 || !N(at[j])) return null; const c = K15.c[j], R0 = 3 * at[j]; const v = trade(K15, j, { sg, stop: c - sg * R0, T: [c + sg * 2 * R0], W: [1], hz: 96 }); return v == null ? null : { t: K15.t[j], v, sg, sym }; };
               const ids = Object.keys(SG), t0 = K15.ct[20], t1 = K15.ct[K15.ct.length - 1];
@@ -14422,11 +14422,13 @@ setTimeout(function () { try {
         for (const [id, rows] of Object.entries(R)) one(id, rows);
         this.st = { at: Date.now(), coins: coins.length, sum }; store.set('p309.cs', this.st); prog(''); }
       catch (e) { prog('وقف: ' + (e.message || e)); console.warn('cs', e); } finally { this.busy = false; try { V21.refresh(); } catch (e) {} } },
+    // a channel rule that clearly lost in the lab (40+ trades, both halves below zero, and average ≤ -0.15R or t ≤ -2) stops trading live — no data spent on it
+    bad(id) { const x = this.st && this.st.sum && this.st.sum[id]; return !!x && x.n >= 40 && x.h1 < 0 && x.h2 < 0 && N(x.m) && (x.m <= -.15 || (N(x.t) && x.t <= -2)); },
     ok(x) { return x && x.n >= 30 && N(x.m) && x.m > 0 && N(x.t) && x.t >= 2 && x.h1 > 0 && x.h2 > 0 && x.m - .15 > 0; },
     // ---------------------------------------------------------------- live: the same rules on the newest closed candle, paper only (training)
     async tick() { if (!this.live.on || S.mode !== 'futures' || this.ticking) return; this.ticking = true; let opened = 0;
       try { const now = Date.now(), coins = this.coins(25), last = this.live.last;
-        for (const [n, sym] of coins.entries()) { const K = {}; for (const iv of ['15m', '30m', '1h', '4h', '1d', '3m']) { if (iv === '3m' && n >= 10) continue; try { K[iv] = closedK(await API.klines(sym, iv, iv === '3m' ? 150 : 260)); } catch (e) {} }
+        for (const [n, sym] of coins.entries()) { const K = {}; const need = new Set(SL.filter(q => !this.bad(q.id)).map(q => q.iv).concat('15m')); for (const iv of ['15m', '30m', '1h', '4h', '1d', '3m']) { if (!need.has(iv) || (iv === '3m' && n >= 10)) continue; try { K[iv] = closedK(await API.klines(sym, iv, iv === '3m' ? 150 : 260)); } catch (e) {} }
           for (const s of SL) { const KK = K[s.iv]; if (!KK || KK.c.length < 120) continue; const i = KK.c.length - 1; if (now - KK.ct[i] > MS[s.iv] + 120000) continue; const key = s.id + '|' + sym; if (last[key] && now - last[key] < (MS[s.iv] * 24)) continue;
             let x = null; try { x = s.f(KK, i); } catch (e) {} if (!x) continue; try { const G = this.live.sig || (this.live.sig = {}), A = G[sym] || (G[sym] = []); if (!A.some(y => y.id === s.id && y.t === KK.ct[i])) A.push({ id: s.id, sg: x.sg, t: KK.ct[i] }); } catch (e) {} const e = KK.c[i], R0 = Math.abs(e - x.stop); if (!(R0 > 0)) continue; const t2 = x.T[x.T.length - 1], t1 = x.T.length > 1 ? x.T[0] : e + x.sg * Math.min(1, Math.abs(t2 - e) / R0) * R0;
             let ok = false; try { ok = TRN.openCall(s.src, { sym, sg: x.sg, stop: x.stop, tps: [t1, t2], raw: `${s.ch} — نفس قاعدة القناة على فريم ${s.iv}` }, s.src); } catch (e) {} if (ok) { last[key] = now; opened++; } }
@@ -14440,7 +14442,7 @@ setTimeout(function () { try {
       const row = (name, ch, x, live) => `<tr><td>${esc(name)}<br><small class="mu21">${esc(ch)}</small></td><td class="num">${x ? x.n : 0}<br><small class="mu21">${x && N(x.pd) ? x.pd.toFixed(1) + ' في اليوم' : ''}</small></td><td>${cell(x)}<br><small class="mu21">${x && N(x.t) ? 't ' + x.t.toFixed(1) : ''}${x && N(x.w) ? ' · كسب ' + Math.round(x.w * 100) + '%' : ''}</small></td><td class="num"><small>${x ? f2(x.h1) + ' / ' + f2(x.h2) : '—'}</small></td><td class="num ${x ? cls(x.m - .15) : ''}"><small>${x && N(x.m) ? f2(x.m - .15) : '—'}</small></td><td>${x ? (this.ok(x) ? '✅ مثبت' : x.n >= 30 && x.m < 0 && x.h1 < 0 && x.h2 < 0 ? '❌ خسران' : '⏳') : '—'}</td><td class="num"><small>${live || '—'}</small></td></tr>`;
       let body = '<p class="mu21">لسه ما اتعملش.</p>'; if (s) { const X = s.sum, L = n => SL.find(q => q.id === n);
         body = `<div class="t32tab"><table><thead><tr><th>الاستراتيجية</th><th>صفقات</th><th>المتوسط</th><th>النصين</th><th>بعد خصم 0.15R</th><th>الحكم</th><th>لايف في التدريب</th></tr></thead><tbody>
-          ${SL.map(q => row(q.src.replace('قناة: ', ''), `${q.ch} · ${q.iv}`, X[q.id], rec(q.src))).join('')}${row('طبقتين متفقين (لايف)', 'أي استراتيجيتين في 4 ساعات', null, rec('قناة: طبقتين متفقين'))}${row('3 طبقات متفقين (لايف)', 'أي 3', null, rec('قناة: 3 طبقات متفقين'))}
+          ${SL.map(q => row(q.src.replace('قناة: ', ''), `${q.ch} · ${q.iv}`, X[q.id], this.bad(q.id) ? '⛔ واقف لايف' : rec(q.src))).join('')}${row('طبقتين متفقين (لايف)', 'أي استراتيجيتين في 4 ساعات', null, rec('قناة: طبقتين متفقين'))}${row('3 طبقات متفقين (لايف)', 'أي 3', null, rec('قناة: 3 طبقات متفقين'))}
           ${PUMP.map(p => row('كاشف الحركات: ' + p[1], 'Pump Detector · 15د', X[p[0]], '')).join('')}
           ${row('تجميع — البيتكوين طالع', 'FishTheWhales · 1س', X.accumUp, '')}${row('تجميع — البيتكوين نازل', 'FishTheWhales · 1س', X.accumDn, '')}</tbody></table></div>
           ${(() => { const nm = id => (L(id) || { src: id }).src.replace('قناة: ', ''), one = Object.keys(X).filter(k => k.startsWith('one|')), two = Object.keys(X).filter(k => k.startsWith('two|') && X[k].n >= 15).sort((a, b) => (X[b].m || -9) - (X[a].m || -9)).slice(0, 10);
