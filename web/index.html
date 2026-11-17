@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.10.3';
+window.SONAR_WEB = '3.0.12';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14663,6 +14663,109 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.10', e); } }, 1800);
 
 } catch (e) { console.warn("baked 3.0.10", e); }
+/* ===== baked update 3.0.12 ===== */
+try {
+// the same update loaded by hand as files (3.0.11 / 3.0.12) is switched off from the next start — this baked copy takes over
+try { const L = UPD.list(); let ch = 0; for (const p of L) if ((p.id === '3.0.11' || p.id === '3.0.12') && p.on) { p.on = 0; ch = 1; } if (ch) UPD.save(L); } catch (e) {}
+window.__b3012 = true;
+/* Sonar 3.0.12 — «مكان الدخول» (Ashraf, 17 Nov: «شوف واعمل حل وبعدها تحديث»)
+   What the diagnosis showed: the exit lab (3.0.8) already tried 8 exit methods on 282 decisions — NONE turned them positive, and every
+   method collapses in the second half the same way. So the leak is mostly WHERE we enter, not how we leave.
+   📍 ELAB — takes every closed training trade in the permanent ledger (up to 12,000), rebuilds the 1-hour chart at the moment it opened,
+      and measures 4 things about the entry location:
+        · position in the last 48 hours' range, seen from the trade's side: edge (bought low / sold high) · middle · chase
+        · room to the nearest swing level in the trade's direction, in R: < 1R · 1–2R · > 2R
+        · stretch from EMA20 in ATR: pullback · normal · stretched
+        · 1h trend (EMA50 vs EMA200): with the trade · against it
+      Then it tests «skip bucket X» (and the best pair). A filter is ADOPTED only if: it keeps ≥ 40% of trades (and ≥ 300),
+      lifts the average by ≥ +0.08R, and the kept trades are better in BOTH halves of time (≥ +0.03R each). Adopted filters:
+        · «فرص النهارده» (the pre-trading account's picks) get a «مكان الدخول» reason and are skipped
+        · the training book's money budget becomes 0 for that trade (it still runs for learning)
+      It reruns by itself every 24 h on the newest trades, so a filter that stops working is dropped automatically.
+   Also folds in 3.0.11 (momentum detector in learning mode + a complete diagnosis file) if that file wasn't loaded. */
+setTimeout(function () { try {
+  if (window.P3012) return;
+  const H = 3600e3, D = 24 * H, f2 = v => N(v) ? (v >= 0 ? '+' : '') + v.toFixed(2) + 'R' : '—', T0 = Date.now() - Math.round(performance.now());
+  const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
+
+  // ---------------- 3.0.11 (only if its file wasn't loaded)
+  if (!window.P3011) { try {
+    const MM = { live() { try { const Dn = MOMO.st.al.filter(x => x.st === 'done' && N(x.R)).slice(-40); return Dn.length >= 40 && mean(Dn.map(x => x.R)) >= .2; } catch (e) { return false; } },
+      loud() { return +(S.set && S.set.momoLoud) === 1 || this.live(); } };
+    const n0 = MOMO.note.bind(MOMO); MOMO.note = function (sym, msg, kind, big) { if (MM.loud()) return n0(sym, msg, kind, big); try { NEWS.add(sym, '🧪 ' + msg, 'info'); } catch (e) {} };
+    const h0 = MOMO.homeHtml.bind(MOMO); MOMO.homeHtml = function () { return MM.loud() ? h0() : ''; };
+    const d0 = HC.download.bind(HC); HC.download = async function () { try { if (!this.last) { toast('🩺 بعمل كشف سريع الأول عشان الملف يطلع كامل…'); await this.run(); } const t = Date.now(); while (!S.firstScanDone && Date.now() - t < 45000) await sleep(1500); } catch (e) {} return d0(); };
+    window.P3011 = { MM, via: '3.0.12' };
+  } catch (e) { console.warn('3.0.12/11', e); } }
+
+  // ---------------- entry-location features from a 1h chart at bar i (last closed bar before the entry)
+  const FEAT = {
+    emaAt(c, n, i) { const k = 2 / (n + 1); let p = NaN; for (let j = Math.max(0, i - n * 4); j <= i; j++) p = N(p) ? c[j] * k + p * (1 - k) : c[j]; return p; },
+    atrAt(K, i, n = 14) { let s = 0, m = 0; for (let j = Math.max(1, i - n + 1); j <= i; j++) { s += Math.max(K.h[j] - K.l[j], Math.abs(K.h[j] - K.c[j - 1]), Math.abs(K.l[j] - K.c[j - 1])); m++; } return m ? s / m : NaN; },
+    of(K, i, sg, stopPct) { if (!K || i < 210 || !(stopPct > 0)) return null; const c = K.c[i];
+      let lo = Infinity, hi = -Infinity; for (let j = i - 47; j <= i; j++) { lo = Math.min(lo, K.l[j]); hi = Math.max(hi, K.h[j]); }
+      const pos = hi > lo ? (c - lo) / (hi - lo) : .5, dp = sg > 0 ? pos : 1 - pos;
+      let lvl = null; for (let j = i - 2; j >= Math.max(2, i - 120); j--) { if (sg > 0) { const v = K.h[j]; if (v > c * 1.002 && v >= K.h[j - 1] && v >= K.h[j - 2] && v >= K.h[j + 1] && v >= K.h[j + 2] && (lvl === null || v < lvl)) lvl = v; }
+        else { const v = K.l[j]; if (v < c * .998 && v <= K.l[j - 1] && v <= K.l[j - 2] && v <= K.l[j + 1] && v <= K.l[j + 2] && (lvl === null || v > lvl)) lvl = v; } }
+      const room = lvl === null ? 9 : Math.abs(lvl - c) / (stopPct * c), a = this.atrAt(K, i), x = a > 0 ? sg * (c - this.emaAt(K.c, 20, i)) / a : 0, tr = sg * (this.emaAt(K.c, 50, i) - this.emaAt(K.c, 200, i));
+      return { pos: dp < .33 ? 'edge' : dp <= .67 ? 'mid' : 'chase', room: room < 1 ? 'r0' : room < 2 ? 'r1' : 'r2', ext: x < -.5 ? 'pb' : x > 1.5 ? 'st' : 'nm', tr: tr > 0 ? 'with' : 'ag' }; } };
+  const LBL = { 'pos:edge': 'من الطرف (شراء تحت / بيع فوق)', 'pos:mid': 'في نص الرينج', 'pos:chase': 'مطاردة (شراء فوق / بيع تحت)', 'room:r0': 'المسافة لأقرب مستوى أقل من 1R', 'room:r1': 'المسافة 1–2R', 'room:r2': 'المسافة أكتر من 2R',
+    'ext:pb': 'دخول على ارتداد (تحت EMA20)', 'ext:nm': 'عادي', 'ext:st': 'ممطوط بعيد عن EMA20', 'tr:with': 'مع ترند الساعة', 'tr:ag': 'عكس ترند الساعة' };
+
+  // ---------------- the lab
+  const EL = { st: store.get('p3012.el', { res: null, active: [], at: 0 }), busy: false, prog: '',
+    save() { store.set('p3012.el', this.st); },
+    rows() { try { return (P221.LED.st.L || []).map(r => ({ to: r[0], src: r[2], sym: r[3], sg: r[4], R: r[5], sp: r[9] })).filter(r => r.to && r.sym && N(r.R) && r.sp > 0 && (r.sg === 1 || r.sg === -1)); } catch (e) { return []; } },
+    async run(cb) { if (this.busy) return; this.busy = true; const say = s => { this.prog = s; try { cb && cb(s); } catch (e) {} };
+      try { const R = this.rows().slice(-12000); if (R.length < 300) { say(''); this.st.res = { at: Date.now(), n: R.length, short: true }; this.save(); return; }
+        const by = {}; for (const r of R) (by[r.sym] = by[r.sym] || []).push(r); const syms = Object.keys(by); let done = 0, F = [];
+        await pool(syms, 3, async sym => { let K; try { K = closedK(await API.klines(sym, '1h', 1500)); } catch (e) { done++; return; } done++; if (done % 10 === 0) say(`بحلل ${done} من ${syms.length} عملة…`);
+          for (const r of by[sym]) { let i = -1; for (let j = K.t.length - 1; j >= 0; j--) if (K.ct[j] < r.to) { i = j; break; } const f = FEAT.of(K, i, r.sg, r.sp); if (f) F.push(Object.assign({ R: r.R, to: r.to, src: r.src }, f)); }
+          await sleep(60); });
+        F.sort((a, b) => a.to - b.to); const n = F.length; if (n < 300) { this.st.res = { at: Date.now(), n, short: true }; this.save(); return; }
+        const mid = F[Math.floor(n / 2)].to, half = (A, h) => A.filter(x => h ? x.to >= mid : x.to < mid).map(x => x.R);
+        const base = { n, m: mean(F.map(x => x.R)), h1: mean(half(F, 0)), h2: mean(half(F, 1)) };
+        const keys = ['pos', 'room', 'ext', 'tr'], B = []; for (const k of keys) for (const v of [...new Set(F.map(x => x[k]))]) { const A = F.filter(x => x[k] === v).map(x => x.R); B.push({ id: k + ':' + v, n: A.length, m: mean(A) }); }
+        const test = ids => { const K2 = F.filter(x => !ids.some(id => { const [k, v] = id.split(':'); return x[k] === v; })); const m = mean(K2.map(x => x.R)), a = mean(half(K2, 0)), b = mean(half(K2, 1));
+          return { ids, n: K2.length, keep: K2.length / n, m, h1: a, h2: b, lift: m - base.m, ok: K2.length >= Math.max(300, .4 * n) && m - base.m >= .08 && a - base.h1 >= .03 && b - base.h2 >= .03 && ids.every(id => (B.find(q => q.id === id) || {}).n >= 100) }; };
+        const one = B.map(b => test([b.id])).sort((p, q) => q.lift - p.lift), good1 = one.filter(x => x.ok); let best = good1[0] || null;
+        if (best) { const two = B.filter(b => !best.ids.includes(b.id) && b.id.split(':')[0] !== best.ids[0].split(':')[0]).map(b => test(best.ids.concat(b.id))).filter(x => x.ok && x.lift >= best.lift + .05).sort((p, q) => q.lift - p.lift); if (two[0]) best = two[0]; }
+        const proven = F.filter(x => { try { return !!PICK.proven(x.src, 1) || !!PICK.proven(x.src, -1); } catch (e) { return false; } }), pv = proven.length >= 60 ? { n: proven.length, m: mean(proven.map(x => x.R)),
+          kept: best ? (() => { const K2 = proven.filter(x => !best.ids.some(id => { const [k, v] = id.split(':'); return x[k] === v; })); return { n: K2.length, m: mean(K2.map(x => x.R)) }; })() : null } : null;
+        const prev = this.st.active.slice(); this.st.active = best ? best.ids : []; this.st.res = { at: Date.now(), n, base, B, one: one.slice(0, 8), best, pv, from: F[0].to, to: F[n - 1].to }; this.st.at = Date.now(); this.save();
+        const chg = JSON.stringify(prev) !== JSON.stringify(this.st.active);
+        try { if (best && chg) DREAM.note(`📍 مكان الدخول: لقيت فلتر بيرفع المتوسط ${f2(best.lift)} على ${best.n} صفقة (النصين اتحسنوا): مش هندخل ${best.ids.map(id => '«' + LBL[id] + '»').join(' و')}`, 'ai');
+          else if (!best && prev.length) DREAM.note('📍 مكان الدخول: الفلتر اللي كان شغال ماعدش بيفرق على الصفقات الجديدة — اتشال', 'ai');
+          else if (!best) DREAM.note(`📍 مكان الدخول: حللت ${n} صفقة ومفيش فلتر عدّى الشروط (لازم يتحسن النصين) — مفيش تغيير`, 'ai'); } catch (e) {}
+      } catch (e) { console.warn('elab', e); } finally { this.busy = false; say(''); } },
+    veto(sym, sg, stopPct) { try { if (!this.st.active.length) return null; const r = S.bySym.get(sym); if (!r || !r.k1) return null; const K = closedK(r.k1); const f = FEAT.of(K, K.c.length - 1, sg, stopPct); if (!f) return null;
+        const hit = this.st.active.filter(id => { const [k, v] = id.split(':'); return f[k] === v; }); return hit.length ? hit.map(id => LBL[id]).join(' + ') : null; } catch (e) { return null; } },
+    html() { const s = this.st.res, row = (a, b, c) => `<tr><td>${a}</td><td class="num">${b}</td><td class="num">${c}</td></tr>`;
+      let body = '<p class="mu21">لسه ما اتعملش — بيشتغل لوحده بعد 3 دقايق من الفتح، وكل 24 ساعة.</p>';
+      if (s && s.short) body = `<p class="mu21">صفقات التدريب المقفولة لسه قليلة (${s.n}) — محتاج 300 على الأقل.</p>`;
+      else if (s && s.base) { const b = s.best;
+        body = `<p style="margin:6px 0">${s.n} صفقة تدريب · المتوسط كله ${f2(s.base.m)} (النص الأول ${f2(s.base.h1)} · التاني ${f2(s.base.h2)})</p>
+          <p style="margin:6px 0">${b ? `✅ <b>الفلتر الشغال:</b> مش هندخل ${b.ids.map(id => '«' + esc(LBL[id]) + '»').join(' و')} — بيسيب ${Math.round(b.keep * 100)}% من الصفقات، والمتوسط بيبقى ${f2(b.m)} (${f2(b.lift)}) · النص الأول ${f2(b.h1)} · التاني ${f2(b.h2)}` : '⬜ مفيش فلتر عدّى الشروط — مفيش تغيير على الدخول'}</p>
+          ${s.pv ? `<p class="mu21" style="margin:6px 0">صفقات المحركات المثبتة بس: ${s.pv.n} صفقة · ${f2(s.pv.m)}${s.pv.kept ? ` ← بعد الفلتر ${s.pv.kept.n} صفقة · ${f2(s.pv.kept.m)}` : ''}</p>` : ''}
+          <div class="t32tab"><table><thead><tr><th>مكان الدخول</th><th>صفقات</th><th>المتوسط</th></tr></thead><tbody>${s.B.slice().sort((p, q) => p.id.localeCompare(q.id)).map(x => row(esc(LBL[x.id] || x.id), x.n, `<b class="${x.m > 0 ? 'up21' : 'dn21'}">${f2(x.m)}</b>`)).join('')}</tbody></table></div>
+          <p class="mu21" style="font-size:12px;margin:6px 0 0">الفلتر بيتطبّق على «فرص النهارده» وعلى فلوس حساب التدريب بس (التدريب نفسه بيكمّل يتعلم). بيتعاد كل 24 ساعة، ولو بطّل يفرق بيتشال لوحده. آخر تحليل ${new Date(s.at).toLocaleString('ar-EG')}.</p>`; }
+      return `<details class="v-card t32fold" id="c312el" open style="margin-top:10px"><summary>📍 مكان الدخول <small class="mu21">الخسارة جاية من فين بندخل، مش من الخروج</small></summary>${body}
+        <button class="btn sm" type="button" id="c312b" ${this.busy ? 'disabled' : ''} style="margin-top:8px">${this.busy ? esc(this.prog || 'شغال…') : 'حلّل دلوقتي'}</button></details>`; } };
+
+  // ---------------- apply adopted filters
+  { const j0 = PICK.judge.bind(PICK); PICK.judge = function (g) { const x = j0(g); try { if (x && N(x.sp)) { const v = EL.veto(x.sym, x.sg, x.sp / 100); if (v) x.no.push('مكان الدخول: ' + v); } } catch (e) {} return x; }; }
+  { const b0 = TRN.budget.bind(TRN); TRN.budget = function (src, mk, sym, sg, P, liq) { const k = b0.apply(this, arguments); try { if (k > 0 && P && N(P.entry) && P.R0 > 0 && EL.veto(sym, sg, P.R0 / P.entry)) return 0; } catch (e) {} return k; }; }
+
+  // ---------------- UI (brain tab, with the other labs) + diagnosis + schedule
+  { const b0 = V21.brain.bind(V21); V21.brain = function () { const v = b0(); try { const w = $('#c38wrap') || $('#v21-brain'); if (w) { const o = $('#c312el'); if (o) o.remove(); w.insertAdjacentHTML('beforeend', EL.html());
+        const b = $('#c312b'); if (b) b.onclick = () => { b.disabled = true; EL.run(s => { const x = $('#c312b'); if (x) { x.textContent = s || 'خلص'; } }).then(() => { try { V21.brain(); } catch (e) {} }); }; } } catch (e) { console.warn('c312', e); } return v; }; }
+  { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v3012 = { upSec: Math.round((Date.now() - T0) / 1000), firstScanDone: !!S.firstScanDone, checksReady: !!this.last, el: EL.st }; } catch (e) {} return o; }; }
+  const due = () => { if (!S.firstScanDone || EL.busy) return; if (Date.now() - (EL.st.at || 0) > D) EL.run(); };
+  setTimeout(due, 3 * 60000); setInterval(due, 30 * 60000);
+  window.P3012 = { EL, FEAT };
+} catch (e) { console.warn('3.0.12', e); } }, 3000);
+
+} catch (e) { console.warn("baked 3.0.12", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
