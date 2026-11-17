@@ -2,6 +2,15 @@
 
 **الهدف:** عقل Sonar يشتغل 24 ساعة بدل لابتوب/تابلت صاحي 69% من اليوم. نفس التطبيق بالظبط (web/index.html) شغال في Chromium headless على سيرفر، ومعاه watchdog ولوحة متابعة. **مفيش أوامر حقيقية** — Sonar نفسه مش بيبعت أوامر لأي منصة.
 
+## 0) قبل أي حاجة: ارفع التحديثات على GitHub
+Claude مش قادر يرفع على المستودع من عنده، فالـ 4 commits دول جاهزين في `sonar-patches/` جوه الملف المضغوط:
+```bash
+git clone https://github.com/ashrafmenour-jpg/sonar-app.git && cd sonar-app
+git am /path/to/sonar-patches/*.patch      # 3.0.12 · 3.0.13 · 3.0.14 · server
+git push origin main                        # بحساب ashrafmenour-jpg أو بصلاحية عليه
+```
+بعد الـ push: تبويب **Actions** في GitHub → لازم «Test Sonar page» يبقى ✅ أخضر. التطبيقات عند أشرف هتنزّل 3.0.14 لوحدها خلال 3 ساعات.
+
 ## 1) السيرفر
 - **Hetzner Cloud CX22** (2 vCPU / 4 GB RAM / 40 GB) — منطقة **Falkenstein أو Helsinki**، Ubuntu 24.04. (~5 يورو/شهر). أي VPS بنفس المواصفات ينفع.
 - **ممنوع منطقة أمريكا:** Binance بيرفض الـ IPs الأمريكية (HTTP 451). أوروبا كويسة.
