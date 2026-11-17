@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.9.11';
+window.SONAR_WEB = '3.0.10';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14580,6 +14580,37 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.9.4', e); } }, 1750);
 
 } catch (e) { console.warn("baked 3.0.9.4", e); }
+/* ===== baked update 3.0.10 ===== */
+try {
+/* Sonar 3.0.10 — BTC reading on the home page, next to the price, and one tap opens the BTC chart inside Sonar.
+     Line 1: price · 24h · radar score (−100…+100) and its state (تجميع — احتمال بمب / تصريف — احتمال دمب / بمب جاري / مراقبة / عرضي …)
+     Line 2: MACD on 1h and 4h — صاعد / صاعد بيضعف / هابط / هابط بيضعف (احتمال ارتداد) — from the histogram's side and direction
+     Line 3: the market phase (كمّل شورت / اسكت / خد الارتداد …)
+   Tap → BTCV (all timeframes + the chart). MACD candles are fetched at most every 5 minutes (the network saver caches them too). */
+setTimeout(function () { try {
+  const BM = { at: 0, busy: false, r: {},
+    read(K) { const c = K.c, n = c.length; if (n < 40) return null; const e12 = ema(c, 12), e26 = ema(c, 26), m = c.map((_, i) => e12[i] - e26[i]), s = ema(m, 9), h = m.map((x, i) => x - s[i]), a = h[n - 1], b = h[n - 2];
+      if (!N(a) || !N(b)) return null; const up = a > 0, rising = a > b;
+      return up ? (rising ? ['صاعد', 'up21'] : ['صاعد بيضعف', 'c310w']) : (rising ? ['هابط بيضعف — احتمال ارتداد', 'c310w'] : ['هابط', 'dn21']); },
+    async load() { if (this.busy || Date.now() - this.at < 5 * 60000) return; this.busy = true;
+      try { for (const iv of ['1h', '4h']) { try { const K = closedK(await API.klines('BTCUSDT', iv, 120)); const x = this.read(K); if (x) this.r[iv] = x; } catch (e) {} } this.at = Date.now(); }
+      finally { this.busy = false; } try { const w = $('#v21-home'); if (w && w.querySelector('.c310btc')) paint(); } catch (e) {} },
+    html() { const b = S.btc, p = S.prices.BTCUSDT; let L1 = `<b class="num" data-px="BTCUSDT">${N(p) ? fp(p) : '—'}</b>`;
+      if (b && b.sc) { const v = b.sc.bias, d = b.chg24; if (N(d)) L1 += ` <span class="num ${d >= 0 ? 'up21' : 'dn21'}">${d >= 0 ? '+' : ''}${d.toFixed(2)}%</span>`;
+        const st = STATE[b.state] ? STATE[b.state][0] : ''; L1 += ` · <b class="num ${v > 0 ? 'up21' : v < 0 ? 'dn21' : ''}">${v > 0 ? '+' : ''}${v}</b>${st ? ` · <b class="${/بمب|لونج/.test(st) ? 'up21' : /دمب|شورت/.test(st) ? 'dn21' : ''}">${esc(st)}</b>` : ''}`; }
+      const M = ['1h', '4h'].map(iv => this.r[iv] ? `ماكد ${iv === '1h' ? 'ساعة' : '4س'}: <b class="${this.r[iv][1]}">${this.r[iv][0]}</b>` : '').filter(Boolean).join(' · ');
+      let ph = ''; try { const c = P307.PH.st.cur, L = c && P307.PH.LAB[c.k]; if (L) ph = `${L[0]} المرحلة: <b>${esc(L[1])}</b>`; } catch (e) {}
+      return `<div class="c310btc" data-btcv="1" title="افتح شارت البيتكوين" style="cursor:pointer;margin:0 0 10px;padding:10px 12px;border:1px solid var(--v-line);border-radius:12px;line-height:1.7">
+        <div style="font-size:15px">₿ ${L1}</div>${M ? `<div style="font-size:12.5px">${M}</div>` : ''}${ph ? `<div style="font-size:12.5px">${ph}</div>` : ''}<small class="mu21" style="font-size:11px">اضغط للشارت وكل الفريمات ←</small></div>`; } };
+  function paint() { const w = $('#v21-home'); if (!w) return; const o = w.querySelector('.c310btc'); if (o) o.remove();
+    const card = [...w.querySelectorAll('.v-card')].find(c => /₿ الحركة/.test(c.textContent)); if (!card) return; const h = card.firstElementChild;
+    h.insertAdjacentHTML('afterend', BM.html()); const e = w.querySelector('.c310btc'); if (e) e.onclick = ev => { ev.stopPropagation(); try { BTCV.open(); } catch (x) { console.warn('btcv', x); } }; }
+  const h0 = V21.home.bind(V21); V21.home = function () { const v = h0(); try { paint(); BM.load(); } catch (e) { console.warn('c310 home', e); } return v; };
+  { const st = document.createElement('style'); st.textContent = '.c310btc .c310w{color:#e8b04b}.c310btc:hover{border-color:var(--v-accent,#58a6e8)}'; document.head.appendChild(st); }
+  window.P3100 = { BM };
+} catch (e) { console.warn('3.0.10', e); } }, 1800);
+
+} catch (e) { console.warn("baked 3.0.10", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
