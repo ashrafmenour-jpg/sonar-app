@@ -1,0 +1,16 @@
+name: Test Sonar page
+on:
+  push:
+    paths: ['web/**', 'server/**', '.github/workflows/test.yml']
+  pull_request:
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install playwright==1.49.1 && playwright install --with-deps chromium
+      - name: Smoke test web/index.html
+        run: python server/smoke_test.py web

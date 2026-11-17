@@ -1,0 +1,23 @@
+services:
+  sonar:
+    build: .
+    container_name: sonar
+    restart: unless-stopped
+    environment:
+      SONAR_PASS: ${SONAR_PASS:?set SONAR_PASS in .env}
+      SNAP_MIN: "15"
+      PULL_MIN: "20"
+      KEEP_DAYS: "14"
+    volumes:
+      - ./data:/data
+    shm_size: "1gb"
+    mem_limit: 2g
+    expose: ["8090"]
+  caddy:                       # HTTPS in front of the dashboard (needs a domain pointing to the server)
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy:/data
+    depends_on: [sonar]

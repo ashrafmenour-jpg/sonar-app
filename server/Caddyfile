@@ -1,0 +1,4 @@
+# replace with the real subdomain, e.g. sonar.zedsglobal.com (DNS A record -> server IP)
+sonar.example.com {
+	reverse_proxy sonar:8090
+}
