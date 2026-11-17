@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.13';
+window.SONAR_WEB = '3.0.14';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14804,6 +14804,31 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.13', e); } }, 3500);
 
 } catch (e) { console.warn("baked 3.0.13", e); }
+/* ===== baked update 3.0.14 ===== */
+try {
+try { const L = UPD.list(); let ch = 0; for (const p of L) if (p.id === '3.0.14' && p.on) { p.on = 0; ch = 1; } if (ch) UPD.save(L); } catch (e) {}
+/* Sonar 3.0.14 — «رأيي قبل الدخول» كان بيظهر «—» (Ashraf, 17 Nov, صورة صفحة صفقاتي)
+   Cause: since 2.1.2, when the brain had ANY decision on the coin (ادخل / استنى / مفيش), the entry check returned before the
+   opinion was computed, so the trade was saved without it. Now the opinion (✅ مقبولة / ⚠ مخاطرة / ⛔ متدخلش) is always
+   computed and saved with the trade, plus the brain's decision at that moment.
+   Also: the updates list keeps only the recent hand-loaded updates (old ones are already inside the app). The 8 older trades can't be filled in:
+   the market picture at their entry wasn't saved. */
+setTimeout(function () { try {
+  if (window.P3014) return;
+  const g = RVW.gate;
+  RVW.gate = function (t, r, mode) { const ok = g.call(this, t, r, mode);
+    try { if (ok && r && !t.rv) { const sg = t.side === 'LONG' ? 1 : -1, o = RVW.ctx(r, sg, t), v = RVW.verdict(o, t);
+        t.rv = { o, v: { lvl: v.lvl, bad: v.bad, warn: v.warn, good: v.good, cz: v.cz, t: v.t } };
+        try { const d = JUDGE.of(r.sym); if (d) t.rv.brain = { k: d.k, sg: d.sg }; } catch (e) {}
+        if (mode !== 'sim') toast(`${esc(v.t)} — ${esc(base(t.sym))}${v.bad.length ? ': ' + esc(v.bad.slice(0, 2).join('، ')) : v.good.length ? ': ' + esc(v.good.slice(0, 2).join('، ')) : ''}`, v.lvl === 2 ? 'err' : v.lvl === 1 ? 'warn' : 'info'); } } catch (e) { console.warn('3.0.14', e); }
+    return ok; };
+  // tidy the updates list: drop stored copies of updates already built into the app, and 3.0.11 (3.0.12 contains it)
+  try { const vn = v => String(v || '').split('.').reduce((a, x) => a * 1000 + (+x || 0), 0) * Math.pow(1000, 4 - String(v || '').split('.').length), web = vn(window.SONAR_WEB);
+    const L = UPD.list(), K = L.filter(x => !UPD.BAKED.includes(x.id) && x.id !== '3.0.11' && !(web && vn(x.id) <= web)); if (K.length !== L.length) UPD.save(K); } catch (e) {}
+  window.P3014 = 1;
+} catch (e) { console.warn('3.0.14', e); } }, 3600);
+
+} catch (e) { console.warn("baked 3.0.14", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
