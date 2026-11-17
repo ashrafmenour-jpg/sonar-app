@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.10.2';
+window.SONAR_WEB = '3.0.10.3';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14321,6 +14321,7 @@ try {
         a) flag / pennant: a pole (≥ 6 % on 1h, ≥ 10 % on 4h) → a tight pause (≤ half the pole) → a close beyond the pause;
            stop at the other side of the pause, target = the pole's length from the breakout
         b) trendline break (wedges, triangles): close through the line over the last two swing highs (lows) with 1.5× volume — also DAILY (Zayk Charts), stop up to 20 %, up to 20 days
+        f) cup & handle (and inverted) 4h / daily: equal rims, middle bottom 8–50 % deep, handle ≤ 35 %, first close through the rim, stop under the handle
         e) Sheirko (ICT): sweep → CHoCH → displacement FVG, enter on the first return into the gap, 1h/4h
         d) Sami Algo: liquidity sweep 1h/4h and expansion break (squeeze then strong close past the 20-bar range) 30m/4h, EMA200 filter, 3 targets
         c) RSI divergence (Mfanni) 1h / 4h: new swing low (high) with RSI higher low (lower high) by 3+, RSI < 40 (> 60), stop past the swing, 2R
@@ -14387,6 +14388,19 @@ setTimeout(function () { try {
           const stop = (lo ? K.l[s] : K.h[s]) - sg * .2 * a, R0 = Math.abs(c - stop); if (R0 / c < .004 || R0 / c > .08) break;
           return { sg, stop, T: [c + sg * R0, c + sg * 2 * R0, c + sg * 3 * R0], W: [.34, .33, .33], hz: 48 }; } }
       return null; },
+    // cup & handle (and the inverted one for shorts): left rim → rounded bottom in the middle (8–50 % deep) → right rim within 5 % of the left →
+    // small handle (≤ 35 % of the cup depth, 3–15 bars, closes stay under the rim) → first close through the rim. Stop under the handle, 3 targets 1R/2R/3R.
+    cup(K, i, hz) { const P = prep(K), a = P.atr[i], c = K.c[i]; if (!N(a) || i < 150) return null;
+      for (const sg of [1, -1]) { const up = sg > 0, X = up ? K.h : K.l, Y = up ? K.l : K.h;
+        for (let r = i - 3; r >= i - 15; r--) { if (!I.piv(K, r, 2, up)) continue; const rim = X[r];
+          if (up ? !(c > rim && K.c[i - 1] <= rim) : !(c < rim && K.c[i - 1] >= rim)) continue;
+          let hx = Y[r + 1], bad = false; for (let q = r + 1; q < i; q++) { hx = up ? Math.min(hx, K.l[q]) : Math.max(hx, K.h[q]); if (up ? K.c[q] > rim : K.c[q] < rim) bad = true; } if (bad) continue;
+          let L = -1; for (let q = r - 25; q >= Math.max(0, r - 120); q--) if (L < 0 || (up ? X[q] > X[L] : X[q] < X[L])) L = q; if (L < 0 || Math.abs(X[L] - rim) / rim > .05) continue;
+          let b = L; for (let q = L + 1; q < r; q++) if (up ? Y[q] < Y[b] : Y[q] > Y[b]) b = q; const pos = (b - L) / (r - L), depth = Math.abs(rim - Y[b]);
+          if (pos < .25 || pos > .75 || depth / rim < .08 || depth / rim > .5) continue; if (Math.abs(rim - hx) > .35 * depth) continue;
+          const stop = hx - sg * .2 * a, R0 = Math.abs(c - stop); if (R0 / c < .006 || R0 / c > .1) continue;
+          return { sg, stop, T: [c + sg * R0, c + sg * 2 * R0, c + sg * 3 * R0], W: [.34, .33, .33], hz: hz || 48 }; } }
+      return null; },
     div(K, i) { const P = prep(K), r = P.rsi, a = P.atr[i], c = K.c[i], w = 3, j = i - w; if (!N(a) || j < 50) return null;
       for (const sg of [1, -1]) { const lo = sg > 0, X = lo ? K.l : K.h; if (!I.piv(K, j, w, !lo) || !N(r[j])) continue; if (lo ? !(r[j] < 40 && c > K.c[j]) : !(r[j] > 60 && c < K.c[j])) continue;
         for (let k = j - 6; k >= j - 40 && k > w; k--) { if (!I.piv(K, k, w, !lo) || !N(r[k])) continue; const px = lo ? X[j] < X[k] : X[j] > X[k], rx = lo ? r[j] > r[k] + 3 : r[j] < r[k] - 3; if (!(px && rx)) break;
@@ -14420,6 +14434,8 @@ setTimeout(function () { try {
     { id: 'xb4', src: 'قناة: Sami Algo · كسر التوسع 4س', ch: 'Sami Algo', iv: '4h', f: (K, i) => SIG.xbrk(K, i) },
     { id: 'seq1', src: 'قناة: Sheirko · سحب سيولة ← CHoCH ← FVG 1س', ch: 'Sheirko (ICT)', iv: '1h', f: (K, i) => SIG.seq(K, i) },
     { id: 'seq4', src: 'قناة: Sheirko · سحب سيولة ← CHoCH ← FVG 4س', ch: 'Sheirko (ICT)', iv: '4h', f: (K, i) => SIG.seq(K, i) },
+    { id: 'cup4', src: 'قناة: الكوب والعروة 4س', ch: 'Market Insights (X)', iv: '4h', f: (K, i) => SIG.cup(K, i) },
+    { id: 'cup1d', src: 'قناة: الكوب والعروة يومي', ch: 'Market Insights (X)', iv: '1d', f: (K, i) => SIG.cup(K, i, 20) },
     { id: 'div1', src: 'قناة: دايفرجنس RSI 1س', ch: 'Mfanni', iv: '1h', f: (K, i) => SIG.div(K, i) },
     { id: 'div4', src: 'قناة: دايفرجنس RSI 4س', ch: 'Mfanni', iv: '4h', f: (K, i) => SIG.div(K, i) },
     { id: 'bbl15', src: 'قناة: harmonicshark · بولينجر تحت 15د', ch: 'harmonicshark', iv: '15m', f: (K, i) => SIG.bblow(K, i, 0) },
