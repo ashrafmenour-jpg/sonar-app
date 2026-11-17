@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.12';
+window.SONAR_WEB = '3.0.13';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14766,6 +14766,44 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.12', e); } }, 3000);
 
 } catch (e) { console.warn("baked 3.0.12", e); }
+/* ===== baked update 3.0.13 ===== */
+try {
+try { const L = UPD.list(); let ch = 0; for (const p of L) if (p.id === '3.0.13' && p.on) { p.on = 0; ch = 1; } if (ch) UPD.save(L); } catch (e) {}
+/* Sonar 3.0.13 — XT و KuCoin (Ashraf, 17 Nov: «جهز» — بعد ما ملف التشخيص ورّى المنصات الشغالة Bybit و OKX و Bitget و Gate بس)
+   Why they were missing: XT, KuCoin, MEXC and LBank don't let a browser page read their prices directly, so each request first
+   waited 15 s for the direct try, then went through the helper stand-in, then through up to 3 public relays (25 s each) —
+   up to ~2 minutes per exchange, every 10 minutes, and a diagnosis taken in the first minute shows them as missing.
+   Now: a host whose working route is already known (direct or a relay) goes straight there; the direct try waits 8 s at most;
+   every exchange's last result is kept (ok, route, time, error), the health check names XT and KuCoin on their own line,
+   and the diagnosis file carries it. Coins are never marked «مش على منصاتك» while XT or KuCoin couldn't be read. */
+setTimeout(function () { try {
+  if (window.P3013) return;
+  const meta = store.get('p3013.x', {}), save = () => { try { store.set('p3013.x', meta); } catch (e) {} };
+  const NAME = { 'sapi.xt.com': 'XT', 'api.kucoin.com': 'KuCoin', 'api.mexc.com': 'MEXC', 'api.lbkex.com': 'LBank', 'www.okx.com': 'OKX', 'api.bybit.com': 'Bybit', 'api.gateio.ws': 'Gate', 'api.bitget.com': 'Bitget' };
+  const VIA = { d: 'مباشر', r0: 'وسيط 1', r1: 'وسيط 2', r2: 'وسيط 3', h: 'المساعد' };
+  const g0 = XCH.get.bind(XCH);
+  XCH.get = async function (u) { const h = NET.host(u), t0 = Date.now(), rt = NET.route[h];
+    try { let j;
+      if (rt && rt !== 'd') j = await NET.get(u, 'json', 25000);
+      else { try { j = await getJSON(u, 8000); if (NET.route[h] !== 'd') { NET.route[h] = 'd'; try { store.set('net.route', NET.route); } catch (e) {} } } catch (e) { j = await NET.get(u, 'json', 25000); } }
+      if (/\/(ticker|tickers|allTickers|24hr)/i.test(u)) { meta[h] = { ok: 1, via: NET.route[h] || 'd', ms: Date.now() - t0, at: Date.now() }; save(); }
+      return j;
+    } catch (e) { const tk = /\/(ticker|tickers|allTickers|24hr)/i.test(u);
+      try { const j = await g0(u); if (tk) { meta[h] = { ok: 1, via: 'h', ms: Date.now() - t0, at: Date.now() }; save(); } return j; }
+      catch (x) { if (tk) { meta[h] = { ok: 0, err: String(e && e.message || e).slice(0, 80), ms: Date.now() - t0, at: Date.now() }; save(); } throw e; } } };
+  const known = () => ['XT', 'KuCoin'].every(k => XCH.ok[k] === true);
+  { const m0 = XCH.mine.bind(XCH); XCH.mine = function (sym) { const r = m0(sym); return r.length || known() || !XCH.at ? r : ['XT/KuCoin؟']; }; }
+  const line = () => ['XT', 'KuCoin'].map(k => { const h = Object.keys(NAME).find(x => NAME[x] === k), m = meta[h]; return `${XCH.ok[k] === true ? '🟢' : XCH.ok[k] === false ? '🔴' : '⏳'} ${k}${m && m.ok ? ` (${VIA[m.via] || m.via} · ${Math.round(m.ms / 1000)}ث)` : m && !m.ok ? ` (${m.err})` : ''}`; }).join(' · ');
+  { const r0 = HC.run.bind(HC); HC.run = async function () { const v = await r0(); try { const L = this.last; if (L && L.C) { const ok = known(), first = XCH.ok.XT === undefined && XCH.ok.KuCoin === undefined;
+          L.C.push({ k: 'myx', n: 'منصاتك (XT و KuCoin)', ok: ok ? 'ok' : first ? 'warn' : 'bad', t: first ? 'لسه بتتحمّل (ممكن تاخد دقيقتين بعد الفتح)' : line() });
+          L.nb = L.C.filter(c => c.ok === 'bad').length; L.nw = L.C.filter(c => c.ok === 'warn').length; const h = this.hist[this.hist.length - 1]; if (h && h.t === L.t) { h.nb = L.nb; h.nw = L.nw; h.bad = L.C.filter(c => c.ok !== 'ok').map(c => c.k); }
+          this.chip(); if ($('#hcModal') && !$('#hcModal').hidden) this.paint(); } } catch (e) {} return v; }; }
+  { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v3013 = { ok: XCH.ok, at: XCH.at, meta: Object.fromEntries(Object.entries(meta).map(([h, m]) => [NAME[h] || h, m])), route: Object.fromEntries(Object.keys(NAME).map(h => [NAME[h], NET.route[h] || null])) }; } catch (e) {} return o; }; }
+  try { XCH.at = 0; XCH.run(); } catch (e) {}
+  window.P3013 = { meta };
+} catch (e) { console.warn('3.0.13', e); } }, 3500);
+
+} catch (e) { console.warn("baked 3.0.13", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
