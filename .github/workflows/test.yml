@@ -28,6 +28,9 @@ jobs:
           curl -sf -o /dev/null -w "login %{http_code}\n" http://127.0.0.1:8090/login
           curl -sf -u sonar:ci -o /dev/null -w "viewer %{http_code}\n" http://127.0.0.1:8090/
           curl -sf -u sonar:ci http://127.0.0.1:8090/status.json | head -c 300
+          curl -sf -u sonar:ci http://127.0.0.1:8090/ | grep -q SONAR_MIRROR && echo "fast view ok"
+          curl -sf -u sonar:ci http://127.0.0.1:8090/state | head -c 120; echo
+          curl -sf -u sonar:ci -o /dev/null -w "live %{http_code}\n" http://127.0.0.1:8090/live
           grep -q "Sonar اشتغل على السيرفر" /tmp/srv.log
   promote:
     needs: smoke

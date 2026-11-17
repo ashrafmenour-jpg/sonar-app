@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
  && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir playwright==1.49.1 aiohttp==3.11.11 && playwright install --with-deps chromium
 WORKDIR /app
-COPY runner.py smoke_test.py viewer.html ./
+COPY runner.py smoke_test.py viewer.html mirror.js ./
 ARG REPO_URL=https://github.com/ashrafmenour-jpg/sonar-app.git
 RUN git clone --depth 50 ${REPO_URL} /app/repo
 VOLUME ["/data"]

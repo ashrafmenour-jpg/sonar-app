@@ -359,6 +359,32 @@ async def h_login(req):
         await asyncio.sleep(1.5)
         return web.Response(text=LOGIN.replace('{ERR}', '<div class="e">الباسورد غلط</div>'), content_type='text/html')
     return web.Response(text=LOGIN.replace('{ERR}', ''), content_type='text/html')
+STATE_CACHE = {'t': 0, 'b': None}
+async def h_state(req):
+    """the server's saved Sonar data (every sonarpro.* key) — what the fast view loads at open"""
+    if not authed(req): raise web.HTTPForbidden()
+    if time.time() - STATE_CACHE['t'] > 20 or STATE_CACHE['b'] is None:
+        if not BRAIN.page: raise web.HTTPServiceUnavailable(text='Sonar is starting')
+        keys = await BRAIN.page.evaluate("""() => { try { store.flushAll(); } catch (e) {} const o = {};
+            for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('sonarpro.')) o[k] = localStorage.getItem(k); } return o; }""")
+        STATE_CACHE['b'] = json.dumps({'at': int(time.time() * 1000), 'ver': web_version(), 'keys': keys}, ensure_ascii=False).encode('utf-8'); STATE_CACHE['t'] = time.time()
+    r = web.Response(body=STATE_CACHE['b'], content_type='application/json', headers={'Cache-Control': 'no-store'}); r.enable_compression(); return r
+def repo_file(*p):
+    v = os.path.join(REPO, *p)
+    return v if os.path.exists(v) else os.path.join(HERE, p[-1])
+async def h_fast(req):
+    """/ : Sonar itself running in your browser (fast scrolling), loaded with the server's data — see mirror.js"""
+    if not authed(req): raise web.HTTPFound('/login')
+    html_ = open(os.path.join(WEB, 'index.html'), encoding='utf-8').read()
+    inject = '<script>' + open(repo_file('server', 'mirror.js'), encoding='utf-8').read() + '</script>'
+    html_ = html_.replace('<head>', '<head>' + inject, 1)
+    r = web.Response(text=html_, content_type='text/html', headers={'Cache-Control': 'no-store'}); r.enable_compression(); return r
+async def h_asset(req):
+    n = os.path.basename(req.match_info['n'])
+    if not n.endswith(('.png', '.svg', '.ico', '.webmanifest')) and n != 'manifest.json': raise web.HTTPNotFound()
+    p = os.path.join(WEB, n)
+    if not os.path.isfile(p): raise web.HTTPNotFound()
+    return web.FileResponse(p)
 async def h_index(req):
     if not authed(req): raise web.HTTPFound('/login')
     v = os.path.join(REPO, 'server', 'viewer.html')   # the pulled repo copy => viewer fixes arrive with the 20-min update
@@ -441,9 +467,11 @@ async def main():
     inner.router.add_get('/{n:.*}', stat)
     r1 = web.AppRunner(inner); await r1.setup(); await web.TCPSite(r1, '127.0.0.1', APP_PORT).start()
     app = web.Application(client_max_size=60 * 1024 * 1024)
-    app.router.add_route('*', '/login', h_login); app.router.add_get('/', h_index); app.router.add_get('/ws', h_ws)
+    app.router.add_route('*', '/login', h_login); app.router.add_get('/', h_fast); app.router.add_get('/live', h_index); app.router.add_get('/ws', h_ws)
+    app.router.add_get('/state', h_state)
     app.router.add_post('/upload', h_upload); app.router.add_get('/f/{k}', h_file); app.router.add_get('/dl/{n}', h_dl)
     app.router.add_get('/status', h_status); app.router.add_get('/status.json', h_status); app.router.add_get('/health', h_health)
+    app.router.add_get('/{n}', h_asset)
     r2 = web.AppRunner(app); await r2.setup(); await web.TCPSite(r2, '0.0.0.0', DASH_PORT).start()
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, pull); await loop.run_in_executor(None, check_net)
