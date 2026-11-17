@@ -35,7 +35,9 @@
   let ws, url, W = innerWidth, H = innerHeight, frames = 0, lastFrame = 0, retry = 500;
   const send = o => { try { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); } catch (e) {} };
   const toast = (t, ms = 3500) => { const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => m.style.display = 'none', ms); };
-  const hello = () => { W = innerWidth; H = innerHeight; send({ t: 'hello', w: W, h: H, dpr: devicePixelRatio || 1 }); };
+  // speed first: 1× pixels and medium JPEG; «sharp» (🔍) asks for 2× on retina screens when the connection is good
+  let sharp = (() => { try { return localStorage.getItem('sonar.sharp') === '1'; } catch (e) { return false; } })();
+  const hello = () => { W = innerWidth; H = innerHeight; send({ t: 'hello', w: W, h: H, dpr: devicePixelRatio || 1, sharp, q: sharp ? 70 : 50 }); };
 
   function connect() {
     ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); ws.binaryType = 'blob';
@@ -68,6 +70,8 @@
   // ---- pointer: mouse = clicks + hover + wheel; touch = tap clicks, drag scrolls
   const pt = e => { const r = scr.getBoundingClientRect(); return { x: Math.round((e.clientX - r.left) * W / r.width), y: Math.round((e.clientY - r.top) * H / r.height) }; };
   let down = null, lastMove = 0, lastTap = 0;
+  // scrolling: many small wheel/drag steps are added up and sent once per frame (one round-trip instead of dozens)
+  let acc = null; const wheel = (p, dx, dy) => { if (acc) { acc.dx += dx; acc.dy += dy; return; } acc = { ...p, dx, dy }; requestAnimationFrame(() => { send({ t: 'wheel', x: acc.x, y: acc.y, dx: acc.dx, dy: acc.dy }); acc = null; }); };
   scr.addEventListener('pointerdown', e => {
     e.preventDefault(); const p = pt(e);
     if (e.pointerType === 'mouse') { const n = Date.now() - lastTap < 350 ? 2 : 1; lastTap = Date.now(); send({ t: 'mouse', type: 'mousePressed', ...p, n, button: e.button === 2 ? 'right' : 'left' }); down = { mouse: 1 }; }
@@ -75,10 +79,10 @@
   });
   scr.addEventListener('pointermove', e => {
     const p = pt(e);
-    if (e.pointerType === 'mouse') { if (Date.now() - lastMove > 40) { lastMove = Date.now(); send({ t: 'mouse', type: 'mouseMoved', ...p, button: down ? 'left' : 'none' }); } return; }
+    if (e.pointerType === 'mouse') { if (down && Date.now() - lastMove > 50) { lastMove = Date.now(); send({ t: 'mouse', type: 'mouseMoved', ...p, button: 'left' }); } return; }   // no hover traffic: only drags
     if (!down) return;
     if (!down.moved && Math.hypot(e.clientY - down.x, e.clientX - down.sx) > 8) down.moved = true;
-    if (down.moved) { const dy = (down.ly - e.clientY) * H / innerHeight, dx = (down.lx - e.clientX) * W / innerWidth; down.ly = e.clientY; down.lx = e.clientX; send({ t: 'wheel', ...down.p, dx, dy }); }
+    if (down.moved) { const dy = (down.ly - e.clientY) * H / innerHeight, dx = (down.lx - e.clientX) * W / innerWidth; down.ly = e.clientY; down.lx = e.clientX; wheel(down.p, dx, dy); }
   });
   const up = e => {
     if (!down) return; const p = pt(e);
@@ -87,7 +91,7 @@
     down = null;
   };
   scr.addEventListener('pointerup', up); scr.addEventListener('pointercancel', () => down = null);
-  scr.addEventListener('wheel', e => { e.preventDefault(); send({ t: 'wheel', ...pt(e), dx: e.deltaX, dy: e.deltaY }); }, { passive: false });
+  scr.addEventListener('wheel', e => { e.preventDefault(); wheel(pt(e), e.deltaX, e.deltaY); }, { passive: false });
   scr.addEventListener('contextmenu', e => e.preventDefault());
 
   // ---- keyboard (computer): every key goes to the server page
@@ -128,6 +132,8 @@
     };
     f.click();
   }
+  { const b = document.createElement('button'); b.textContent = '🔍'; b.title = 'وضوح أعلى (أبطأ)'; b.style.opacity = sharp ? 1 : .5;
+    b.onclick = () => { sharp = !sharp; b.style.opacity = sharp ? 1 : .5; try { localStorage.setItem('sonar.sharp', sharp ? '1' : '0'); } catch (e) {} hello(); toast(sharp ? 'وضوح أعلى' : 'سرعة أعلى'); }; $('bar').insertBefore(b, $('rl')); }
   $('rl').onclick = () => { if (confirm('أعيد تحميل Sonar على السيرفر؟ (البيانات زي ما هي)')) send({ t: 'reload' }); };
 })();
 </script>

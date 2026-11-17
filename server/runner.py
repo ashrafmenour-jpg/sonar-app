@@ -92,20 +92,22 @@ class Brain:
         try:
             if on:
                 await self.apply_viewport()
-                await self.cdp.send('Page.startScreencast', {'format': 'jpeg', 'quality': 72, 'maxWidth': int(self.vp['w'] * self.vp['dpr']),
+                await self.cdp.send('Page.startScreencast', {'format': 'jpeg', 'quality': self.vp.get('q', 55), 'maxWidth': int(self.vp['w'] * self.vp['dpr']),
                                                              'maxHeight': int(self.vp['h'] * self.vp['dpr']), 'everyNthFrame': 1})
             elif self.casting:
                 await self.cdp.send('Page.stopScreencast')
             self.casting = on
         except Exception as e: log(f'screencast {on}: {e}')
     async def on_frame(self, p):
-        try: await self.cdp.send('Page.screencastFrameAck', {'sessionId': p['sessionId']})
-        except Exception: pass
+        # ack only AFTER the frame went out: Chrome waits for the ack before the next frame, so a slow connection gets
+        # fewer, fresh frames instead of a growing queue of old ones (that queue is what makes it feel slow)
         b = base64.b64decode(p['data']); dead = []
         for ws in list(self.viewers):
-            try: await ws.send_bytes(b)
+            try: await asyncio.wait_for(ws.send_bytes(b), 10)
             except Exception: dead.append(ws)
         for ws in dead: self.viewers.discard(ws)
+        try: await self.cdp.send('Page.screencastFrameAck', {'sessionId': p['sessionId']})
+        except Exception: pass
         if not self.viewers: await self.cast(False)
 
     # ---------- input from a viewer ----------
@@ -137,7 +139,7 @@ class Brain:
                     await c.send('Input.dispatchKeyEvent', {'type': 'keyUp', 'key': 'Enter', 'code': 'Enter', 'windowsVirtualKeyCode': 13})
             elif t == 'hello':
                 self.vp = {'w': max(360, min(2560, int(m.get('w', 1280)))), 'h': max(480, min(1600, int(m.get('h', 900)))),
-                           'dpr': max(1, min(2, float(m.get('dpr', 1))))}
+                           'dpr': 2 if m.get('sharp') and float(m.get('dpr', 1)) >= 2 else 1, 'q': max(30, min(85, int(m.get('q', 55))))}
                 await self.cast(True)
             elif t == 'answer':
                 self.answer(m.get('id'), m.get('v'))
@@ -359,7 +361,8 @@ async def h_login(req):
     return web.Response(text=LOGIN.replace('{ERR}', ''), content_type='text/html')
 async def h_index(req):
     if not authed(req): raise web.HTTPFound('/login')
-    return web.FileResponse(os.path.join(HERE, 'viewer.html'), headers={'Cache-Control': 'no-store'})
+    v = os.path.join(REPO, 'server', 'viewer.html')   # the pulled repo copy => viewer fixes arrive with the 20-min update
+    return web.FileResponse(v if os.path.exists(v) else os.path.join(HERE, 'viewer.html'), headers={'Cache-Control': 'no-store'})
 async def h_ws(req):
     if not authed(req): raise web.HTTPForbidden()
     ws = web.WebSocketResponse(heartbeat=25, max_msg_size=8 * 1024 * 1024); await ws.prepare(req)
