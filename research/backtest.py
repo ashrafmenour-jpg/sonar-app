@@ -166,19 +166,30 @@ def candidates(sym, f, ctx, rule):
 def simulate(f, t, sg, rule, cost_r_pct):
     i = f.index.get_loc(t) + 1
     if i >= len(f): return None
-    entry = f.o.iat[i]; risk = rule['stop_atr4h'] * f.atr4h.iat[i - 1]
+    entry = f.o.iat[i]
+    risk = entry * rule['stop_pct'] / 100 if rule.get('stop_pct') else rule['stop_atr4h'] * f.atr4h.iat[i - 1]
     if not (risk > 0) or risk / entry > .25: return None
-    stop = entry - sg * risk; tp = entry + sg * rule['tp_r'] * risk; be = False
+    stop = entry - sg * risk; be = False
+    # targets: one target at tp_r · or the brain's picks: half at tp_pct[0] (stop → entry), the rest at tp_pct[1]
+    tps = [entry * (1 + sg * x / 100) for x in rule['tp_pct']] if rule.get('tp_pct') else [entry + sg * rule['tp_r'] * risk]
+    half = len(tps) > 1; banked = 0.0
     end = min(len(f) - 1, i + rule['max_hours'] - 1); H, L, C = f.h.values, f.l.values, f.c.values
+    D4 = f.d4h.values; dead = rule.get('dead'); mfe = 0.0
     exit_p, why, j = None, 'time', end
     for j in range(i, end + 1):
+        tp = tps[1] if (half and banked) else tps[0]
         hit_stop = L[j] <= stop if sg > 0 else H[j] >= stop
         hit_tp = H[j] >= tp if sg > 0 else L[j] <= tp
         if hit_stop: exit_p, why = stop, 'be' if be else 'stop'; break
-        if hit_tp: exit_p, why = tp, 'target'; break
-        if not be and rule.get('be_at_r') and (sg * (C[j] - entry) / risk) >= rule['be_at_r']: stop, be = entry, True
+        if hit_tp:
+            if half and not banked: banked = .5 * sg * (tp - entry) / risk; stop, be = entry, True; continue
+            exit_p, why = tp, 'target'; break
+        r_now = sg * (C[j] - entry) / risk; mfe = max(mfe, sg * ((H[j] if sg > 0 else L[j]) - entry) / risk)
+        if not be and rule.get('be_at_r') and r_now >= rule['be_at_r']: stop, be = entry, True
+        if dead and j - i + 1 >= dead['hours'] and mfe < dead['mfe_r'] and not banked: exit_p, why = C[j], 'dead'; break
+        if rule.get('flip4h') and D4[j] == -sg and not banked: exit_p, why = C[j], 'flip'; break
     if exit_p is None: exit_p = C[end]
-    gross = sg * (exit_p - entry) / risk
+    gross = (banked + .5 * sg * (exit_p - entry) / risk) if (half and banked) else sg * (exit_p - entry) / risk
     cost = cost_r_pct / 100 * entry / risk                       # round-trip fee + slippage in R
     return {'t': t, 'exit_t': f.index[j], 'entry': entry, 'R': gross - cost, 'gross': gross, 'why': why, 'stop_pct': risk / entry * 100}
 

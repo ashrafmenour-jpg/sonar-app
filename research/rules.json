@@ -208,6 +208,110 @@
    "max_hours": 120,
    "registered": "2026-11-18",
    "seen": true
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_pct": 3.3,
+   "tp_pct": [
+    3.0,
+    5.5
+   ],
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-18",
+   "id": "pick_like",
+   "name": "إدارة صفقات العقل زي ما هي: وقف 3.3%، نص عند 3% والوقف للدخول، الباقي عند 5.5%، 3 أيام"
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_pct": 3.3,
+   "tp_pct": [
+    3.0,
+    5.5
+   ],
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-18",
+   "id": "pick_dead24",
+   "name": "نفس الصفقة + اقفل لو بعد 24 ساعة ما مشيتش +0.5R في صالحنا",
+   "dead": {
+    "hours": 24,
+    "mfe_r": 0.5
+   }
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_pct": 3.3,
+   "tp_pct": [
+    3.0,
+    5.5
+   ],
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-18",
+   "id": "pick_flip4h",
+   "name": "نفس الصفقة + اقفل لو اتجاه الـ4 ساعات قلب ضدنا",
+   "flip4h": true
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_pct": 3.3,
+   "tp_pct": [
+    3.0,
+    5.5
+   ],
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-18",
+   "id": "pick_dead_flip",
+   "name": "نفس الصفقة + الاتنين (24 ساعة بلا حركة أو الـ4 ساعات قلبت)",
+   "dead": {
+    "hours": 24,
+    "mfe_r": 0.5
+   },
+   "flip4h": true
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_pct": 3.3,
+   "tp_pct": [
+    3.0,
+    5.5
+   ],
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-18",
+   "id": "pick_8h",
+   "name": "نفس الصفقة + مضاربة حقيقية: اقفل لو بعد 8 ساعات ما مشيتش +0.5R",
+   "dead": {
+    "hours": 8,
+    "mfe_r": 0.5
+   }
   }
  ]
 }
