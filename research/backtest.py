@@ -141,12 +141,19 @@ def candidates(sym, f, ctx, rule):
     side = rule['side']; sig = rule['signal']
     if sig == 'mtf_all':
         a = np.where((f.d1h == 1) & (f.d4h == 1) & (f.d1d == 1), 1, np.where((f.d1h == -1) & (f.d4h == -1) & (f.d1d == -1), -1, 0))
+    elif sig == 'cond':   # every listed timeframe direction + where the price sits in its 48h range
+        ok = pd.Series(True, index=f.index)
+        for k, v in rule.get('dirs', {}).items(): ok &= f[k] == v
+        if rule.get('pos_min') is not None: ok &= f.pos48 >= rule['pos_min']
+        if rule.get('pos_max') is not None: ok &= f.pos48 <= rule['pos_max']
+        a = np.where(ok, side, 0)
     else:
         a = f.brk4h.fillna(0).values.astype(int)
     a = pd.Series(a, index=f.index)
     onset = (a != 0) & (a != a.shift(1))                       # only when the setup appears, not every hour it lasts
     if side: onset &= a == side
     if rule.get('mood'): onset &= ctx.mood.reindex(f.index).isin(rule['mood']).values
+    if rule.get('regime'): onset &= ctx.regime.reindex(f.index).isin(rule['regime']).values
     loc = rule.get('loc')
     if loc:
         p = f.pos48
@@ -229,12 +236,16 @@ def main():
         day = T.t.dt.floor('D').astype(str).values; half = len(T) // 2
         S = {'all': stats(T.R, day), 'train': stats(T.R[T.t < split], day[(T.t < split).values]), 'holdout': stats(T.R[T.t >= split], day[(T.t >= split).values]),
              'half1': stats(T.R[:half], day[:half]), 'half2': stats(T.R[half:], day[half:])}
+        reg = pd.Timestamp(rule.get('registered', cfg['registered']), tz='UTC')
+        S['after_reg'] = stats(T.R[T.t >= reg], day[(T.t >= reg).values])   # the honest test for rules designed after seeing results
         S['by_regime'] = {g: stats(T.R[T.regime == g], day[(T.regime == g).values]) for g in ['DOWN', 'REBOUND', 'RANGE', 'UP']}
         S['by_year'] = {str(yy): stats(T.R[T.t.dt.year == yy]) for yy in sorted(T.t.dt.year.unique())}
         S['by_side'] = {('long' if k > 0 else 'short'): stats(T.R[T.side == k]) for k in sorted(T.side.unique())}
         S['exits'] = T.why.value_counts().to_dict(); S['median_stop_pct'] = round(float(T.stop_pct.median()), 2)
         S['last'] = [{'t': str(x.t)[:16], 'sym': x.sym, 'side': int(x.side), 'R': round(float(x.R), 2), 'why': x.why} for x in T.tail(12).itertuples()]
-        v = verdict(S); out_rules.append({'id': rule['id'], 'name': rule['name'], 'spec': rule, 'stats': S, 'verdict': list(v)})
+        v = verdict(S)
+        if rule.get('seen'): v = (v[0], v[1] + ' — اتصممت بعد ما شفنا النتايج، فالحكم الحقيقي من صفقاتها بعد ' + rule['registered'])
+        out_rules.append({'id': rule['id'], 'name': rule['name'], 'spec': rule, 'stats': S, 'verdict': list(v)})
         print(f"{rule['id']}: n={S['all']['n']} mean={S['all'].get('mean')} t={S['all'].get('t')} holdout={S['holdout'].get('mean')} -> {v[0]}", flush=True)
     rc = pd.Series(ctx.regime.values, index=ctx.index).resample('1D').last().value_counts().to_dict()
     report = {'app': 'sonar-backtest', 'v': 1, 'at': dt.datetime.now(dt.timezone.utc).isoformat()[:19] + 'Z', 'rules_sha256': hashlib.sha256(rules_raw).hexdigest(),

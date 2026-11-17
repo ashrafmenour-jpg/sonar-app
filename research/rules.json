@@ -1,16 +1,213 @@
 {
  "registered": "2026-11-18",
- "note": "Pre-registered rules. Change a rule = new id (never edit an existing one after it has results). Only rules registered here are reported.",
- "costs": {"fee_pct_per_side": 0.05, "slippage_pct_per_side": 0.05},
- "split": {"train_end": "2022-12-31", "holdout_from": "2023-01-01"},
+ "note": "Pre-registered rules. Change a rule = new id (never edit one that has results). 'seen': designed after looking at earlier results — judge those by the trades after 'registered'.",
+ "costs": {
+  "fee_pct_per_side": 0.05,
+  "slippage_pct_per_side": 0.05
+ },
+ "split": {
+  "train_end": "2022-12-31",
+  "holdout_from": "2023-01-01"
+ },
  "max_open_per_rule": 5,
  "rules": [
-  {"id": "core_short", "name": "الأساس المثبت: شورت لما كل الفريمات هابطة ومزاج السوق «هبوط عميق»", "side": -1, "signal": "mtf_all", "mood": ["deep"], "loc": null, "stop_atr4h": 1.2, "tp_r": 2.0, "be_at_r": 1.0, "max_hours": 48},
-  {"id": "core_short_no_mood", "name": "نفس الأساس من غير مزاج السوق (مقارنة: المزاج بيضيف ولا لأ)", "side": -1, "signal": "mtf_all", "mood": null, "loc": null, "stop_atr4h": 1.2, "tp_r": 2.0, "be_at_r": 1.0, "max_hours": 48},
-  {"id": "core_short_no_chase", "name": "الأساس + مكان الدخول: متدخلش شورت والسعر في قاع مدى 48 ساعة (مطاردة)", "side": -1, "signal": "mtf_all", "mood": ["deep"], "loc": "no_chase", "stop_atr4h": 1.2, "tp_r": 2.0, "be_at_r": 1.0, "max_hours": 48},
-  {"id": "core_short_swing", "name": "الأساس بنَفَس أطول (سوينج 5 أيام، وقف أوسع، هدف 3R)", "side": -1, "signal": "mtf_all", "mood": ["deep"], "loc": null, "stop_atr4h": 2.0, "tp_r": 3.0, "be_at_r": 1.0, "max_hours": 120},
-  {"id": "core_long_rally", "name": "المرآة: لونج لما كل الفريمات طالعة ومزاج السوق «صعود جماعي»", "side": 1, "signal": "mtf_all", "mood": ["rally"], "loc": null, "stop_atr4h": 1.2, "tp_r": 2.0, "be_at_r": 1.0, "max_hours": 48},
-  {"id": "abo_ammar_breakout", "name": "مؤشر أبو عمار (4 ساعات): إغلاق فوق قمة آخر شمعة هابطة قوية = لونج، تحت قاع آخر صاعدة قوية = شورت", "side": 0, "signal": "strong_candle_break", "mood": null, "loc": null, "stop_atr4h": 1.2, "tp_r": 2.0, "be_at_r": 1.0, "max_hours": 48},
-  {"id": "range_mid_skip", "name": "فلتر نص المدى: الأساس بس لما السعر في طرف مدى 48 ساعة مش في نصه", "side": -1, "signal": "mtf_all", "mood": ["deep"], "loc": "edge_only", "stop_atr4h": 1.2, "tp_r": 2.0, "be_at_r": 1.0, "max_hours": 48}
+  {
+   "id": "core_short",
+   "name": "الأساس المثبت: شورت لما كل الفريمات هابطة ومزاج السوق «هبوط عميق»",
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48
+  },
+  {
+   "id": "core_short_no_mood",
+   "name": "نفس الأساس من غير مزاج السوق (مقارنة: المزاج بيضيف ولا لأ)",
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": null,
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48
+  },
+  {
+   "id": "core_short_no_chase",
+   "name": "الأساس + مكان الدخول: متدخلش شورت والسعر في قاع مدى 48 ساعة (مطاردة)",
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": "no_chase",
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48
+  },
+  {
+   "id": "core_short_swing",
+   "name": "الأساس بنَفَس أطول (سوينج 5 أيام، وقف أوسع، هدف 3R)",
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.0,
+   "tp_r": 3.0,
+   "be_at_r": 1.0,
+   "max_hours": 120
+  },
+  {
+   "id": "core_long_rally",
+   "name": "المرآة: لونج لما كل الفريمات طالعة ومزاج السوق «صعود جماعي»",
+   "side": 1,
+   "signal": "mtf_all",
+   "mood": [
+    "rally"
+   ],
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48
+  },
+  {
+   "id": "abo_ammar_breakout",
+   "name": "مؤشر أبو عمار (4 ساعات): إغلاق فوق قمة آخر شمعة هابطة قوية = لونج، تحت قاع آخر صاعدة قوية = شورت",
+   "side": 0,
+   "signal": "strong_candle_break",
+   "mood": null,
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48
+  },
+  {
+   "id": "range_mid_skip",
+   "name": "فلتر نص المدى: الأساس بس لما السعر في طرف مدى 48 ساعة مش في نصه",
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": "edge_only",
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48
+  },
+  {
+   "id": "range_short_top",
+   "name": "شورت السوق العرضي: السعر في ربع المدى العلوي (48 ساعة) والساعة قلبت هابطة",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d1h": -1
+   },
+   "pos_min": 0.75,
+   "regime": [
+    "RANGE"
+   ],
+   "mood": null,
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48,
+   "registered": "2026-11-18",
+   "seen": true
+  },
+  {
+   "id": "range_long_bottom",
+   "name": "لونج السوق العرضي: السعر في ربع المدى السفلي والساعة قلبت طالعة",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d1h": 1
+   },
+   "pos_max": 0.25,
+   "regime": [
+    "RANGE"
+   ],
+   "mood": null,
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48,
+   "registered": "2026-11-18",
+   "seen": true
+  },
+  {
+   "id": "daily_swing_short",
+   "name": "سوينج يومي: شورت لما اليومي والـ4 ساعات هابطين والمزاج تصحيح أو هبوط (لحد 10 أيام)",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "registered": "2026-11-18",
+   "seen": true
+  },
+  {
+   "id": "bounce_short_down",
+   "name": "شورت الارتداد في الهبوط: السوق هابط، العملة ارتدت لنص المدى العلوي، والساعة قلبت هابطة",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d1h": -1,
+    "d1d": -1
+   },
+   "pos_min": 0.6,
+   "regime": [
+    "DOWN"
+   ],
+   "mood": null,
+   "loc": null,
+   "stop_atr4h": 1.5,
+   "tp_r": 2.5,
+   "be_at_r": 1.0,
+   "max_hours": 72,
+   "registered": "2026-11-18",
+   "seen": true
+  },
+  {
+   "id": "core_short_swing_range",
+   "name": "الأساس سوينج 5 أيام بس لما البيتكوين في سوق عرضي",
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "regime": [
+    "RANGE"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.0,
+   "tp_r": 3.0,
+   "be_at_r": 1.0,
+   "max_hours": 120,
+   "registered": "2026-11-18",
+   "seen": true
+  }
  ]
 }

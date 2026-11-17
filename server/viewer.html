@@ -44,7 +44,7 @@
     ws.onopen = () => { retry = 500; $('dot').style.background = '#3fb950'; hello(); };
     ws.onclose = () => { $('dot').style.background = '#f85149'; $('waitT').textContent = 'الاتصال اتقطع — بيرجع لوحده…'; if (!frames) $('wait').style.display = 'flex'; setTimeout(connect, retry = Math.min(retry * 2, 8000)); };
     ws.onmessage = e => {
-      if (typeof e.data !== 'string') { const u = URL.createObjectURL(e.data); scr.onload = () => { if (url) URL.revokeObjectURL(url); url = u; }; scr.src = u; frames++; lastFrame = Date.now(); $('wait').style.display = 'none'; return; }
+      if (typeof e.data !== 'string') { const u = URL.createObjectURL(e.data); scr.onload = () => { if (url) URL.revokeObjectURL(url); url = u; if (shift && !acc) { shift = 0; scr.style.transform = ''; } }; scr.src = u; frames++; lastFrame = Date.now(); $('wait').style.display = 'none'; return; }
       let m; try { m = JSON.parse(e.data); } catch (x) { return; }
       if (m.t === 'dialog') dialog(m);
       else if (m.t === 'pick') pick(m);
@@ -71,7 +71,9 @@
   const pt = e => { const r = scr.getBoundingClientRect(); return { x: Math.round((e.clientX - r.left) * W / r.width), y: Math.round((e.clientY - r.top) * H / r.height) }; };
   let down = null, lastMove = 0, lastTap = 0;
   // scrolling: many small wheel/drag steps are added up and sent once per frame (one round-trip instead of dozens)
-  let acc = null; const wheel = (p, dx, dy) => { if (acc) { acc.dx += dx; acc.dy += dy; return; } acc = { ...p, dx, dy }; requestAnimationFrame(() => { send({ t: 'wheel', x: acc.x, y: acc.y, dx: acc.dx, dy: acc.dy }); acc = null; }); };
+  // the picture moves under your finger right away (local shift), the server's real frame replaces it when it arrives
+  let shift = 0; const moveLocal = dy => { shift = Math.max(-H, Math.min(H, shift + dy)); scr.style.transform = `translateY(${-shift * innerHeight / H}px)`; };
+  let acc = null; const wheel = (p, dx, dy) => { moveLocal(dy); if (acc) { acc.dx += dx; acc.dy += dy; return; } acc = { ...p, dx, dy }; requestAnimationFrame(() => { send({ t: 'wheel', x: acc.x, y: acc.y, dx: acc.dx, dy: acc.dy }); acc = null; }); };
   scr.addEventListener('pointerdown', e => {
     e.preventDefault(); const p = pt(e);
     if (e.pointerType === 'mouse') { const n = Date.now() - lastTap < 350 ? 2 : 1; lastTap = Date.now(); send({ t: 'mouse', type: 'mousePressed', ...p, n, button: e.button === 2 ? 'right' : 'left' }); down = { mouse: 1 }; }
