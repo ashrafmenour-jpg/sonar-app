@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.14';
+window.SONAR_WEB = '3.0.15';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14829,6 +14829,30 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.14', e); } }, 3600);
 
 } catch (e) { console.warn("baked 3.0.14", e); }
+/* ===== baked update 3.0.15 ===== */
+try {
+try { const L = UPD.list(); let ch = 0; for (const p of L) if (p.id === '3.0.15' && p.on) { p.on = 0; ch = 1; } if (ch) UPD.save(L); } catch (e) {}
+/* Sonar 3.0.15 — «🌐 السيرفر» in المركز (Ashraf, 17 Nov: "هنكتفي بالسرفر والتطبيق جوه الاب متوصل بالسرفر")
+   One Sonar brain runs on the server; the app and any browser just open it. This card switches this device to the server
+   (or back). In the Android/Mac apps the server opens inside the app (needs the app build that has SonarApp.setServer);
+   in a browser it simply goes to the server address. Hidden on the server itself. */
+setTimeout(function () { try {
+  if (window.P3015 || window.SONAR_SERVER) return;
+  const app = window.SonarApp, can = !!(app && app.setServer), cur = () => { try { return (app && app.getServer && app.getServer()) || store.get('p3015.srv', ''); } catch (e) { return ''; } };
+  const norm = u => { u = String(u || '').trim(); return !u ? '' : /^https?:\/\//.test(u) ? u : 'https://' + u; };
+  const go = u => { u = norm(u); if (!u) return toast('اكتب عنوان السيرفر الأول', 'err'); store.set('p3015.srv', u);
+    if (!confirm(`هتفتح Sonar اللي على السيرفر:\n${u}\n\nSonar اللي على الجهاز ده هيوقف (السيرفر هو اللي بيشتغل 24 ساعة). تكمل؟`)) return;
+    try { store.flushAll(); } catch (e) {}
+    if (can) app.setServer(u); else if (app) { toast('التطبيق ده محتاج تحديث علشان يفتح السيرفر جوه — هفتحه في المتصفح', 'warn'); try { app.openUrl ? app.openUrl(u) : location.assign(u); } catch (e) { location.assign(u); } } else location.assign(u); };
+  const card = () => `<details class="v-card c30" id="c30-srv" open><summary><b>🌐 السيرفر</b> <small class="mu21">Sonar واحد شغال 24 ساعة — الجهاز ده بيفتحه بس</small></summary><div class="c30b">
+      <div class="v-row"><input id="c315u" class="inp" style="flex:1;min-width:0;padding:8px;border-radius:8px" placeholder="sonar.zedsglobal.com" value="${esc(cur())}"><button class="v-btn pri" id="c315go">افتح السيرفر</button></div>
+      <p class="mu21" style="font-size:13px;margin:8px 0 0">بعد ما تفتحه، التطبيق هيفتح على السيرفر على طول كل مرة. للرجوع للنسخة اللي على الجهاز: زرار 📱 تحت في شاشة السيرفر.${app && !can ? '<br>⚠️ نسخة التطبيق دي قديمة — هيفتح في المتصفح لحد ما التطبيق يتحدّث.' : ''}</p></div></details>`;
+  setInterval(() => { try { const u = document.getElementById('c30upd'); if (!u || document.getElementById('c30-srv')) return; const s = u.closest('details'); if (!s) return;
+      s.insertAdjacentHTML('beforebegin', card()); const b = document.getElementById('c315go'); if (b) b.onclick = () => go(document.getElementById('c315u').value); } catch (e) {} }, 1000);
+  window.P3015 = 1;
+} catch (e) { console.warn('3.0.15', e); } }, 3800);
+
+} catch (e) { console.warn("baked 3.0.15", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>

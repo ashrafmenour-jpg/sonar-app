@@ -8,6 +8,7 @@ services:
       SNAP_MIN: "15"
       PULL_MIN: "20"
       KEEP_DAYS: "14"
+      READ_TOKEN: ${READ_TOKEN:-}
     volumes:
       - ./data:/data
     shm_size: "1gb"

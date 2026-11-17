@@ -11,6 +11,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
-      - run: pip install playwright==1.49.1 && playwright install --with-deps chromium
+      - run: pip install playwright==1.49.1 aiohttp==3.11.11 && playwright install --with-deps chromium
       - name: Smoke test web/index.html
         run: python server/smoke_test.py web
+      - name: Server starts and serves the viewer
+        run: |
+          mkdir -p /tmp/sd
+          DATA_DIR=/tmp/sd WEB_DIR=web REPO_DIR=/none SONAR_PASS=ci timeout 90 python server/runner.py > /tmp/srv.log 2>&1 &
+          sleep 60
+          curl -sf -o /dev/null -w "login %{http_code}\n" http://127.0.0.1:8090/login
+          curl -sf -u sonar:ci -o /dev/null -w "viewer %{http_code}\n" http://127.0.0.1:8090/
+          curl -sf -u sonar:ci http://127.0.0.1:8090/status.json | head -c 300
+          grep -q "Sonar اشتغل على السيرفر" /tmp/srv.log

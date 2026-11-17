@@ -80,7 +80,10 @@ final class App: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUIDelegate
           keepAwake: function(on){ webkit.messageHandlers.sonar.postMessage({op:'awake', on:!!on}); }, awake: function(){ return !!window.__macAwake; },
           checkUpdate: function(){ webkit.messageHandlers.sonar.postMessage({op:'update'}); },
           openUrl: function(u){ webkit.messageHandlers.sonar.postMessage({op:'open', url:u}); },
-          reload: function(){ location.reload(); } };
+          reload: function(){ location.reload(); },
+          getServer: function(){ return window.__macServer || ''; },
+          setServer: function(u){ webkit.messageHandlers.sonar.postMessage({op:'server', url:String(u||'')}); return 'ok'; } };
+        window.__macServer = '\(UserDefaults.standard.string(forKey: "server") ?? "")';
         """
         cfg.userContentController.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         cfg.userContentController.add(self, name: "sonar")
@@ -92,7 +95,7 @@ final class App: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUIDelegate
         win.title = "Sonar"; win.contentView = web; win.delegate = self; win.center(); win.setFrameAutosaveName("SonarMain"); win.isReleasedWhenClosed = false
         win.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.web.load(URLRequest(url: URL(string: "http://127.0.0.1:\(PORT)/index.html")!)) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.web.load(URLRequest(url: self.startURL())) }
         setAwake(true)
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
         DispatchQueue.main.asyncAfter(deadline: .now() + 45) { self.checkUpdate(false) }
@@ -148,6 +151,11 @@ final class App: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUIDelegate
         case "awake": setAwake((o["on"] as? Bool) ?? true)
         case "update": checkUpdate(true)
         case "open": if let s = o["url"] as? String, let url = URL(string: s) { NSWorkspace.shared.open(url) }
+        case "server":   // switch to the Sonar server (url) or back to this Mac ("")
+            var u = ((o["url"] as? String) ?? "").trimmingCharacters(in: .whitespaces)
+            if !u.isEmpty && !u.hasPrefix("http://") && !u.hasPrefix("https://") { u = "https://" + u }
+            UserDefaults.standard.set(u, forKey: "server")
+            web.load(URLRequest(url: startURL()))
         default: break
         }
     }
@@ -202,7 +210,14 @@ final class App: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUIDelegate
     func webView(_ w: WKWebView, runOpenPanelWith p: WKOpenPanelParameters, initiatedByFrame f: WKFrameInfo, completionHandler done: @escaping ([URL]?) -> Void) {
         let o = NSOpenPanel(); o.allowsMultipleSelection = p.allowsMultipleSelection; o.canChooseDirectories = false; o.begin { r in done(r == .OK ? o.urls : nil) }
     }
+    /** The Sonar server if one is saved, otherwise Sonar on this Mac. */
+    func startURL() -> URL {
+        if let s = UserDefaults.standard.string(forKey: "server"), !s.isEmpty, let u = URL(string: s) { return u }
+        return URL(string: "http://127.0.0.1:\(PORT)/index.html")!
+    }
+    func serverHost() -> String { URL(string: UserDefaults.standard.string(forKey: "server") ?? "")?.host ?? "" }
     func webView(_ w: WKWebView, decidePolicyFor a: WKNavigationAction, decisionHandler done: @escaping (WKNavigationActionPolicy) -> Void) {
+        if let h = a.request.url?.host, !serverHost().isEmpty, h == serverHost() { done(.allow); return }
         if let u = a.request.url, a.targetFrame?.isMainFrame ?? true, u.host != "127.0.0.1", ["http", "https"].contains(u.scheme ?? "") { NSWorkspace.shared.open(u); done(.cancel); return }
         done(.allow)
     }

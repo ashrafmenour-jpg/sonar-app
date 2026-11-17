@@ -1,0 +1,134 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<!-- Sonar viewer: shows the Sonar that runs on the server, live, and sends your clicks/scroll/typing back to it. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0b1220">
+<title>Sonar</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1220; overflow: hidden; font-family: system-ui, sans-serif; color: #e6edf3; }
+  #scr { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: fill; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: default; }
+  #bar { position: fixed; left: 8px; bottom: 8px; z-index: 5; display: flex; gap: 6px; align-items: center; background: #0b1220cc; border: 1px solid #22304a; border-radius: 999px; padding: 4px 8px; font-size: 12px; direction: rtl; }
+  #bar a, #bar button { color: #9fb0c3; background: none; border: 0; font-size: 14px; cursor: pointer; text-decoration: none; padding: 2px 4px; }
+  #dot { width: 9px; height: 9px; border-radius: 50%; background: #f0b429; }
+  .ov { position: fixed; inset: 0; z-index: 10; background: #000a; display: none; align-items: center; justify-content: center; direction: rtl; }
+  .box { background: #111a2c; border: 1px solid #22304a; border-radius: 14px; padding: 18px; width: min(520px, 92vw); line-height: 1.7; }
+  .box pre { white-space: pre-wrap; font-family: inherit; margin: 0 0 12px; max-height: 50vh; overflow: auto; }
+  .box input, .box textarea { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 10px; border: 1px solid #2a3a55; background: #0b1220; color: #e6edf3; font-size: 16px; }
+  .row { display: flex; gap: 8px; justify-content: flex-start; margin-top: 12px; }
+  .row button { padding: 10px 16px; border-radius: 10px; border: 0; font-size: 15px; cursor: pointer; background: #22304a; color: #e6edf3; }
+  .row button.p { background: #1f6feb; color: #fff; font-weight: 600; }
+  #msg { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 6; background: #1f6febee; color: #fff; padding: 8px 14px; border-radius: 10px; display: none; font-size: 14px; }
+  #wait { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: #8b9bb4; }
+</style>
+<div id="wait"><div style="font-size:40px">📡</div><div id="waitT">بيتوصل بالسيرفر…</div></div>
+<img id="scr" alt="" draggable="false">
+<div id="bar"><span id="dot"></span><button id="kb" title="كيبورد">⌨️</button><button id="rl" title="أعد تحميل Sonar على السيرفر">🔄</button><a href="/status" target="_blank" title="حالة السيرفر">📊</a></div>
+<div id="msg"></div>
+<div class="ov" id="dlg"><div class="box"><pre id="dlgT"></pre><input id="dlgI" style="display:none"><div class="row" id="dlgB"></div></div></div>
+<div class="ov" id="txt"><div class="box"><div id="txtH" style="color:#8b9bb4;margin-bottom:6px">اكتب هنا</div><input id="txtI" autocomplete="off"><div class="row"><button class="p" id="txtOk">تمام</button><button id="txtNo">إلغاء</button></div></div></div>
+<input type="file" id="pick" hidden>
+<script>
+(() => {
+  const $ = id => document.getElementById(id), scr = $('scr');
+  const touchDev = matchMedia('(pointer: coarse)').matches;
+  let ws, url, W = innerWidth, H = innerHeight, frames = 0, lastFrame = 0, retry = 500;
+  const send = o => { try { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); } catch (e) {} };
+  const toast = (t, ms = 3500) => { const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => m.style.display = 'none', ms); };
+  const hello = () => { W = innerWidth; H = innerHeight; send({ t: 'hello', w: W, h: H, dpr: devicePixelRatio || 1 }); };
+
+  function connect() {
+    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); ws.binaryType = 'blob';
+    ws.onopen = () => { retry = 500; $('dot').style.background = '#3fb950'; hello(); };
+    ws.onclose = () => { $('dot').style.background = '#f85149'; $('waitT').textContent = 'الاتصال اتقطع — بيرجع لوحده…'; if (!frames) $('wait').style.display = 'flex'; setTimeout(connect, retry = Math.min(retry * 2, 8000)); };
+    ws.onmessage = e => {
+      if (typeof e.data !== 'string') { const u = URL.createObjectURL(e.data); scr.onload = () => { if (url) URL.revokeObjectURL(url); url = u; }; scr.src = u; frames++; lastFrame = Date.now(); $('wait').style.display = 'none'; return; }
+      let m; try { m = JSON.parse(e.data); } catch (x) { return; }
+      if (m.t === 'dialog') dialog(m);
+      else if (m.t === 'pick') pick(m);
+      else if (m.t === 'file') saveFile(m);
+      else if (m.t === 'focus' && touchDev) textBox(m.v || '', m.ph || '');
+      else if (m.t === 'note') toast(m.msg);
+    };
+  }
+  // files Sonar saves on the server (diagnosis, learning…) come down to this device; inside the Sonar app they go through the app
+  async function saveFile(m) {
+    const A = window.SonarApp;
+    if (A && A.saveFile) { try { const t = await (await fetch(m.url)).text(); A.saveFile(m.name, t); return; } catch (e) {} }
+    const a = document.createElement('a'); a.href = m.url; a.download = m.name; document.body.appendChild(a); a.click(); a.remove(); toast('📥 ' + m.name);
+  }
+  // inside the Sonar app: a button back to the Sonar on this device
+  if (window.SonarApp && window.SonarApp.setServer) { const b = document.createElement('button'); b.textContent = '📱'; b.title = 'رجوع لنسخة الجهاز';
+    b.onclick = () => { if (confirm('ترجع لـ Sonar اللي على الجهاز ده؟ (السيرفر يفضل شغال)')) window.SonarApp.setServer(''); }; $('bar').appendChild(b); }
+  connect();
+  // frames only arrive when something changes; if the server stops answering for long, say so
+  setInterval(() => { if (ws && ws.readyState === 1 && frames && Date.now() - lastFrame > 120000) send({ t: 'hello', w: W, h: H, dpr: devicePixelRatio || 1 }); }, 30000);
+  let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(hello, 300); });
+
+  // ---- pointer: mouse = clicks + hover + wheel; touch = tap clicks, drag scrolls
+  const pt = e => { const r = scr.getBoundingClientRect(); return { x: Math.round((e.clientX - r.left) * W / r.width), y: Math.round((e.clientY - r.top) * H / r.height) }; };
+  let down = null, lastMove = 0, lastTap = 0;
+  scr.addEventListener('pointerdown', e => {
+    e.preventDefault(); const p = pt(e);
+    if (e.pointerType === 'mouse') { const n = Date.now() - lastTap < 350 ? 2 : 1; lastTap = Date.now(); send({ t: 'mouse', type: 'mousePressed', ...p, n, button: e.button === 2 ? 'right' : 'left' }); down = { mouse: 1 }; }
+    else down = { x: e.clientY, sx: e.clientX, p, moved: false, ly: e.clientY, lx: e.clientX };
+  });
+  scr.addEventListener('pointermove', e => {
+    const p = pt(e);
+    if (e.pointerType === 'mouse') { if (Date.now() - lastMove > 40) { lastMove = Date.now(); send({ t: 'mouse', type: 'mouseMoved', ...p, button: down ? 'left' : 'none' }); } return; }
+    if (!down) return;
+    if (!down.moved && Math.hypot(e.clientY - down.x, e.clientX - down.sx) > 8) down.moved = true;
+    if (down.moved) { const dy = (down.ly - e.clientY) * H / innerHeight, dx = (down.lx - e.clientX) * W / innerWidth; down.ly = e.clientY; down.lx = e.clientX; send({ t: 'wheel', ...down.p, dx, dy }); }
+  });
+  const up = e => {
+    if (!down) return; const p = pt(e);
+    if (down.mouse) send({ t: 'mouse', type: 'mouseReleased', ...p, button: e.button === 2 ? 'right' : 'left' });
+    else if (!down.moved) { send({ t: 'mouse', type: 'mousePressed', ...down.p }); send({ t: 'mouse', type: 'mouseReleased', ...down.p }); }
+    down = null;
+  };
+  scr.addEventListener('pointerup', up); scr.addEventListener('pointercancel', () => down = null);
+  scr.addEventListener('wheel', e => { e.preventDefault(); send({ t: 'wheel', ...pt(e), dx: e.deltaX, dy: e.deltaY }); }, { passive: false });
+  scr.addEventListener('contextmenu', e => e.preventDefault());
+
+  // ---- keyboard (computer): every key goes to the server page
+  const busy = () => $('dlg').style.display === 'flex' || $('txt').style.display === 'flex';
+  addEventListener('keydown', e => {
+    if (busy()) return;
+    if ((e.ctrlKey || e.metaKey) && /^[vV]$/.test(e.key)) return;          // paste handled below
+    e.preventDefault();
+    send({ t: 'key', key: e.key, code: e.code, kc: e.keyCode, text: e.key.length === 1 ? e.key : (e.key === 'Enter' ? '\r' : ''), shift: e.shiftKey, ctrl: e.ctrlKey, alt: e.altKey, meta: e.metaKey });
+  });
+  addEventListener('paste', e => { if (busy()) return; const s = (e.clipboardData || window.clipboardData).getData('text'); if (s) { e.preventDefault(); send({ t: 'text', s }); } });
+
+  // ---- touch keyboard: a field on the server got focus -> type it here
+  function textBox(v, ph) {
+    const o = $('txt'), i = $('txtI'); i.value = v; i.placeholder = ph; o.style.display = 'flex'; setTimeout(() => { i.focus(); i.select(); }, 50);
+    const done = ok => { o.style.display = 'none'; if (ok) send({ t: 'set', v: i.value }); };
+    $('txtOk').onclick = () => done(true); $('txtNo').onclick = () => done(false); i.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); done(true); } };
+  }
+  $('kb').onclick = () => textBox('', '');
+
+  // ---- questions from Sonar (confirm / prompt / alert) are answered here
+  function dialog(m) {
+    const o = $('dlg'), B = $('dlgB'), I = $('dlgI'); $('dlgT').textContent = m.msg; B.innerHTML = '';
+    I.style.display = m.kind === 'prompt' ? 'block' : 'none'; I.value = m.def || '';
+    const btn = (t, v, p) => { const b = document.createElement('button'); b.textContent = t; if (p) b.className = 'p'; b.onclick = () => { o.style.display = 'none'; send({ t: 'answer', id: m.id, v: v === 'IN' ? I.value : v }); }; B.appendChild(b); };
+    if (m.kind === 'alert') btn('تمام', true, 1);
+    else { btn(m.kind === 'prompt' ? 'تمام' : 'أيوه', m.kind === 'prompt' ? 'IN' : true, 1); btn(m.kind === 'prompt' ? 'إلغاء' : 'لأ', false); }
+    o.style.display = 'flex'; if (m.kind === 'prompt') setTimeout(() => I.focus(), 50);
+    I.onkeydown = e => { if (e.key === 'Enter') B.firstChild.click(); };
+  }
+  // ---- Sonar asked for a file (e.g. an update file): pick it here, it is uploaded to the server
+  function pick(m) {
+    const f = $('pick'); f.multiple = !!m.multiple; f.value = '';
+    f.onchange = async () => {
+      const names = [];
+      for (const file of f.files) { toast('⬆️ برفع ' + file.name); const r = await fetch('/upload?name=' + encodeURIComponent(file.name), { method: 'POST', body: file }); if (r.ok) names.push((await r.json()).name); }
+      send({ t: 'answer', id: m.id, v: m.multiple ? names : names[0] || null });
+    };
+    f.click();
+  }
+  $('rl').onclick = () => { if (confirm('أعيد تحميل Sonar على السيرفر؟ (البيانات زي ما هي)')) send({ t: 'reload' }); };
+})();
+</script>
+</html>

@@ -90,6 +90,7 @@ class MainActivity : Activity() {
             override fun shouldInterceptRequest(v: WebView, r: WebResourceRequest): WebResourceResponse? = loader.shouldInterceptRequest(r.url)
             override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest): Boolean {
                 if (r.url.host == HOST) return false
+                if (serverHost().isNotEmpty() && r.url.host == serverHost()) return false   // Sonar running on our server
                 if (r.isForMainFrame) { try { startActivity(Intent(Intent.ACTION_VIEW, r.url)) } catch (e: Exception) {}; return true }
                 return false
             }
@@ -101,7 +102,7 @@ class MainActivity : Activity() {
                 return try { startActivityForResult(Intent.createChooser(i, "اختار الملف"), 42); true } catch (e: Exception) { fileCb = null; false }
             }
         }
-        web.loadUrl("https://$HOST/index.html")
+        web.loadUrl(server().ifEmpty { "https://$HOST/index.html" })
         KeepService.start(this)
         Updater.schedule(this)
     }
@@ -123,8 +124,19 @@ class MainActivity : Activity() {
     fun js(code: String) = main.post { try { web.evaluateJavascript(code, null) } catch (e: Exception) {} }
     fun reloadPage() = main.post { web.reload() }
 
+    /** Address of the Sonar server ("" = run Sonar on this device). Set from the page via SonarApp.setServer(). */
+    fun server(): String = getSharedPreferences("sonar", MODE_PRIVATE).getString("server", "") ?: ""
+    fun serverHost(): String = try { Uri.parse(server()).host ?: "" } catch (e: Exception) { "" }
+
     class Bridge(private val a: MainActivity) {
         private fun ui(f: () -> Unit) = a.main.post(f)
+        @JavascriptInterface fun getServer(): String = a.server()
+        /** Switch to the server (url) or back to this device (""). */
+        @JavascriptInterface fun setServer(url: String): String {
+            val u = url.trim().let { if (it.isEmpty() || it.startsWith("https://") || it.startsWith("http://")) it else "https://$it" }
+            a.getSharedPreferences("sonar", MODE_PRIVATE).edit().putString("server", u).apply()
+            ui { a.web.loadUrl(u.ifEmpty { "https://$HOST/index.html" }) }; return "ok"
+        }
         @JavascriptInterface fun platform(): String = "android"
         @JavascriptInterface fun version(): String = JSONObject().put("app", BuildConfig.VERSION_NAME).put("code", BuildConfig.VERSION_CODE).put("web", Updater.webVersion(a)).toString()
 
