@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.10.1';
+window.SONAR_WEB = '3.0.10.2';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14321,6 +14321,7 @@ try {
         a) flag / pennant: a pole (≥ 6 % on 1h, ≥ 10 % on 4h) → a tight pause (≤ half the pole) → a close beyond the pause;
            stop at the other side of the pause, target = the pole's length from the breakout
         b) trendline break (wedges, triangles): close through the line over the last two swing highs (lows) with 1.5× volume — also DAILY (Zayk Charts), stop up to 20 %, up to 20 days
+        e) Sheirko (ICT): sweep → CHoCH → displacement FVG, enter on the first return into the gap, 1h/4h
         d) Sami Algo: liquidity sweep 1h/4h and expansion break (squeeze then strong close past the 20-bar range) 30m/4h, EMA200 filter, 3 targets
         c) RSI divergence (Mfanni) 1h / 4h: new swing low (high) with RSI higher low (lower high) by 3+, RSI < 40 (> 60), stop past the swing, 2R
      S4 harmonicshark       15m · back inside the lower Bollinger band with the MACD histogram turning up → long;
@@ -14371,6 +14372,21 @@ setTimeout(function () { try {
       const sg = c > H && c > o && c > e ? 1 : c < L && c < o && c < e ? -1 : 0; if (!sg) return null;
       const stop = (H + L) / 2, R0 = Math.abs(c - stop); if (R0 / c < .004 || R0 / c > .08) return null;
       return { sg, stop, T: [c + sg * R0, c + sg * 2 * R0, c + sg * 3 * R0], W: [.34, .33, .33], hz: 48 }; },
+    // Sheirko (ICT): an FVG only counts after the sequence — sweep of the swing low → CHoCH (close above the high before the sweep) → displacement candle leaving a gap;
+    // entry when price first comes back into that gap, stop past the sweep wick, 3 targets 1R/2R/3R. Mirror for shorts.
+    seq(K, i) { const P = prep(K), a = P.atr[i], c = K.c[i]; if (!N(a) || i < 60) return null;
+      for (const sg of [1, -1]) { const lo = sg > 0;
+        for (let s = i - 3; s >= i - 20; s--) { let ext = lo ? Infinity : -Infinity, pre = lo ? -Infinity : Infinity;
+          for (let j = s - 20; j < s; j++) { ext = lo ? Math.min(ext, K.l[j]) : Math.max(ext, K.h[j]); if (j >= s - 10) pre = lo ? Math.max(pre, K.h[j]) : Math.min(pre, K.l[j]); }
+          const swept = lo ? K.l[s] < ext && K.c[s] > ext : K.h[s] > ext && K.c[s] < ext; if (!swept) continue;
+          let ch = -1; for (let b = s + 1; b < i; b++) if (lo ? K.c[b] > pre : K.c[b] < pre) { ch = b; break; } if (ch < 0) break;
+          let k = -1; for (let q = Math.max(s + 2, 2); q < i; q++) { const gap = lo ? K.l[q] > K.h[q - 2] : K.h[q] < K.l[q - 2], disp = Math.abs(K.c[q - 1] - K.o[q - 1]) > a; if (gap && disp && q - 1 >= ch - 1) { k = q; break; } } if (k < 0) break;
+          const top = lo ? K.l[k] : K.h[k], bot = lo ? K.h[k - 2] : K.l[k - 2];
+          for (let q = k + 1; q < i; q++) if (lo ? K.l[q] <= top : K.h[q] >= top) return null;   // only the first return into the gap
+          const touch = lo ? K.l[i] <= top && c > bot : K.h[i] >= top && c < bot; if (!touch) break;
+          const stop = (lo ? K.l[s] : K.h[s]) - sg * .2 * a, R0 = Math.abs(c - stop); if (R0 / c < .004 || R0 / c > .08) break;
+          return { sg, stop, T: [c + sg * R0, c + sg * 2 * R0, c + sg * 3 * R0], W: [.34, .33, .33], hz: 48 }; } }
+      return null; },
     div(K, i) { const P = prep(K), r = P.rsi, a = P.atr[i], c = K.c[i], w = 3, j = i - w; if (!N(a) || j < 50) return null;
       for (const sg of [1, -1]) { const lo = sg > 0, X = lo ? K.l : K.h; if (!I.piv(K, j, w, !lo) || !N(r[j])) continue; if (lo ? !(r[j] < 40 && c > K.c[j]) : !(r[j] > 60 && c < K.c[j])) continue;
         for (let k = j - 6; k >= j - 40 && k > w; k--) { if (!I.piv(K, k, w, !lo) || !N(r[k])) continue; const px = lo ? X[j] < X[k] : X[j] > X[k], rx = lo ? r[j] > r[k] + 3 : r[j] < r[k] - 3; if (!(px && rx)) break;
@@ -14402,6 +14418,8 @@ setTimeout(function () { try {
     { id: 'swp4', src: 'قناة: Sami Algo · سحب سيولة 4س', ch: 'Sami Algo', iv: '4h', f: (K, i) => SIG.sweep(K, i) },
     { id: 'xb30', src: 'قناة: Sami Algo · كسر التوسع 30د', ch: 'Sami Algo', iv: '30m', f: (K, i) => SIG.xbrk(K, i) },
     { id: 'xb4', src: 'قناة: Sami Algo · كسر التوسع 4س', ch: 'Sami Algo', iv: '4h', f: (K, i) => SIG.xbrk(K, i) },
+    { id: 'seq1', src: 'قناة: Sheirko · سحب سيولة ← CHoCH ← FVG 1س', ch: 'Sheirko (ICT)', iv: '1h', f: (K, i) => SIG.seq(K, i) },
+    { id: 'seq4', src: 'قناة: Sheirko · سحب سيولة ← CHoCH ← FVG 4س', ch: 'Sheirko (ICT)', iv: '4h', f: (K, i) => SIG.seq(K, i) },
     { id: 'div1', src: 'قناة: دايفرجنس RSI 1س', ch: 'Mfanni', iv: '1h', f: (K, i) => SIG.div(K, i) },
     { id: 'div4', src: 'قناة: دايفرجنس RSI 4س', ch: 'Mfanni', iv: '4h', f: (K, i) => SIG.div(K, i) },
     { id: 'bbl15', src: 'قناة: harmonicshark · بولينجر تحت 15د', ch: 'harmonicshark', iv: '15m', f: (K, i) => SIG.bblow(K, i, 0) },
