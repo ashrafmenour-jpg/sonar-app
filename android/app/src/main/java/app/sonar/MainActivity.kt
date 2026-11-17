@@ -63,6 +63,7 @@ class MainActivity : Activity() {
             .addPathHandler("/", object : WebViewAssetLoader.PathHandler {
                 override fun handle(path: String): WebResourceResponse? {
                     val p = if (path.isEmpty() || path == "/") "index.html" else path.trimStart('/')
+                    if (p == "state") return mirrorState()
                     val f = File(www, p)
                     return try {
                         val stream = if (f.isFile) FileInputStream(f) else assets.open("www/$p")
@@ -124,6 +125,18 @@ class MainActivity : Activity() {
     fun js(code: String) = main.post { try { web.evaluateJavascript(code, null) } catch (e: Exception) {} }
     fun reloadPage() = main.post { web.reload() }
 
+    /** Fast view: the server's saved Sonar data (its /f/all export, read key), served to the page from its own origin. */
+    fun mirrorState(): WebResourceResponse? {
+        val pr = getSharedPreferences("sonar", MODE_PRIVATE); val u = pr.getString("mirror", "") ?: ""; val k = pr.getString("mirrorKey", "") ?: ""
+        if (u.isEmpty()) return null
+        return try {
+            val c = java.net.URL(u.trimEnd('/') + "/f/all?k=" + java.net.URLEncoder.encode(k, "UTF-8")).openConnection() as java.net.HttpURLConnection
+            c.connectTimeout = 15000; c.readTimeout = 40000
+            if (c.responseCode != 200) WebResourceResponse("text/plain", "utf-8", 502, "Bad Gateway", mapOf(), "no server data".byteInputStream())
+            else WebResourceResponse("application/json", "utf-8", c.inputStream).apply { responseHeaders = mapOf("Cache-Control" to "no-store") }
+        } catch (e: Exception) { WebResourceResponse("text/plain", "utf-8", 502, "Bad Gateway", mapOf(), "no server data".byteInputStream()) }
+    }
+
     /** Address of the Sonar server ("" = run Sonar on this device). Set from the page via SonarApp.setServer(). */
     fun server(): String = getSharedPreferences("sonar", MODE_PRIVATE).getString("server", "") ?: ""
     fun serverHost(): String = try { Uri.parse(server()).host ?: "" } catch (e: Exception) { "" }
@@ -131,6 +144,13 @@ class MainActivity : Activity() {
     class Bridge(private val a: MainActivity) {
         private fun ui(f: () -> Unit) = a.main.post(f)
         @JavascriptInterface fun getServer(): String = a.server()
+        @JavascriptInterface fun getMirror(): String = if ((a.getSharedPreferences("sonar", MODE_PRIVATE).getString("mirror", "") ?: "").isEmpty()) "" else "1"
+        /** Fast view on: Sonar runs here with the server's data (url + read key). "" = off. */
+        @JavascriptInterface fun setMirror(url: String, key: String): String {
+            val u = url.trim().let { if (it.isEmpty() || it.startsWith("https://") || it.startsWith("http://")) it else "https://$it" }
+            a.getSharedPreferences("sonar", MODE_PRIVATE).edit().putString("mirror", u).putString("mirrorKey", key.trim()).putString("server", "").apply()
+            ui { a.web.loadUrl("https://$HOST/index.html") }; return "ok"
+        }
         /** Switch to the server (url) or back to this device (""). */
         @JavascriptInterface fun setServer(url: String): String {
             val u = url.trim().let { if (it.isEmpty() || it.startsWith("https://") || it.startsWith("http://")) it else "https://$it" }

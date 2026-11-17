@@ -12,7 +12,22 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.16';
+/* 3.0.17 fast view inside the apps — runs before everything: when the app has a server + read key saved (SonarApp.getMirror),
+   load the server's saved data from the app (/state) and turn saving off, so this page is a fast local copy of the server. */
+(function () { try {
+  var A = window.SonarApp; if (!A || !A.getMirror || !A.getMirror() || window.SONAR_MIRROR) return;
+  var M = window.SONAR_MIRROR = { at: 0, ok: false, src: 'app' };
+  try { var x = new XMLHttpRequest(); x.open('GET', '/state', false); x.send(null);
+    if (x.status === 200) { var o = JSON.parse(x.responseText); if (o && o.keys) {
+      for (var i = localStorage.length - 1; i >= 0; i--) { var k = localStorage.key(i); if (k && k.indexOf('sonarpro.') === 0) localStorage.removeItem(k); }
+      for (var key in o.keys) if (key !== 'sonarpro.inst') { try { localStorage.setItem(key, o.keys[key]); } catch (e) {} }
+      M.at = o.at ? (typeof o.at === 'number' ? o.at : Date.parse(o.at)) : Date.now(); M.ok = true; } } } catch (e) { M.err = String(e); }
+  window.__SONAR_PASSIVE = true;
+  try { var tab = sessionStorage.getItem('mirror.tab'); if (tab) localStorage.setItem('sonarpro.v21.tab', JSON.stringify(tab)); } catch (e) {}
+} catch (e) {} })();
+</script>
+<script>
+window.SONAR_WEB = '3.0.17';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14885,6 +14900,49 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.16', e); } }, 4200);
 
 } catch (e) { console.warn("baked 3.0.16", e); }
+/* ===== baked update 3.0.17 ===== */
+try {
+/* Sonar 3.0.17 — ⚡ fast view in the apps (Ashraf, 18 Nov: scrolling on the server screen is slow).
+   The page runs here (native scrolling) with the server's saved data; the server stays the one brain. Real trades open the
+   live server screen so they are recorded there. The 🌐 السيرفر card gets the read key and the two buttons. */
+setTimeout(function () { try {
+  if (window.P3017 || window.SONAR_SERVER) return;
+  const A = window.SonarApp, M = window.SONAR_MIRROR;
+  const srv = () => { try { return store.get('p3015.srv', '') || ''; } catch (e) { return ''; } };
+  const live = () => { const u = srv(); if (!u) return toast('اكتب عنوان السيرفر في المركز ← 🌐 السيرفر', 'err'); const L = u.replace(/\/+$/, '') + '/?live=1'; if (A && A.setServer) A.setServer(L); else location.assign(L); };
+  if (M && M.src === 'app') {
+    ['startTrade', 'startSpotTrade', 'startFastSpot'].forEach(fn => { const f0 = window[fn]; if (typeof f0 !== 'function') return;
+      window[fn] = function () { const mode = arguments[fn === 'startFastSpot' ? 1 : 2] || 'real'; if (mode === 'sim') return f0.apply(this, arguments);
+        if (confirm('الصفقة الحقيقية لازم تتسجّل على السيرفر.\nأفتح شاشة السيرفر المباشرة وتفتحها من هناك؟')) live(); }; });
+    const b = document.createElement('div');
+    b.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:9998;background:#0b1220e6;border:1px solid #22304a;border-radius:999px;padding:4px 10px;font:12px system-ui;color:#9fb0c3;display:flex;gap:8px;align-items:center;direction:rtl';
+    b.innerHTML = '<span>⚡ عرض سريع · بيانات السيرفر من <b id="m17a"></b></span><a href="#" id="m17r" style="color:#9fb0c3;text-decoration:none" title="هات آخر بيانات">🔄</a><a href="#" id="m17l" style="color:#9fb0c3;text-decoration:none" title="شاشة السيرفر المباشرة (صفقات حقيقية وإعدادات)">🖥 مباشر</a>';
+    document.body.appendChild(b);
+    const paint = () => { const e = document.getElementById('m17a'); if (e) e.textContent = M.ok ? Math.max(0, Math.round((Date.now() - M.at) / 60000)) + ' د' : 'مش متصل'; }; paint(); setInterval(paint, 30000);
+    const reload = () => { try { sessionStorage.setItem('mirror.tab', V21.tab || ''); sessionStorage.setItem('mirror.y', String(scrollY)); } catch (e) {} location.reload(); };
+    document.getElementById('m17r').onclick = e => { e.preventDefault(); reload(); }; document.getElementById('m17l').onclick = e => { e.preventDefault(); live(); };
+    try { const y = +sessionStorage.getItem('mirror.y'); if (y) setTimeout(() => scrollTo(0, y), 1200); sessionStorage.removeItem('mirror.y'); } catch (e) {}
+    let hid = 0, inp = Date.now(); ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => addEventListener(ev, () => { inp = Date.now(); }, { passive: true }));
+    document.addEventListener('visibilitychange', () => { if (document.hidden) hid = Date.now(); else if (hid && Date.now() - hid > 10 * 60000) reload(); });
+    setInterval(() => { if (Date.now() - M.at > 20 * 60000 && Date.now() - inp > 2 * 60000 && !document.hidden) reload(); }, 60000);
+    if (!M.ok) toast('⚠️ مقدرتش أجيب بيانات السيرفر — راجع العنوان ومفتاح القراءة في المركز ← 🌐 السيرفر، أو النت', 'err');
+  }
+  // the 🌐 السيرفر card: read key + ⚡ fast / 🖥 live
+  setInterval(() => { try { const c = document.getElementById('c30-srv'); if (!c || document.getElementById('c317k')) return; const go = document.getElementById('c315go'); if (!go) return;
+      const key0 = store.get('p3017.key', ''); go.textContent = '🖥 مباشر';
+      go.insertAdjacentHTML('beforebegin', `<button class="v-btn pri" id="c317f">⚡ سريع</button>`);
+      go.closest('.v-row').insertAdjacentHTML('afterend', `<div class="v-row" style="margin-top:6px"><input id="c317k" class="inp" style="flex:1;min-width:0;padding:8px;border-radius:8px" placeholder="مفتاح القراءة (READ_TOKEN)" value="${esc(key0)}"></div>
+        <p class="mu21" style="font-size:13px;margin:6px 0 0">⚡ <b>سريع:</b> Sonar بيشتغل هنا بسكرول عادي وببيانات السيرفر (بتتحدّث كل 20 دقيقة)، ومش بيحفظ حاجة هنا. 🖥 <b>مباشر:</b> شاشة السيرفر نفسه — للصفقات الحقيقية والإعدادات.${M && M.src === 'app' ? '<br>✅ العرض السريع شغال دلوقتي. <a href="#" id="c317off">رجّع Sonar المحلي</a>' : ''}</p>`);
+      document.getElementById('c317f').onclick = () => { const u = document.getElementById('c315u').value.trim(), k = document.getElementById('c317k').value.trim();
+        if (!u || !k) return toast('اكتب عنوان السيرفر ومفتاح القراءة', 'err'); store.set('p3015.srv', /^https?:/.test(u) ? u : 'https://' + u); store.set('p3017.key', k);
+        try { store.flushAll(); } catch (e) {} if (A && A.setMirror) A.setMirror(u, k); else toast('التطبيق ده محتاج تحديث للنسخة الجديدة علشان العرض السريع — أو افتح العنوان في المتصفح', 'warn'); };
+      const off = document.getElementById('c317off'); if (off) off.onclick = e => { e.preventDefault(); if (confirm('أرجّع Sonar اللي على الجهاز ده (بيتعلم لوحده)؟')) A.setMirror('', ''); };
+    } catch (e) {} }, 1000);
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v3017 = { mirror: M ? { src: M.src, ok: M.ok, age: M.at ? Math.round((Date.now() - M.at) / 60000) : null } : null }; } catch (e) {} return o; }; } catch (e) {}
+  window.P3017 = 1;
+} catch (e) { console.warn('3.0.17', e); } }, 4400);
+
+} catch (e) { console.warn("baked 3.0.17", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>

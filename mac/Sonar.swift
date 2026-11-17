@@ -43,9 +43,19 @@ final class Server {
             } else if done || err != nil { c.cancel() } else { self.read(c, b) }
         }
     }
+    /** fast view: the server's saved Sonar data (its /f/all export), fetched here so the page gets it from its own origin */
+    private func mirrorState() -> Data? {
+        guard let u = UserDefaults.standard.string(forKey: "mirror"), !u.isEmpty, let k = UserDefaults.standard.string(forKey: "mirrorKey"),
+              let url = URL(string: u.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/f/all?k=" + (k.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "")) else { return nil }
+        var out: Data?; let sem = DispatchSemaphore(value: 0)
+        var rq = URLRequest(url: url); rq.timeoutInterval = 40; rq.cachePolicy = .reloadIgnoringLocalCacheData
+        URLSession.shared.dataTask(with: rq) { d, r, _ in if let h = r as? HTTPURLResponse, h.statusCode == 200 { out = d }; sem.signal() }.resume()
+        _ = sem.wait(timeout: .now() + 45); return out
+    }
     private func reply(_ c: NWConnection, _ name: String) {
         var body = Data(), code = "200 OK", type = "application/octet-stream"
-        if let d = pageData(name) { body = d } else { code = "404 Not Found"; body = Data("not found".utf8) }
+        if name == "state" { if let d = mirrorState() { body = d; type = "application/json" } else { code = "502 Bad Gateway"; body = Data("no server data".utf8) } }
+        else if let d = pageData(name) { body = d } else { code = "404 Not Found"; body = Data("not found".utf8) }
         if name.hasSuffix(".html") { type = "text/html; charset=utf-8" } else if name.hasSuffix(".json") { type = "application/json" } else if name.hasSuffix(".png") { type = "image/png" }
         var h = Data("HTTP/1.1 \(code)\r\nContent-Type: \(type)\r\nContent-Length: \(body.count)\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n".utf8); h.append(body)
         c.send(content: h, completion: .contentProcessed { _ in c.cancel() })
@@ -82,8 +92,11 @@ final class App: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUIDelegate
           openUrl: function(u){ webkit.messageHandlers.sonar.postMessage({op:'open', url:u}); },
           reload: function(){ location.reload(); },
           getServer: function(){ return window.__macServer || ''; },
+          getMirror: function(){ return window.__macMirror || ''; },
+          setMirror: function(u, k){ webkit.messageHandlers.sonar.postMessage({op:'mirror', url:String(u||''), key:String(k||'')}); return 'ok'; },
           setServer: function(u){ webkit.messageHandlers.sonar.postMessage({op:'server', url:String(u||'')}); return 'ok'; } };
         window.__macServer = '\(UserDefaults.standard.string(forKey: "server") ?? "")';
+        window.__macMirror = '\((UserDefaults.standard.string(forKey: "mirror") ?? "").isEmpty ? "" : "1")';
         """
         cfg.userContentController.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         cfg.userContentController.add(self, name: "sonar")
@@ -151,6 +164,12 @@ final class App: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUIDelegate
         case "awake": setAwake((o["on"] as? Bool) ?? true)
         case "update": checkUpdate(true)
         case "open": if let s = o["url"] as? String, let url = URL(string: s) { NSWorkspace.shared.open(url) }
+        case "mirror":   // fast view: Sonar runs here with the server's data (url + read key), or "" to turn it off
+            var u = ((o["url"] as? String) ?? "").trimmingCharacters(in: .whitespaces)
+            if !u.isEmpty && !u.hasPrefix("http://") && !u.hasPrefix("https://") { u = "https://" + u }
+            UserDefaults.standard.set(u, forKey: "mirror"); UserDefaults.standard.set((o["key"] as? String) ?? "", forKey: "mirrorKey")
+            UserDefaults.standard.set("", forKey: "server")
+            web.evaluateJavaScript("window.__macMirror = '\(u.isEmpty ? "" : "1")'; window.__macServer = ''") { _, _ in self.web.load(URLRequest(url: self.startURL())) }
         case "server":   // switch to the Sonar server (url) or back to this Mac ("")
             var u = ((o["url"] as? String) ?? "").trimmingCharacters(in: .whitespaces)
             if !u.isEmpty && !u.hasPrefix("http://") && !u.hasPrefix("https://") { u = "https://" + u }

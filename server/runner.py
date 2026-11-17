@@ -375,6 +375,7 @@ def repo_file(*p):
 async def h_fast(req):
     """/ : Sonar itself running in your browser (fast scrolling), loaded with the server's data — see mirror.js"""
     if not authed(req): raise web.HTTPFound('/login')
+    if 'live' in req.query: return await h_index(req)   # the apps open /?live=1 for the live screen (works on old and new runners)
     html_ = open(os.path.join(WEB, 'index.html'), encoding='utf-8').read()
     inject = '<script>' + open(repo_file('server', 'mirror.js'), encoding='utf-8').read() + '</script>'
     html_ = html_.replace('<head>', '<head>' + inject, 1)
