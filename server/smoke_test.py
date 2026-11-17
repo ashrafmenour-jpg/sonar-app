@@ -11,6 +11,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(executable_path=os.environ.get('CHROME_PATH') or None, args=['--no-sandbox'])
     pg = b.new_page()
     pg.on('pageerror', lambda e: errs.append(str(e)[:300]))
+    pg.on('console', lambda m: errs.append('baked update failed: ' + m.text[:200]) if m.type == 'warning' and m.text.startswith('baked ') else None)
     pg.on('dialog', lambda d: d.dismiss())
     pg.goto('file://' + os.path.join(WEB, 'index.html'), wait_until='load', timeout=120000)
     pg.wait_for_timeout(int(os.environ.get('SMOKE_WAIT_MS', '20000')))
@@ -22,6 +23,13 @@ with sync_playwright() as p:
         r = pg.evaluate('JSON.stringify(HC.report()).length')
         if not r or r < 1000: problems.append(f'diagnosis report too small ({r})')
     except Exception as e: problems.append(f'diagnosis report failed: {e}')
+    # decisions still work: the pre-entry opinion on a fake short, and the brain's judge exists
+    try:
+        v = pg.evaluate("""() => { const t = { side: 'SHORT', sym: 'ETHUSDT', entry: 100, stop0: 103, stop: 103, tps: [94, 90], qty: 1, lev: 2 };
+            const v = RVW.verdict({ ready: true, h4: -1, rr: 2, riskPct: 1 }, t); return [v.lvl, typeof PICK.judge, typeof TRN.settle]; }""")
+        if v[0] not in (0, 1, 2): problems.append(f'pre-entry opinion broken: {v}')
+        if v[1] != 'function' or v[2] != 'function': problems.append(f'decision functions missing: {v}')
+    except Exception as e: problems.append(f'decision check failed: {e}')
     baked = pg.evaluate("[...document.scripts].map(s => s.textContent).join('').match(/baked update [0-9.]+/g) || []")
     b.close()
 for e in errs: problems.append('page error: ' + e)

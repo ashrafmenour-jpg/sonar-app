@@ -2,7 +2,7 @@ name: Build Sonar apps
 on:
   push:
     branches: [main]
-    paths: ['android/**', 'mac/**', '.github/workflows/**']
+    paths: ['android/**', 'mac/**', '.github/workflows/build.yml']
   workflow_dispatch:
 permissions:
   contents: write

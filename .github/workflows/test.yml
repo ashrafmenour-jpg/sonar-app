@@ -1,9 +1,15 @@
 name: Test Sonar page
+# The update gate: everything is pushed to `dev`. Only when the page passes here, `dev` is promoted to `main`.
+# The apps, the Mac app and the server all update from `main`, so a broken page never reaches them.
 on:
   push:
-    paths: ['web/**', 'server/**', '.github/workflows/test.yml']
+    branches: [dev, main]
+    paths: ['web/**', 'server/**', 'android/**', 'mac/**', 'research/rules.json', '.github/workflows/test.yml']
   pull_request:
   workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -23,3 +29,18 @@ jobs:
           curl -sf -u sonar:ci -o /dev/null -w "viewer %{http_code}\n" http://127.0.0.1:8090/
           curl -sf -u sonar:ci http://127.0.0.1:8090/status.json | head -c 300
           grep -q "Sonar اشتغل على السيرفر" /tmp/srv.log
+  promote:
+    needs: smoke
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Promote dev to main (fast-forward only)
+        run: |
+          git fetch origin main
+          if git merge-base --is-ancestor origin/main HEAD; then git push origin HEAD:main; else echo "::error::main has commits that are not in dev — merge main into dev first"; exit 1; fi
+      - name: Build the apps if their code changed
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          if git diff --name-only ${{ github.event.before }} HEAD | grep -qE '^(android|mac)/'; then gh workflow run build.yml --ref main; echo "app build started"; else echo "no app changes"; fi

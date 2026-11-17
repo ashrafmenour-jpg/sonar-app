@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Sonar 3.0 — رادار الكريبتو</title>
 <script>
-window.SONAR_WEB = '3.0.15';
+window.SONAR_WEB = '3.0.16';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14853,6 +14853,38 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.15', e); } }, 3800);
 
 } catch (e) { console.warn("baked 3.0.15", e); }
+/* ===== baked update 3.0.16 ===== */
+try {
+/* Sonar 3.0.16 — «📚 الاختبار على 8 سنين» in the brain tab (Ashraf, 18 Nov: "اعمل كل حاجه")
+   The pre-registered rules (research/rules.json) are tested every week on GitHub against 2018 → now (research/backtest.py).
+   This card shows that report: per rule, trades, win %, average R after costs, the unseen period (2023+), the two halves,
+   each market state, and the verdict. Read-only: nothing here changes a decision yet. */
+setTimeout(function () { try {
+  if (window.P3016) return;
+  const URL0 = 'https://raw.githubusercontent.com/ashrafmenour-jpg/sonar-app/research-data/research/backtest-latest.json';
+  const BT = window.BT316 = { d: store.get('p3016.bt', null), at: store.get('p3016.at', 0), busy: false,
+    async load(force) { if (this.busy || (!force && this.d && Date.now() - this.at < 6 * 3600e3)) return; this.busy = true;
+      try { const r = await fetch(URL0 + '?t=' + Date.now()); if (r.ok) { const d = await r.json(); if (d && d.app === 'sonar-backtest') { this.d = d; this.at = Date.now(); store.set('p3016.bt', d); store.set('p3016.at', this.at); } } } catch (e) {}
+      this.busy = false; this.paint(); },
+    f(x) { return x && x.n ? `<b class="num ${x.mean > 0 ? 'up' : 'dn'}">${x.mean >= 0 ? '+' : ''}${x.mean.toFixed(2)}R</b> <small class="mu21">${x.n}</small>` : '<span class="mu21">—</span>'; },
+    html() { const d = this.d, V = { proven: '✅', promising: '🟡', fragile: '⚠️', no: '❌', few: '…' };
+      if (!d) return `<div class="v-sec" id="c316"><h2>📚 الاختبار على 8 سنين <small>القواعد على 2018 لحد النهارده</small></h2><div class="v-card"><p class="mu21" style="margin:0">${this.busy ? 'بيحمّل…' : 'لسه مفيش تقرير — بيتعمل على GitHub كل أسبوع.'}</p></div></div>`;
+      const R = d.rules.filter(r => r.stats && r.stats.all && r.stats.all.n);
+      return `<div class="v-sec" id="c316"><h2>📚 الاختبار على 8 سنين <small>${esc(d.from)} → ${esc(String(d.to).slice(0, 10))} · ${d.symbols.length} عملة · بالمصاريف</small></h2><div class="v-card">
+        <div class="t32tab"><table><thead><tr><th>القاعدة</th><th>صفقات</th><th>كسب</th><th>المتوسط</th><th>2018–2022</th><th>2023+ (ما اتشافتش)</th><th>النص 1 / 2</th><th>هابط</th><th>عرضي</th><th>صاعد</th><th>الحكم</th></tr></thead><tbody>
+        ${R.map(r => { const S = r.stats, B = S.by_regime || {}; return `<tr><td><small>${esc(r.name)}</small></td><td class="num">${S.all.n}</td><td class="num">${S.all.win}%</td><td>${this.f(S.all)}<br><small class="mu21">t ${S.all.t ?? '—'}</small></td><td>${this.f(S.train)}</td><td>${this.f(S.holdout)}</td><td>${this.f(S.half1)}<br>${this.f(S.half2)}</td><td>${this.f(B.DOWN)}</td><td>${this.f(B.RANGE)}</td><td>${this.f(B.UP)}</td><td>${V[r.verdict[0]] || ''} <small>${esc(r.verdict[1])}</small></td></tr>`; }).join('')}</tbody></table></div>
+        <p class="mu21" style="font-size:12px;margin:8px 0 0">السوق دلوقتي في التاريخ ده: <b>${esc(d.current.regime)}</b> · المزاج ${esc(d.current.mood)} · اتعمل ${new Date(d.at).toLocaleString('ar-EG')} · القواعد متسجلة ${esc(d.registered)} قبل النتايج (بصمة ${esc(String(d.rules_sha256).slice(0, 10))}).<br>${d.limits.map(esc).join(' · ')}</p>
+        <button class="btn sm" id="c316r" style="margin-top:6px">${this.busy ? 'بيحمّل…' : '🔄 هات آخر تقرير'}</button></div></div>`; },
+    paint() { const w = document.getElementById('v21-brain'); if (!w) return; const o = document.getElementById('c316'); const h = this.html();
+      if (o) o.outerHTML = h; else { const a = document.getElementById('c37card'); if (a) a.insertAdjacentHTML('afterend', h); else w.insertAdjacentHTML('afterbegin', h); }
+      const b = document.getElementById('c316r'); if (b) b.onclick = () => this.load(true); } };
+  setInterval(() => { try { if (document.getElementById('v21-brain') && !document.getElementById('c316')) BT.paint(); } catch (e) {} }, 1500);
+  BT.load(false); setInterval(() => BT.load(false), 3 * 3600e3);
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { const d = BT.d; o.v3016 = d ? { at: d.at, rules: d.rules.map(r => ({ id: r.id, v: r.verdict && r.verdict[0], n: r.stats && r.stats.all && r.stats.all.n, m: r.stats && r.stats.all && r.stats.all.mean, ho: r.stats && r.stats.holdout && r.stats.holdout.mean })) } : null; } catch (e) {} return o; }; } catch (e) {}
+  window.P3016 = 1;
+} catch (e) { console.warn('3.0.16', e); } }, 4200);
+
+} catch (e) { console.warn("baked 3.0.16", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
