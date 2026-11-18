@@ -37,9 +37,15 @@
     try { var y = +sessionStorage.getItem('mirror.y'); if (y) setTimeout(function () { scrollTo(0, y); }, 1500); sessionStorage.removeItem('mirror.y'); } catch (e) {}
     // fresh server data: when you come back after 10+ minutes away, and every 30 minutes while untouched
     var hidAt = 0, lastInput = Date.now();
-    ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (ev) { addEventListener(ev, function () { lastInput = Date.now(); }, { passive: true }); });
+    // 18 Nov: a Mac fast view kept 8.8 h old server data — the Mac slept, no visibilitychange fired, and the first touch after
+    // coming back reset lastInput so the timer never reloaded. Now: the first input after 10+ min idle, or a wake from sleep
+    // (timer gap > 5 min), reloads when the data is older than 30 min.
+    var old = function () { return Date.now() - M.at > 30 * 60000; }, tick = Date.now();
+    ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (ev) { addEventListener(ev, function () {
+      var away = Date.now() - lastInput > 10 * 60000; lastInput = Date.now(); if (away && old()) reload(); }, { passive: true }); });
     document.addEventListener('visibilitychange', function () { if (document.hidden) hidAt = Date.now(); else if (hidAt && Date.now() - hidAt > 10 * 60000) reload(); });
-    setInterval(function () { if (Date.now() - M.at > 30 * 60000 && Date.now() - lastInput > 2 * 60000 && !document.hidden) reload(); }, 60000);
+    setInterval(function () { var gap = Date.now() - tick; tick = Date.now();
+      if (old() && (gap > 5 * 60000 || (Date.now() - lastInput > 2 * 60000 && !document.hidden))) reload(); }, 60000);
     if (!M.ok) try { toast('⚠️ مقدرتش أجيب بيانات السيرفر — ده Sonar فاضي. جرّب 🔄 أو افتح 🖥 مباشر', 'err'); } catch (e) {}
   }, 4500); });
 })();
