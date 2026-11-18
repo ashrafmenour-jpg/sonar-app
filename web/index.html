@@ -27,7 +27,7 @@
 } catch (e) {} })();
 </script>
 <script>
-window.SONAR_WEB = '3.0.17';
+window.SONAR_WEB = '3.0.18';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14943,6 +14943,23 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.17', e); } }, 4400);
 
 } catch (e) { console.warn("baked 3.0.17", e); }
+
+/* ===== baked update 3.0.18 ===== */
+try {
+/* Sonar 3.0.18 — combos stop trading live on paper (learning file 18 Nov: combos lost −187R of the day's −341R).
+   Every time a losing combo was benched, a near-copy («الرادار: جاهزة + …») took its place and lost again: the ok-path let
+   combos in without the strict rule, and they all copy the same base trades. Agreed rule (18 Nov): no new live engine before
+   the 8-year historical test says so. Combos keep being computed and shown in 🧩 and the reports; they just don't open trades. */
+setTimeout(function () { try {
+  const CB = window.P3092 && window.P3092.CB; if (!CB || CB._off18) return; CB._off18 = 1;
+  CB.tick = function () { return 0; };
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { if (o.v3092) o.v3092.paused = 'combos analysed only — no live paper trades since 3.0.18'; } catch (e) {} return o; }; } catch (e) {}
+  setInterval(() => { try { const c = document.getElementById('c392'); if (!c || c.querySelector('.c318n')) return; const s = c.querySelector('summary');
+    if (s) s.insertAdjacentHTML('afterend', '<p class="c318n mu21" style="font-size:12.5px;margin:8px 0 0">⏸ التوليفات <b>مش بتفتح صفقات</b> من 3.0.18 — بتتحسب وتتعرض هنا بس. كل ما توليفة خسرانة تقف، نسخة شبهها مبنية على نفس صفقات «الرادار: جاهزة» كانت بتاخد مكانها وتخسر. أي توليفة واعدة تتسجّل في الاختبار التاريخي الأول.</p>'); } catch (e) {} }, 2000);
+  window.P3018 = 1;
+} catch (e) { console.warn('3.0.18', e); } }, 4600);
+
+} catch (e) { console.warn("baked 3.0.18", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
