@@ -687,6 +687,97 @@
    "id": "capit_short",
    "side": -1,
    "name": "مقارنة: شورت بعد يوم الاستسلام نفسه (هل فعلاً لازم نبطّل شورت بعده؟)"
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48,
+   "pause_after_stop_h": 2,
+   "registered": "2026-11-19",
+   "id": "core_short_pause2h",
+   "name": "الأساس + مفيش صفقة جديدة لمدة ساعتين بعد أي وقف خسارة (قرارات 19 نوفمبر: كل وقف كان بيتعوّض في نفس الدقيقة)"
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48,
+   "max_open": 2,
+   "registered": "2026-11-19",
+   "id": "core_short_max2",
+   "name": "الأساس + أقصى صفقتين مفتوحين في نفس الوقت (الشورتات على العملات الكبيرة = رهان واحد على البيتكوين)"
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48,
+   "pause_after_stop_h": 2,
+   "max_open": 2,
+   "registered": "2026-11-19",
+   "id": "core_short_pause2h_max2",
+   "name": "الأساس + الاتنين: وقفة ساعتين بعد أي وقف وأقصى صفقتين مفتوحين"
+  },
+  {
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "pause_after_stop_h": 2,
+   "registered": "2026-11-19",
+   "id": "daily_swing_short_pause2h",
+   "name": "السوينج اليومي المثبت + وقفة ساعتين بعد أي وقف"
+  },
+  {
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "max_open": 2,
+   "registered": "2026-11-19",
+   "id": "daily_swing_short_max2",
+   "name": "السوينج اليومي المثبت + أقصى صفقتين مفتوحين"
   }
  ]
 }

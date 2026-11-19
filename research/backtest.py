@@ -267,14 +267,18 @@ def main():
     split = pd.Timestamp(cfg['split']['holdout_from'], tz='UTC'); out_rules = []
     for rule in cfg['rules']:
         cands = sorted(c for s in F for c in candidates(s, F[s], ctx, rule))
-        open_until, per_coin, trades = [], {}, []
+        open_until, per_coin, trades, stops = [], {}, [], []
+        max_open = rule.get('max_open', cfg['max_open_per_rule'])                 # portfolio cap (all trades of a rule share one side)
+        pause = pd.Timedelta(hours=rule['pause_after_stop_h']) if rule.get('pause_after_stop_h') else None
         for t, s, sg in cands:
             open_until = [x for x in open_until if x > t]
-            if len(open_until) >= cfg['max_open_per_rule'] or per_coin.get(s, t) > t: continue
+            if len(open_until) >= max_open or per_coin.get(s, t) > t: continue
+            if pause is not None and any(t - pause <= x <= t for x in stops[-50:]): continue   # a full stop in the last N hours (only stops already closed at t)
             r = simulate(F[s], t, sg, rule, cost)
             if not r: continue
             r.update(sym=s, side=sg, regime=str(ctx.regime.get(t, 'RANGE')), mood=str(ctx.mood.get(t, '')))
             trades.append(r); open_until.append(r['exit_t']); per_coin[s] = r['exit_t']
+            if r['why'] == 'stop': stops.append(r['exit_t']); stops.sort()
         T = pd.DataFrame(trades)
         if not len(T): out_rules.append({'id': rule['id'], 'name': rule['name'], 'stats': {'all': {'n': 0}}, 'verdict': ['few', 'ولا صفقة']}); continue
         day = T.t.dt.floor('D').astype(str).values; half = len(T) // 2

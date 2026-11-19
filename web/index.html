@@ -27,7 +27,7 @@
 } catch (e) {} })();
 </script>
 <script>
-window.SONAR_WEB = '3.0.21';
+window.SONAR_WEB = '3.0.22';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -15044,6 +15044,58 @@ setTimeout(function () { try {
 } catch (e) { console.warn("baked 3.0.20", e); }
 /* ===== baked update 3.0.21 ===== */
 try { /* Sonar 3.0.21 — the 🚦 gate flags an edge that has faded since 2023 (2023+ average below +0.05R), e.g. the volume breakout rule. */ } catch (e) { console.warn("baked 3.0.21", e); }
+/* ===== baked update 3.0.22 ===== */
+try {
+/* Sonar 3.0.22 (Ashraf, 19 Nov: «نفذ») — after a day of 4 stop-losses in a row on A-grade shorts:
+   1) Decisions follow the 🚦 gate. A decision counts for real money only when one of its engines matches a rule that is
+      «مثبت» on 8 years AND positive in today's market state, on the same side. Every other decision gets
+      «🧪 تجريبي — مش للفلوس», and the «ادخل دلوقتي» list says so. Read-only: it does not block, open or close anything.
+      Today none of the live engines qualifies (their base, core_short, is −0.02R over 8 years and −0.10R since 2023).
+   2) Fast view: the browser is refused by XT/KuCoin (HTTP 401 through the proxies), which turned «منصاتك» red while the
+      server reaches both. In the fast view that check now shows the server's own reachability (/status.json), or says
+      the server follows them when the server status is not reachable from here (inside the apps). */
+setTimeout(function () { try {
+  if (window.P3022) return;
+  const T = window.T322 = {
+    // live engine → the historical rule that tests it (research/rules.json)
+    MAP: { 'اتفاق الفريمات': ['core_short_no_mood', 'core_long_rally'], 'مزاج السوق': ['core_short'], 'الاستحواذ USDT/BTC': ['core_short'] },
+    eng(d) { return (d && d.pk && d.pk.eng) || (d && d.eng) || []; },
+    real(d) { try { const x = window.GATE320 && GATE320.read(); if (!x || !d) return false; const ids = new Set();
+        for (const e of this.eng(d)) for (const i of (this.MAP[e] || [])) ids.add(i);
+        return x.edge.some(r => ids.has(r.id) && r.spec && r.spec.side === d.sg && !(r.stats.holdout && r.stats.holdout.mean < .05)); } catch (e) { return false; } },
+    n: 0,
+    badge() { return `<div style="margin-top:8px;padding:6px 8px;border-radius:8px;background:#e8b04b22;color:#e8b04b;font-size:12px;line-height:1.6">🧪 <b>تجريبي — مش للفلوس.</b> المحرك ده ما اتثبتش على 8 سنين في السوق ده، فالقرار بيتسجل محاكاة علشان نقيسه بس.</div>`; } };
+  if (window.V21 && V21.dcard) {
+    const d0 = V21.dcard.bind(V21);
+    V21.dcard = function (d, sym, extra) { let x = extra || ''; try { if (d && d.sg && !T.real(d)) { x += T.badge(); T.n++; } } catch (e) {} return d0(d, sym, x); };
+    const h0 = V21.home.bind(V21);
+    V21.home = function () { const v = h0(); try { const w = $('#v21-home'); if (w) { const h = [...w.querySelectorAll('.v-sec h2')].find(e => /ادخل دلوقتي/.test(e.textContent));
+        const sec = h && h.parentElement, cards = sec ? sec.querySelectorAll('.v-dec').length : 0, exp = sec ? [...sec.querySelectorAll('.v-dec')].filter(c => /تجريبي — مش للفلوس/.test(c.textContent)).length : 0;
+        if (sec && cards && !sec.querySelector('.n322')) {
+          if (exp === cards) h.firstChild.textContent = '🧪 قرارات تجريبية (محاكاة) ';
+          h.insertAdjacentHTML('afterend', `<div class="v-card n322" style="margin:0 0 10px;border-inline-start:4px solid #e8b04b;font-size:13px;line-height:1.7">${exp === cards
+            ? '⏸ <b>ولا قرار هنا مثبت على 8 سنين في السوق ده.</b> العقل بيكمل يسجلهم على الورق علشان نقيسهم، بس متدخلش بفلوس حقيقية لحد ما 🚦 فوق تقول «فيه ميزة» في نفس الاتجاه.'
+            : `⚠️ ${exp} من ${cards} قرارات تجريبية (مكتوب عليها 🧪) — الباقي من قاعدة مثبتة في السوق ده.`}</div>`); } } } catch (e) { console.warn('3.0.22 home', e); } return v; };
+    try { if (V21.tab === 'home') V21.home(); } catch (e) {}
+  }
+  // 2) fast view: exchange reachability from the server
+  if (window.SONAR_MIRROR) {
+    const SV = window.SRV322 = { net: null, at: 0 };
+    const load = async () => { try { const r = await fetch('/status.json', { cache: 'no-store', credentials: 'same-origin' }); if (r.ok) { const j = await r.json(); if (j && j.net) { SV.net = j.net; SV.at = Date.now(); } } } catch (e) {} };
+    load(); setInterval(load, 10 * 60e3);
+    const r0 = HC.run.bind(HC);
+    HC.run = async function () { const v = await r0(); try { const L = this.last, c = L && L.C && L.C.find(x => x.k === 'myx'); if (c) {
+        const n = SV.net, ok = k => n && n[k] && n[k].ok;
+        if (n) { const all = ok('XT') && ok('KuCoin'); c.ok = all ? 'ok' : 'warn'; c.t = `من السيرفر: ${ok('XT') ? '🟢' : '🔴'} XT · ${ok('KuCoin') ? '🟢' : '🔴'} KuCoin — المتصفح هنا ممنوع منهم، وده مش مشكلة`; }
+        else { c.ok = 'ok'; c.t = '⚡ عرض سريع: المتصفح ممنوع من XT و KuCoin، والسيرفر هو اللي بيتابعهم'; }
+        L.nb = L.C.filter(x => x.ok === 'bad').length; L.nw = L.C.filter(x => x.ok === 'warn').length;
+        const h = this.hist[this.hist.length - 1]; if (h && h.t === L.t) { h.nb = L.nb; h.nw = L.nw; h.bad = L.C.filter(x => x.ok !== 'ok').map(x => x.k); }
+        this.chip(); if ($('#hcModal') && !$('#hcModal').hidden) this.paint(); } } catch (e) { console.warn('3.0.22 myx', e); } return v; };
+  }
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v3022 = { badges: T.n, mirror: !!window.SONAR_MIRROR, srvNet: window.SRV322 ? { at: SRV322.at, xt: !!(SRV322.net && SRV322.net.XT && SRV322.net.XT.ok), kucoin: !!(SRV322.net && SRV322.net.KuCoin && SRV322.net.KuCoin.ok) } : null }; } catch (e) {} return o; }; } catch (e) {}
+  window.P3022 = 1;
+} catch (e) { console.warn('3.0.22', e); } }, 6000);
+} catch (e) { console.warn("baked 3.0.22", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
