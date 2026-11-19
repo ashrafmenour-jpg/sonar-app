@@ -488,6 +488,115 @@
    "id": "daily_short_stop8pct",
    "stop_pct": 8,
    "name": "مقاس الوقف للشورت اليومي: 8% ثابتة"
+  },
+  {
+   "side": 0,
+   "signal": "range_edge",
+   "mood": null,
+   "loc": null,
+   "rng_h": 96,
+   "w_min": 0.06,
+   "w_max": 0.15,
+   "edge": 0.15,
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-19",
+   "id": "range_edge_mid",
+   "tp_mode": "mid",
+   "name": "تذبذب العملة نفسها (نطاق 4 أيام عرضه 6–15%): لونج عند القاع / شورت عند القمة بعد شمعة رفض، وقف برّه النطاق، الهدف نص النطاق"
+  },
+  {
+   "side": 0,
+   "signal": "range_edge",
+   "mood": null,
+   "loc": null,
+   "rng_h": 96,
+   "w_min": 0.06,
+   "w_max": 0.15,
+   "edge": 0.15,
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-19",
+   "id": "range_edge_far",
+   "tp_mode": "far",
+   "name": "نفس التذبذب، الهدف الطرف التاني من النطاق"
+  },
+  {
+   "side": 0,
+   "signal": "range_edge",
+   "mood": null,
+   "loc": null,
+   "rng_h": 96,
+   "w_min": 0.06,
+   "w_max": 0.15,
+   "edge": 0.15,
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-19",
+   "id": "range_edge_3pct",
+   "tp_pct": [
+    3
+   ],
+   "name": "نفس التذبذب، هدف ثابت 3%"
+  },
+  {
+   "side": 0,
+   "signal": "range_edge",
+   "mood": null,
+   "loc": null,
+   "rng_h": 96,
+   "w_min": 0.06,
+   "w_max": 0.15,
+   "edge": 0.15,
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-19",
+   "id": "range_edge_5pct",
+   "tp_pct": [
+    5
+   ],
+   "name": "نفس التذبذب، هدف ثابت 5%"
+  },
+  {
+   "side": 0,
+   "signal": "range_edge",
+   "mood": null,
+   "loc": null,
+   "rng_h": 120,
+   "w_min": 0.06,
+   "w_max": 0.15,
+   "edge": 0.15,
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-19",
+   "id": "range_edge_far_5d",
+   "tp_mode": "far",
+   "name": "نفس التذبذب على نطاق 5 أيام، الهدف الطرف التاني"
+  },
+  {
+   "side": 0,
+   "signal": "range_edge",
+   "mood": null,
+   "loc": null,
+   "rng_h": 96,
+   "w_min": 0.06,
+   "w_max": 0.15,
+   "edge": 0.15,
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-19",
+   "id": "range_edge_mid_downbtc",
+   "tp_mode": "mid",
+   "regime": [
+    "DOWN"
+   ],
+   "name": "تذبذب العملة والبيتكوين في حالة DOWN — هل التذبذب ينفع حتى والسوق نازل؟"
   }
  ]
 }

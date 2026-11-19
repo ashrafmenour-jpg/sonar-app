@@ -147,6 +147,15 @@ def candidates(sym, f, ctx, rule):
         if rule.get('pos_min') is not None: ok &= f.pos48 >= rule['pos_min']
         if rule.get('pos_max') is not None: ok &= f.pos48 <= rule['pos_max']
         a = np.where(ok, side, 0)
+    elif sig == 'range_edge':   # trade a coin's own sideways range: long at the floor, short at the ceiling, after a rejection candle
+        n = int(rule.get('rng_h', 96)); hi = f.h.shift(1).rolling(n).max(); lo = f.l.shift(1).rolling(n).min(); w = (hi - lo) / lo
+        f[f'rhi{n}'], f[f'rlo{n}'] = hi, lo
+        flat = (w >= rule.get('w_min', .06)) & (w <= rule.get('w_max', .15)) & ((f.c.shift(n) / f.c - 1).abs() <= w * .5)
+        bar = (f.h - f.l).replace(0, np.nan); edge = rule.get('edge', .15)
+        lw = (np.minimum(f.o, f.c) - f.l) / bar; uw = (f.h - np.maximum(f.o, f.c)) / bar
+        lg = flat & (f.l <= lo + edge * (hi - lo)) & (f.c > f.o) & (lw >= .4) & (f.c > lo)
+        sh = flat & (f.h >= hi - edge * (hi - lo)) & (f.c < f.o) & (uw >= .4) & (f.c < hi)
+        a = np.where(lg, 1, np.where(sh, -1, 0))
     else:
         a = f.brk4h.fillna(0).values.astype(int)
     a = pd.Series(a, index=f.index)
@@ -170,11 +179,21 @@ def simulate(f, t, sg, rule, cost_r_pct):
     i = f.index.get_loc(t) + 1
     if i >= len(f): return None
     entry = f.o.iat[i]
-    risk = entry * rule['stop_pct'] / 100 if rule.get('stop_pct') else rule['stop_atr4h'] * f.atr4h.iat[i - 1]
+    rng = None
+    if rule.get('signal') == 'range_edge':   # stop just outside the range, targets inside it
+        n = int(rule.get('rng_h', 96)); rhi, rlo = f[f'rhi{n}'].iat[i - 1], f[f'rlo{n}'].iat[i - 1]; buf = rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]
+        if not (rhi > rlo) or not (buf >= 0): return None
+        rng = (rhi, rlo); risk = (entry - (min(rlo, f.l.iat[i - 1]) - buf)) if sg > 0 else ((max(rhi, f.h.iat[i - 1]) + buf) - entry)   # beyond the range and the rejection wick
+    else:
+        risk = entry * rule['stop_pct'] / 100 if rule.get('stop_pct') else rule['stop_atr4h'] * f.atr4h.iat[i - 1]
     if not (risk > 0) or risk / entry > .25: return None
     stop = entry - sg * risk; be = False
     # targets: one target at tp_r · or the brain's picks: half at tp_pct[0] (stop → entry), the rest at tp_pct[1]
-    tps = [entry * (1 + sg * x / 100) for x in rule['tp_pct']] if rule.get('tp_pct') else [entry + sg * rule['tp_r'] * risk]
+    if rng and rule.get('tp_mode') in ('mid', 'far'):
+        tps = [(rng[0] + rng[1]) / 2 if rule['tp_mode'] == 'mid' else (rng[0] if sg > 0 else rng[1])]
+        if sg * (tps[0] - entry) <= 0: return None
+    else:
+        tps = [entry * (1 + sg * x / 100) for x in rule['tp_pct']] if rule.get('tp_pct') else [entry + sg * rule['tp_r'] * risk]
     half = len(tps) > 1; banked = 0.0
     end = min(len(f) - 1, i + rule['max_hours'] - 1); H, L, C = f.h.values, f.l.values, f.c.values
     D4 = f.d4h.values; dead = rule.get('dead'); mfe = 0.0
