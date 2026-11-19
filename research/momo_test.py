@@ -43,13 +43,13 @@ def load(sym, start, cache):
     df.index = pd.to_datetime(df.t, unit='ms', utc=True)
     return df[['o', 'h', 'l', 'c', 'q']].astype(float)
 
-def triggers(df):
-    """The live trigger, on closed 5-min candles: 15-min move >= 5% and 15-min quote volume >= 4x its 24h average."""
+def triggers(df, up=5, vx=4, min_q=2e6):
+    """The detector trigger on closed 5-min candles: 15-min move >= up% and 15-min quote volume >= vx times its 24h average."""
     c, q = df.c, df.q
     c15 = (c / c.shift(3) - 1) * 100
     q15 = q.rolling(3).sum(); avg15 = q.shift(3).rolling(288).sum() / 96; q24 = q.rolling(288).sum()
     ch24 = (c / c.shift(288) - 1) * 100
-    ok = (c15.abs() >= 5) & (q15 / avg15.replace(0, np.nan) >= 4) & (q24 >= 2e6)
+    ok = (c15.abs() >= up) & (q15 / avg15.replace(0, np.nan) >= vx) & (q24 >= min_q)
     ok &= ~((c15 > 0) & (ch24 >= 60))            # the live detector does not chase a long after +60% in a day
     h1 = df.resample('1h').agg({'h': 'max', 'l': 'min'}); atr1h = (h1.h - h1.l).rolling(14).mean().shift(1)   # previous closed hours only
     df['atr1h'] = atr1h.reindex(df.index, method='ffill')
@@ -109,11 +109,14 @@ def main():
         df = load(s, (y, m), a.cache)
         if df is not None and len(df) > 288 * 30: data[s] = df; print(f'{s}: {len(df)} candles from {df.index[0].date()}', flush=True)
         else: print(f'{s}: no data', flush=True)
-    T = {s: triggers(df) for s, df in data.items()}
-    print('triggers:', sum(len(v) for v in T.values()), flush=True)
+    TK = lambda v: tuple((v.get('trigger') or {}).get(k, d) for k, d in (('up', 5), ('vx', 4), ('min_q', 2e6)))
+    TT = {}
+    for v in cfg['variants']:
+        k = TK(v)
+        if k not in TT: TT[k] = {s: triggers(df, *k) for s, df in data.items()}; print('triggers', k, sum(len(x) for x in TT[k].values()), flush=True)
     split = pd.Timestamp(cfg['split']['holdout_from'], tz='UTC'); out = []
     for v in cfg['variants']:
-        trades = []
+        trades = []; T = TT[TK(v)]
         for s, df in data.items():
             busy_until, cool_until = None, None
             for i, sg in T[s]:

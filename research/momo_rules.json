@@ -4,15 +4,195 @@
  "why": "19 Nov: MMT went +69% in a day and the detector lost ~3R on it (3 stop-outs) while Sonar's other engines held the same coin to the first target. 268 live alerts: 28% wins, -73.9R.",
  "from": "2025-01",
  "costs_pct_per_side": 0.12,
- "split": {"holdout_from": "2026-01-01"},
- "universe": ["WIFUSDT", "1000PEPEUSDT", "1000BONKUSDT", "BOMEUSDT", "ORDIUSDT", "1000SATSUSDT", "TIAUSDT", "SEIUSDT", "SUIUSDT", "APTUSDT", "ARBUSDT", "OPUSDT", "INJUSDT", "FETUSDT", "RENDERUSDT", "WLDUSDT", "JUPUSDT", "PYTHUSDT", "STRKUSDT", "DYMUSDT", "ALTUSDT", "MANTAUSDT", "PIXELUSDT", "PORTALUSDT", "AEVOUSDT", "ETHFIUSDT", "ENAUSDT", "WUSDT", "TNSRUSDT", "SAGAUSDT", "OMNIUSDT", "REZUSDT", "NOTUSDT", "IOUSDT", "ZKUSDT", "ZROUSDT", "POPCATUSDT", "NEIROUSDT", "DOGSUSDT", "TURBOUSDT", "GOATUSDT", "MOODENGUSDT", "PNUTUSDT", "ACTUSDT", "HIPPOUSDT", "VIRTUALUSDT", "FARTCOINUSDT", "AIXBTUSDT", "PENGUUSDT", "MEUSDT", "MOVEUSDT", "USUALUSDT", "MEWUSDT", "GRASSUSDT", "DRIFTUSDT", "CHILLGUYUSDT", "1000CATUSDT", "ORCAUSDT", "BANUSDT", "SWELLUSDT"],
+ "split": {
+  "holdout_from": "2026-01-01"
+ },
+ "universe": [
+  "WIFUSDT",
+  "1000PEPEUSDT",
+  "1000BONKUSDT",
+  "BOMEUSDT",
+  "ORDIUSDT",
+  "1000SATSUSDT",
+  "TIAUSDT",
+  "SEIUSDT",
+  "SUIUSDT",
+  "APTUSDT",
+  "ARBUSDT",
+  "OPUSDT",
+  "INJUSDT",
+  "FETUSDT",
+  "RENDERUSDT",
+  "WLDUSDT",
+  "JUPUSDT",
+  "PYTHUSDT",
+  "STRKUSDT",
+  "DYMUSDT",
+  "ALTUSDT",
+  "MANTAUSDT",
+  "PIXELUSDT",
+  "PORTALUSDT",
+  "AEVOUSDT",
+  "ETHFIUSDT",
+  "ENAUSDT",
+  "WUSDT",
+  "TNSRUSDT",
+  "SAGAUSDT",
+  "OMNIUSDT",
+  "REZUSDT",
+  "NOTUSDT",
+  "IOUSDT",
+  "ZKUSDT",
+  "ZROUSDT",
+  "POPCATUSDT",
+  "NEIROUSDT",
+  "DOGSUSDT",
+  "TURBOUSDT",
+  "GOATUSDT",
+  "MOODENGUSDT",
+  "PNUTUSDT",
+  "ACTUSDT",
+  "HIPPOUSDT",
+  "VIRTUALUSDT",
+  "FARTCOINUSDT",
+  "AIXBTUSDT",
+  "PENGUUSDT",
+  "MEUSDT",
+  "MOVEUSDT",
+  "USUALUSDT",
+  "MEWUSDT",
+  "GRASSUSDT",
+  "DRIFTUSDT",
+  "CHILLGUYUSDT",
+  "1000CATUSDT",
+  "ORCAUSDT",
+  "BANUSDT",
+  "SWELLUSDT"
+ ],
  "variants": [
-  {"id": "momo_now", "name": "الكاشف زي ما هو: وقف تحت آخر 4 شموع 5 دقايق (3–8%)، ويدخل تاني على نفس العملة بعد ساعتين", "stop": "swing4", "clamp": [0.03, 0.08], "cool_h": 2, "cool_after_stop_h": 2},
-  {"id": "momo_stop_start", "name": "وقف تحت بداية الحركة (قاع الشموع قبل الـ15 دقيقة)، 3–25%", "stop": "start", "clamp": [0.03, 0.25], "cool_h": 2, "cool_after_stop_h": 2},
-  {"id": "momo_stop_atr", "name": "وقف على قد تذبذب العملة: 1.5 × متوسط مدى شمعة الساعة (4–20%)", "stop": "atr1h", "atr_k": 1.5, "clamp": [0.04, 0.20], "cool_h": 2, "cool_after_stop_h": 2},
-  {"id": "momo_now_no_reentry", "name": "الوقف الحالي + ممنوع يدخل نفس العملة 24 ساعة بعد ما الوقف يضرب", "stop": "swing4", "clamp": [0.03, 0.08], "cool_h": 2, "cool_after_stop_h": 24},
-  {"id": "momo_start_no_reentry", "name": "وقف تحت بداية الحركة + ممنوع يدخل نفس العملة 24 ساعة بعد الوقف", "stop": "start", "clamp": [0.03, 0.25], "cool_h": 2, "cool_after_stop_h": 24},
-  {"id": "momo_atr_no_reentry", "name": "وقف على قد التذبذب + ممنوع يدخل نفس العملة 24 ساعة بعد الوقف", "stop": "atr1h", "atr_k": 1.5, "clamp": [0.04, 0.20], "cool_h": 2, "cool_after_stop_h": 24},
-  {"id": "momo_time_only", "name": "مقياس: من غير وقف قريب (طوارئ 25%) ومن غير أهداف — خروج بعد 6 ساعات. هل الدخول نفسه فيه ميزة؟", "stop": "fixed", "fixed": 0.25, "no_tp": true, "cool_h": 2, "cool_after_stop_h": 2}
- ]
+  {
+   "id": "momo_now",
+   "name": "الكاشف زي ما هو: وقف تحت آخر 4 شموع 5 دقايق (3–8%)، ويدخل تاني على نفس العملة بعد ساعتين",
+   "stop": "swing4",
+   "clamp": [
+    0.03,
+    0.08
+   ],
+   "cool_h": 2,
+   "cool_after_stop_h": 2
+  },
+  {
+   "id": "momo_stop_start",
+   "name": "وقف تحت بداية الحركة (قاع الشموع قبل الـ15 دقيقة)، 3–25%",
+   "stop": "start",
+   "clamp": [
+    0.03,
+    0.25
+   ],
+   "cool_h": 2,
+   "cool_after_stop_h": 2
+  },
+  {
+   "id": "momo_stop_atr",
+   "name": "وقف على قد تذبذب العملة: 1.5 × متوسط مدى شمعة الساعة (4–20%)",
+   "stop": "atr1h",
+   "atr_k": 1.5,
+   "clamp": [
+    0.04,
+    0.2
+   ],
+   "cool_h": 2,
+   "cool_after_stop_h": 2
+  },
+  {
+   "id": "momo_now_no_reentry",
+   "name": "الوقف الحالي + ممنوع يدخل نفس العملة 24 ساعة بعد ما الوقف يضرب",
+   "stop": "swing4",
+   "clamp": [
+    0.03,
+    0.08
+   ],
+   "cool_h": 2,
+   "cool_after_stop_h": 24
+  },
+  {
+   "id": "momo_start_no_reentry",
+   "name": "وقف تحت بداية الحركة + ممنوع يدخل نفس العملة 24 ساعة بعد الوقف",
+   "stop": "start",
+   "clamp": [
+    0.03,
+    0.25
+   ],
+   "cool_h": 2,
+   "cool_after_stop_h": 24
+  },
+  {
+   "id": "momo_atr_no_reentry",
+   "name": "وقف على قد التذبذب + ممنوع يدخل نفس العملة 24 ساعة بعد الوقف",
+   "stop": "atr1h",
+   "atr_k": 1.5,
+   "clamp": [
+    0.04,
+    0.2
+   ],
+   "cool_h": 2,
+   "cool_after_stop_h": 24
+  },
+  {
+   "id": "momo_time_only",
+   "name": "مقياس: من غير وقف قريب (طوارئ 25%) ومن غير أهداف — خروج بعد 6 ساعات. هل الدخول نفسه فيه ميزة؟",
+   "stop": "fixed",
+   "fixed": 0.25,
+   "no_tp": true,
+   "cool_h": 2,
+   "cool_after_stop_h": 2
+  },
+  {
+   "id": "momo_b_now",
+   "name": "الشرط الحالي فعلًا (3% في 15 دقيقة + فوليوم 2.5×) بالوقف الحالي",
+   "stop": "swing4",
+   "clamp": [
+    0.03,
+    0.08
+   ],
+   "cool_h": 2,
+   "cool_after_stop_h": 2,
+   "trigger": {
+    "up": 3,
+    "vx": 2.5,
+    "min_q": 1500000
+   }
+  },
+  {
+   "id": "momo_b_start_no_reentry",
+   "name": "الشرط الحالي + وقف تحت بداية الحركة + ممنوع يدخل نفس العملة 24 ساعة بعد الوقف",
+   "stop": "start",
+   "clamp": [
+    0.03,
+    0.25
+   ],
+   "cool_h": 2,
+   "cool_after_stop_h": 24,
+   "trigger": {
+    "up": 3,
+    "vx": 2.5,
+    "min_q": 1500000
+   }
+  },
+  {
+   "id": "momo_b_time_only",
+   "name": "مقياس للشرط الحالي: من غير وقف قريب ولا أهداف — خروج بعد 6 ساعات",
+   "stop": "fixed",
+   "fixed": 0.25,
+   "no_tp": true,
+   "cool_h": 2,
+   "cool_after_stop_h": 2,
+   "trigger": {
+    "up": 3,
+    "vx": 2.5,
+    "min_q": 1500000
+   }
+  }
+ ],
+ "note_b": "Added 19 Nov (same day, before any result for them): the live page lowered the trigger to 3% in 15 min + 2.5x volume (rule B, 3.0.7). The momo_b_* variants test that live trigger."
 }
