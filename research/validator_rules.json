@@ -1,0 +1,30 @@
+{
+ "registered": "2026-11-19",
+ "note": "Pre-registered test of Ashraf's 'Crypto Futures Setup Validator' prompt (19 Nov), turned into exact rules. Binance USDT-M futures 5-min candles, resampled to 15m / 1h / 4h; every feature uses closed candles only (merged on close time). Swings = 1h pivots with 3 candles each side (confirmed 3 hours later); BTC 4h swings = 2 candles each side. Patterns that need the eye (double top/bottom, head & shoulders) are NOT tested — only LL/HL + BOS. One trade per BOS, one open trade per coin, entry on the next 5-min open, 48 h max. Change a variant = new id.",
+ "from": "2025-01",
+ "costs_pct_per_side": 0.1,
+ "split": {"holdout_from": "2026-01-01"},
+ "rules_text": {
+  "layer1_btc": "STRONG BEARISH = BTC 4h close < EMA50 4h and last 4h swing high < previous and last swing low < previous -> no LONG. STRONG BULLISH = mirror -> no SHORT. LONG also needs BTC 1h close > EMA50 1h and last 1h swing low > previous.",
+  "layer1_ema50": "reject LONG if pair price < EMA50(4h) x 0.95; reject SHORT if > EMA50(4h) x 1.05",
+  "layer1_24h": "reject LONG if 24h change < -15%; reject SHORT if > +15%",
+  "layer1_candle": "LONG: last closed 5m candle green and last closed 15m not red. SHORT: mirror.",
+  "layer3": "LONG: bullish BOS (1h close above the last confirmed swing high) with last swing low > previous (HL). SHORT: bearish BOS below the last swing low with last swing high < previous (LH). BOS must be at most 3 hours old.",
+  "layer2": "BOS +8 (always, required) · CHoCH +3 (the BOS direction differs from the previous BOS) · FVG +7 (an unfilled 15m fair-value gap of the trade side from the last 6 h, price inside it or within 1% of it) · volume +5 (BOS candle volume >= 1.5x the 20-hour average)",
+  "exits": {
+   "prompt": "as written: SL 2% judged on a 5m close (exit at that close), no hard stop; at +2% price (+10% at 5x) SL to entry (also on close); auto-close at +3% price (+15% at 5x) — so the 4% target is never reached",
+   "fixed": "corrected: SL 2% on a 5m close + hard stop 3%; TP1 +2% close half and SL to entry; TP2 +4% the rest",
+   "plain": "plain 1:2: hard SL 2%, TP 4%, both intrabar"
+  }
+ },
+ "universe_extra": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT", "DOTUSDT", "TRXUSDT", "NEARUSDT", "BCHUSDT", "SUIUSDT", "TONUSDT"],
+ "variants": [
+  {"id": "val_full_prompt", "name": "البرومبت زي ما هو: الفلتر + BOS + نقاط ≥ 11، والخروج زي ما مكتوب (إغلاق عند +3%)", "gate": true, "min_score": 11, "exit": "prompt"},
+  {"id": "val_full_fixed", "name": "نفس الدخول، بالخروج المعدّل: نص عند +2% والباقي عند +4%، وقف 2% بالإغلاق + طوارئ 3%", "gate": true, "min_score": 11, "exit": "fixed"},
+  {"id": "val_full_plain", "name": "نفس الدخول، بخروج 1:2 عادي: وقف 2% وهدف 4%", "gate": true, "min_score": 11, "exit": "plain"},
+  {"id": "val_bos_only_fixed", "name": "الفلتر + BOS بس (من غير شرط النقاط) — هل النقاط بتفرق؟", "gate": true, "min_score": 8, "exit": "fixed"},
+  {"id": "val_nogate_fixed", "name": "BOS + نقاط ≥ 11 من غير الطبقة الأولى — هل الفلتر بيفرق؟", "gate": false, "min_score": 11, "exit": "fixed"},
+  {"id": "val_full_fixed_short", "name": "الدخول الكامل بالخروج المعدّل — شورت بس", "gate": true, "min_score": 11, "exit": "fixed", "side": -1},
+  {"id": "val_full_fixed_long", "name": "الدخول الكامل بالخروج المعدّل — لونج بس", "gate": true, "min_score": 11, "exit": "fixed", "side": 1}
+ ]
+}

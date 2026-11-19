@@ -36,6 +36,9 @@ jobs:
       - name: Strong-move detector test (5-min futures)
         continue-on-error: true
         run: python research/momo_test.py --out /tmp/out
+      - name: Setup-validator prompt test (5-min futures)
+        continue-on-error: true
+        run: python research/validator_test.py --out /tmp/out
       - name: Publish to research-data
         run: |
           git config user.name "sonar-research"; git config user.email "sonar-research@users.noreply.github.com"
@@ -44,7 +47,8 @@ jobs:
           mkdir -p research/history
           cp /tmp/out/backtest-latest.json /tmp/out/backtest-latest.md research/
           cp /tmp/out/momo-latest.json /tmp/out/momo-latest.md research/ 2>/dev/null || true
+          cp /tmp/out/validator-latest.json /tmp/out/validator-latest.md research/ 2>/dev/null || true
           cp /tmp/out/backtest-latest.json research/history/backtest-$(date -u +%Y-%m-%d).json
-          git add research/backtest-latest.json research/backtest-latest.md research/history; git add research/momo-latest.json research/momo-latest.md 2>/dev/null || true
+          git add research/backtest-latest.json research/backtest-latest.md research/history; git add research/momo-latest.json research/momo-latest.md 2>/dev/null || true; git add research/validator-latest.json research/validator-latest.md 2>/dev/null || true
           git commit -qm "historical test $(date -u +%Y-%m-%d)" && git push -q origin research-data
-          cat /tmp/out/backtest-latest.md >> $GITHUB_STEP_SUMMARY; cat /tmp/out/momo-latest.md >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          cat /tmp/out/backtest-latest.md >> $GITHUB_STEP_SUMMARY; cat /tmp/out/momo-latest.md >> $GITHUB_STEP_SUMMARY 2>/dev/null || true; cat /tmp/out/validator-latest.md >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
