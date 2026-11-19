@@ -27,7 +27,7 @@
 } catch (e) {} })();
 </script>
 <script>
-window.SONAR_WEB = '3.0.19';
+window.SONAR_WEB = '3.0.20';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -14997,6 +14997,51 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.19', e); } }, 4800);
 
 } catch (e) { console.warn("baked 3.0.19", e); }
+
+/* ===== baked update 3.0.20 ===== */
+try {
+/* Sonar 3.0.20 — «🚦 نتداول دلوقتي؟» at the top of home (Ashraf, 19 Nov: «التداول عاوزينه بذكاء»).
+   Reads the 8-year historical test (BT316) and today's BTC market state (same definition as research/backtest.py:
+   DOWN = close < SMA200 and (close < SMA50 or 20-day ≤ −10 %), REBOUND = DOWN with 7-day ≥ +8 %, UP = close > SMA200 and SMA50 > SMA200, else RANGE).
+   A rule counts as an edge NOW only if it is «مثبت» overall AND positive in this market state with 30+ trades there.
+   Read-only guidance: it does not block or open anything. */
+setTimeout(function () { try {
+  if (window.P3020) return;
+  const RN = { DOWN: 'نازل', REBOUND: 'ارتداد في سوق نازل', RANGE: 'عرضي / متذبذب', UP: 'صاعد' };
+  const G = window.GATE320 = { reg: null, at: 0, busy: false,
+    async loadReg() { if (this.busy || Date.now() - this.at < 30 * 60e3) return; this.busy = true;
+      try { const K = closedK(await API.klines('BTCUSDT', '1d', 260)), c = K.c, n = c.length - 1; if (n > 200) {
+          const sma = (k) => c.slice(n + 1 - k, n + 1).reduce((a, b) => a + b, 0) / k, s50 = sma(50), s200 = sma(200), x = c[n], r20 = (x / c[n - 20] - 1) * 100, r7 = (x / c[n - 7] - 1) * 100;
+          let g = x < s200 && (x < s50 || r20 <= -10) ? 'DOWN' : x > s200 && s50 > s200 ? 'UP' : 'RANGE'; if (g === 'DOWN' && r7 >= 8) g = 'REBOUND';
+          this.reg = g; this.at = Date.now(); } } catch (e) {}
+      this.busy = false; try { paint(); } catch (e) {} },
+    read() { const d = window.BT316 && window.BT316.d; if (!d || !d.rules) return null; const g = this.reg || (d.current && d.current.regime) || 'RANGE';
+      const R = d.rules.filter(r => r.stats && r.stats.all && r.stats.all.n), by = r => (r.stats.by_regime || {})[g] || {};
+      const edge = R.filter(r => r.verdict && r.verdict[0] === 'proven' && by(r).n >= 30 && by(r).mean > 0);
+      const maybe = R.filter(r => r.verdict && r.verdict[0] === 'promising' && by(r).n >= 30 && by(r).mean > 0.05);
+      const notHere = R.filter(r => r.verdict && r.verdict[0] === 'proven' && !(by(r).n >= 30 && by(r).mean > 0));
+      return { g, edge, maybe, notHere, by, live: !!this.reg, at: d.at }; },
+    html() { const x = this.read(); if (!x) return '';
+      const nm = r => { const [a, b] = String(r.name).split(':'); return esc(a.trim().slice(0, 40) + (b ? ' · ' + b.split('(')[0].trim().slice(0, 32) : '')); }, f = v => `${v.mean >= 0 ? '+' : ''}${v.mean.toFixed(2)}R`;
+      const ok = x.edge.length;
+      const head = ok ? `✅ <b>فيه ميزة دلوقتي</b>` : `⏸ <b>مفيش ميزة دلوقتي — استنى</b>`;
+      const why = ok ? x.edge.map(r => `${nm(r)} <span class="num up21">${f(x.by(r))}</span> <small class="mu21">(${x.by(r).n} صفقة في السوق ده)</small>`).join('<br>')
+        : `السوق <b>${RN[x.g] || x.g}</b>، ومفيش قاعدة اتثبتت على 8 سنين بتكسب في الحالة دي. الرادار ممكن يشوف فرص، بس الأرقام بتقول الخسارة احتمالها أكبر.`;
+      const nh = x.notHere.length ? `<div style="font-size:12px;margin-top:4px" class="mu21">اتثبتت بس مش في السوق ده: ${x.notHere.map(r => `${nm(r)} (${x.by(r).n ? f(x.by(r)) : '—'})`).join(' · ')}</div>` : '';
+      const mb = x.maybe.length ? `<div style="font-size:12px;margin-top:4px">🟡 بتتأكد ولسه ما اتثبتتش: ${x.maybe.map(r => `${nm(r)} <span class="num">${f(x.by(r))}</span>`).join(' · ')}</div>` : '';
+      return `<div class="v-card c320" style="margin:0 0 10px;border-inline-start:4px solid ${ok ? 'var(--up,#2fbf71)' : '#e8b04b'}">
+        <div style="font-size:13px" class="mu21">🚦 نتداول دلوقتي؟ · السوق <b>${RN[x.g] || x.g}</b>${x.live ? '' : ' (من آخر اختبار)'}</div>
+        <div style="font-size:16px;margin:4px 0">${head}</div><div style="font-size:13px;line-height:1.7">${why}</div>${mb}${nh}
+        <small class="mu21" style="font-size:11px">من الاختبار على 8 سنين (${new Date(x.at).toLocaleDateString('ar-EG')}) · إرشاد بس — مش بيقفل ولا بيفتح صفقات</small></div>`; } };
+  function paint() { const w = $('#v21-home'); if (!w) return; const o = w.querySelector('.c320'); if (o) o.remove(); const h = G.html(); if (!h) return;
+    w.insertAdjacentHTML('afterbegin', h); const e = w.querySelector('.c320'); if (e) { e.style.cursor = 'pointer'; e.onclick = () => { V21.go('brain'); setTimeout(() => { const c = $('#c316'); if (c) c.scrollIntoView({ behavior: 'smooth' }); }, 300); }; } }
+  const h0 = V21.home.bind(V21); V21.home = function () { const v = h0(); try { paint(); G.loadReg(); } catch (e) { console.warn('c320 home', e); } return v; };
+  setInterval(() => { try { const w = $('#v21-home'); if (w && !w.hidden && !w.querySelector('.c320') && G.read()) paint(); } catch (e) {} }, 5000);
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { const x = G.read(); o.v3020 = x ? { reg: x.g, live: x.live, edge: x.edge.map(r => r.id), maybe: x.maybe.map(r => r.id), notHere: x.notHere.map(r => r.id) } : null; } catch (e) {} return o; }; } catch (e) {}
+  window.P3020 = 1;
+} catch (e) { console.warn('3.0.20', e); } }, 5000);
+
+} catch (e) { console.warn("baked 3.0.20", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
