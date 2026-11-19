@@ -27,6 +27,15 @@ jobs:
           restore-keys: candles-
       - name: Run the historical test
         run: python research/backtest.py --out /tmp/out
+      - name: Futures 5-min candle cache
+        uses: actions/cache@v4
+        with:
+          path: research/cache5m
+          key: candles5m-${{ hashFiles('research/momo_rules.json') }}-${{ github.run_id }}
+          restore-keys: candles5m-
+      - name: Strong-move detector test (5-min futures)
+        continue-on-error: true
+        run: python research/momo_test.py --out /tmp/out
       - name: Publish to research-data
         run: |
           git config user.name "sonar-research"; git config user.email "sonar-research@users.noreply.github.com"
@@ -34,7 +43,8 @@ jobs:
           if git rev-parse --verify origin/research-data >/dev/null 2>&1; then git checkout -q -B research-data origin/research-data; else git checkout -q --orphan research-data; git rm -rq --cached . ; rm -rf web server android mac .github; fi
           mkdir -p research/history
           cp /tmp/out/backtest-latest.json /tmp/out/backtest-latest.md research/
+          cp /tmp/out/momo-latest.json /tmp/out/momo-latest.md research/ 2>/dev/null || true
           cp /tmp/out/backtest-latest.json research/history/backtest-$(date -u +%Y-%m-%d).json
-          git add research/backtest-latest.json research/backtest-latest.md research/history
+          git add research/backtest-latest.json research/backtest-latest.md research/history; git add research/momo-latest.json research/momo-latest.md 2>/dev/null || true
           git commit -qm "historical test $(date -u +%Y-%m-%d)" && git push -q origin research-data
-          cat /tmp/out/backtest-latest.md >> $GITHUB_STEP_SUMMARY
+          cat /tmp/out/backtest-latest.md >> $GITHUB_STEP_SUMMARY; cat /tmp/out/momo-latest.md >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
