@@ -88,6 +88,7 @@ def closed_on_hours(x, idx, rule):
 def features(df):
     f = pd.DataFrame(index=df.index)
     f['c'], f['h'], f['l'], f['o'] = df.c, df.h, df.l, df.o
+    f['v'] = df.v
     f['d1h'] = direction(df.c)
     k4 = resample(df, '4h'); kd = resample(df, '1D')
     f['d4h'] = closed_on_hours(pd.Series(direction(k4.c), index=k4.index), df.index, '4h')
@@ -156,6 +157,16 @@ def candidates(sym, f, ctx, rule):
         lg = flat & (f.l <= lo + edge * (hi - lo)) & (f.c > f.o) & (lw >= .4) & (f.c > lo)
         sh = flat & (f.h >= hi - edge * (hi - lo)) & (f.c < f.o) & (uw >= .4) & (f.c < hi)
         a = np.where(lg, 1, np.where(sh, -1, 0))
+    elif sig == 'daily_event':   # daily-close events with volume vs its 20-day average (HanyStock: «كسر بحجم ضعيف = غالباً كاذب»، «حجم ضخم في القاع = استسلام»)
+        d = f[['o', 'h', 'l', 'c', 'v']].resample('1D', label='left', closed='left').agg({'o': 'first', 'h': 'max', 'l': 'min', 'c': 'last', 'v': 'sum'}).dropna()
+        hi20, lo20, va = d.h.shift(1).rolling(20).max(), d.l.shift(1).rolling(20).min(), d.v.shift(1).rolling(20).mean()
+        vr = d.v / va.replace(0, np.nan); ev = rule['event']
+        e = (d.c > hi20) if ev == 'brk_hi' else (d.c < lo20) if ev == 'brk_lo' else (d.l <= lo20)   # 'capit': a new 20-day low
+        if rule.get('vr_min') is not None: e &= vr >= rule['vr_min']
+        if rule.get('vr_max') is not None: e &= vr < rule['vr_max']
+        x = pd.Series(np.where(e, 1, 0), index=d.index)
+        hit = pd.Series(closed_on_hours(x, f.index, '1D'), index=f.index).fillna(0)
+        a = np.where(hit > 0, side if side else 1, 0)
     else:
         a = f.brk4h.fillna(0).values.astype(int)
     a = pd.Series(a, index=f.index)
