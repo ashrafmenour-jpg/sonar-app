@@ -154,6 +154,9 @@ def candidates(sym, f, ctx, rule):
     if side: onset &= a == side
     if rule.get('mood'): onset &= ctx.mood.reindex(f.index).isin(rule['mood']).values
     if rule.get('regime'): onset &= ctx.regime.reindex(f.index).isin(rule['regime']).values
+    # BTC's own 7-day move when the setup appears (e.g. «fast shorts only while BTC is still dumping»)
+    if rule.get('btc_r7_max') is not None: onset &= (ctx.r7.reindex(f.index).astype(float) <= rule['btc_r7_max']).values
+    if rule.get('btc_r7_min') is not None: onset &= (ctx.r7.reindex(f.index).astype(float) >= rule['btc_r7_min']).values
     loc = rule.get('loc')
     if loc:
         p = f.pos48

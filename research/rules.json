@@ -312,6 +312,182 @@
     "hours": 8,
     "mfe_r": 0.5
    }
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48,
+   "registered": "2026-11-19",
+   "seen": true,
+   "id": "fast_short_btc_dump",
+   "btc_r7_max": -5,
+   "name": "الشورت السريع بس والبيتكوين لسه نازل 5% أو أكتر في آخر 7 أيام (هل السريع ينفع وقت الهبوط القوي بس؟)"
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48,
+   "registered": "2026-11-19",
+   "seen": true,
+   "id": "fast_short_btc_dump10",
+   "btc_r7_max": -10,
+   "name": "الشورت السريع بس والبيتكوين نازل 10% أو أكتر في آخر 7 أيام"
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48,
+   "registered": "2026-11-19",
+   "seen": true,
+   "id": "fast_short_btc_chop",
+   "btc_r7_min": -5,
+   "btc_r7_max": 2,
+   "name": "مقارنة: الشورت السريع والبيتكوين بيتذبذب (من −5% لـ+2% في 7 أيام) — الحالة اللي خسرنا فيها 17–19 نوفمبر"
+  },
+  {
+   "side": -1,
+   "signal": "mtf_all",
+   "mood": [
+    "deep"
+   ],
+   "loc": null,
+   "stop_atr4h": 1.2,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 48,
+   "registered": "2026-11-19",
+   "seen": true,
+   "id": "fast_short_down_regime",
+   "regime": [
+    "DOWN"
+   ],
+   "name": "الشورت السريع بس لما حالة السوق DOWN (مش ارتداد ولا عرضي)"
+  },
+  {
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "registered": "2026-11-19",
+   "seen": true,
+   "id": "daily_short_stop15",
+   "stop_atr4h": 1.5,
+   "name": "مقاس الوقف للشورت اليومي: 1.5 × ATR 4س (أضيق من المثبت 2.5)"
+  },
+  {
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "registered": "2026-11-19",
+   "seen": true,
+   "id": "daily_short_stop35",
+   "stop_atr4h": 3.5,
+   "name": "مقاس الوقف للشورت اليومي: 3.5 × ATR 4س (أوسع من المثبت 2.5)"
+  },
+  {
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "registered": "2026-11-19",
+   "seen": true,
+   "id": "daily_short_stop50",
+   "stop_atr4h": 5.0,
+   "name": "مقاس الوقف للشورت اليومي: 5 × ATR 4س (أوسع بكتير)"
+  },
+  {
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "registered": "2026-11-19",
+   "seen": true,
+   "id": "daily_short_stop5pct",
+   "stop_pct": 5,
+   "name": "مقاس الوقف للشورت اليومي: 5% ثابتة"
+  },
+  {
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "registered": "2026-11-19",
+   "seen": true,
+   "id": "daily_short_stop8pct",
+   "stop_pct": 8,
+   "name": "مقاس الوقف للشورت اليومي: 8% ثابتة"
   }
  ]
 }
