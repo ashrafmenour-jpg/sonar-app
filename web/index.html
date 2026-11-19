@@ -27,7 +27,7 @@
 } catch (e) {} })();
 </script>
 <script>
-window.SONAR_WEB = '3.0.20';
+window.SONAR_WEB = '3.0.21';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -15025,7 +15025,7 @@ setTimeout(function () { try {
       const nm = r => { const [a, b] = String(r.name).split(':'); return esc(a.trim().slice(0, 40) + (b ? ' · ' + b.split('(')[0].trim().slice(0, 32) : '')); }, f = v => `${v.mean >= 0 ? '+' : ''}${v.mean.toFixed(2)}R`;
       const ok = x.edge.length;
       const head = ok ? `✅ <b>فيه ميزة دلوقتي</b>` : `⏸ <b>مفيش ميزة دلوقتي — استنى</b>`;
-      const why = ok ? x.edge.map(r => `${nm(r)} <span class="num up21">${f(x.by(r))}</span> <small class="mu21">(${x.by(r).n} صفقة في السوق ده)</small>`).join('<br>')
+      const why = ok ? x.edge.map(r => `${nm(r)} <span class="num up21">${f(x.by(r))}</span> <small class="mu21">(${x.by(r).n} صفقة في السوق ده)</small>${(r.stats.holdout && r.stats.holdout.mean < .05) ? ` <small style="color:#e8b04b">⚠️ ضعفت من 2023 (${f(r.stats.holdout)})</small>` : ''}`).join('<br>')
         : `السوق <b>${RN[x.g] || x.g}</b>، ومفيش قاعدة اتثبتت على 8 سنين بتكسب في الحالة دي. الرادار ممكن يشوف فرص، بس الأرقام بتقول الخسارة احتمالها أكبر.`;
       const nh = x.notHere.length ? `<div style="font-size:12px;margin-top:4px" class="mu21">اتثبتت بس مش في السوق ده: ${x.notHere.map(r => `${nm(r)} (${x.by(r).n ? f(x.by(r)) : '—'})`).join(' · ')}</div>` : '';
       const mb = x.maybe.length ? `<div style="font-size:12px;margin-top:4px">🟡 بتتأكد ولسه ما اتثبتتش: ${x.maybe.map(r => `${nm(r)} <span class="num">${f(x.by(r))}</span>`).join(' · ')}</div>` : '';
@@ -15042,6 +15042,8 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.20', e); } }, 5000);
 
 } catch (e) { console.warn("baked 3.0.20", e); }
+/* ===== baked update 3.0.21 ===== */
+try { /* Sonar 3.0.21 — the 🚦 gate flags an edge that has faded since 2023 (2023+ average below +0.05R), e.g. the volume breakout rule. */ } catch (e) { console.warn("baked 3.0.21", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
