@@ -27,7 +27,7 @@
 } catch (e) {} })();
 </script>
 <script>
-window.SONAR_WEB = '3.0.22';
+window.SONAR_WEB = '3.0.23';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -15096,6 +15096,34 @@ setTimeout(function () { try {
   window.P3022 = 1;
 } catch (e) { console.warn('3.0.22', e); } }, 6000);
 } catch (e) { console.warn("baked 3.0.22", e); }
+/* ===== baked update 3.0.23 ===== */
+try {
+/* Sonar 3.0.23 — the 🚀 strong-move detector becomes alerts only (Ashraf, 19 Nov: «ابدا»; agreed: if no variant wins, alerts only).
+   Historical test on Binance 5-min futures candles, 60 volatile coins, Jan 2025 → now (research/momo_test.py, pre-registered):
+   the live trigger (3% in 15 min + 2.5× volume) gave 11,945 trades at −0.03R, 2026: −0.11R; the stop under the start of the move,
+   a volatility stop, no re-entry for 24 h after a stop and even no stop at all (6 h hold) all came out ≈ 0 or negative.
+   The entry itself has no edge — the stop was not the problem. So: no entry/stop/target calls any more, no beep; the paper
+   trades keep running in the background (to keep measuring) and are labelled as simulation everywhere they show.
+   (Since 3.0.11 the detector was already quiet — news only — unless its last 40 trades averaged +0.2R; if that ever switches it
+   back on, it now stays an alert without entry/stop/targets and without a beep.) */
+setTimeout(function () { try {
+  if (window.P3023 || typeof MOMO === 'undefined') return;
+  const VERD = 'اختبار على 12 ألف حركة (60 عملة، من يناير 2025): الدخول بعد الحركة دي مش بيكسب — بأي وقف، وحتى من غير وقف.';
+  const n0 = MOMO.note.bind(MOMO);
+  MOMO.note = function (sym, msg, kind, big) { try { if (/^(🚀 لونج|🔻 شورت)/.test(String(msg))) {
+        msg = `🔔 ${base(sym)} ${kind === 'long' ? 'طالعة' : 'نازلة'} بقوة دلوقتي (حركة سريعة بفوليوم عالي) — تنبيه بس، مش دخول. ${VERD}`; big = false; } } catch (e) {}
+    return n0(sym, msg, kind, big); };
+  const h0 = MOMO.homeHtml.bind(MOMO);
+  MOMO.homeHtml = function () { let h = h0(); if (!h) return h; try { h = h.replace(/🚀 حركات قوية دلوقتي <small class="faint">[^<]*<\/small>/, '🔔 حركات قوية دلوقتي <small class="faint">تنبيه بس — الأرقام اللي تحت محاكاة، مش للفلوس</small>')
+      .replace('</h3>', `</h3><p class="note" style="margin:0 0 6px;color:#e8b04b">${VERD}</p>`); } catch (e) {} return h; };
+  const l0 = MOMO.labHtml.bind(MOMO);
+  MOMO.labHtml = function () { let h = l0(); try { h = h.replace(/✅ اتنبهنا/g, '🔔 اتنبهنا').replace('صفقات وهمية على كل تنبيه', 'تنبيه بس — والصفقات اللي جوه وهمية للقياس')
+      .replace(/(<h4[^>]*>📋 العملات اللي اتحركت 30%\+ في يوم — لقطناها؟<\/h4>)/, `$1<p class="note" style="margin:0 0 6px">🔔 = طلع تنبيه على العملة. الرقم بين القوسين نتيجة صفقة وهمية، مش مكسب — والقائمة دي بتعرض بس العملات اللي اتحركت فعلًا. الإجمالي الحقيقي لكل التنبيهات هو الرقم اللي فوق. <b style="color:#e8b04b">${VERD}</b></p>`); } catch (e) {} return h; };
+  if (window.MV && MV.html) { const m0 = MV.html.bind(MV); MV.html = function () { let h = m0(); try { h = h.replace(/صفقات الكاشف على الورق بس[^<]*/, '🔔 الكاشف بقى تنبيه بس. ' + VERD); } catch (e) {} return h; }; }
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { o.v3023 = { alertsOnly: true, momoParams: Object.assign({}, MOMO.R) }; } catch (e) {} return o; }; } catch (e) {}
+  window.P3023 = 1;
+} catch (e) { console.warn('3.0.23', e); } }, 7000);
+} catch (e) { console.warn("baked 3.0.23", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
