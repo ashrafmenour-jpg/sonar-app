@@ -1,0 +1,580 @@
+{
+ "app": "sonar-validator-test",
+ "v": 1,
+ "at": "2026-11-19T21:19:32Z",
+ "rules_sha256": "c89ae175f38476861bddcb73bb0a058557132e72bc8e2ce6bedb334578120af4",
+ "registered": "2026-11-19",
+ "symbols": [
+  "BTCUSDT",
+  "ETHUSDT",
+  "SOLUSDT",
+  "BNBUSDT",
+  "XRPUSDT",
+  "DOGEUSDT",
+  "ADAUSDT",
+  "AVAXUSDT",
+  "LINKUSDT",
+  "LTCUSDT",
+  "DOTUSDT",
+  "TRXUSDT",
+  "NEARUSDT",
+  "BCHUSDT",
+  "SUIUSDT",
+  "TONUSDT",
+  "WIFUSDT",
+  "1000PEPEUSDT",
+  "1000BONKUSDT",
+  "BOMEUSDT",
+  "ORDIUSDT",
+  "1000SATSUSDT",
+  "TIAUSDT",
+  "SEIUSDT",
+  "APTUSDT",
+  "ARBUSDT",
+  "OPUSDT",
+  "INJUSDT",
+  "FETUSDT",
+  "RENDERUSDT",
+  "WLDUSDT",
+  "JUPUSDT",
+  "PYTHUSDT",
+  "STRKUSDT",
+  "DYMUSDT",
+  "ALTUSDT",
+  "MANTAUSDT",
+  "PIXELUSDT",
+  "PORTALUSDT",
+  "AEVOUSDT",
+  "ETHFIUSDT",
+  "ENAUSDT",
+  "WUSDT",
+  "TNSRUSDT",
+  "SAGAUSDT",
+  "OMNIUSDT",
+  "REZUSDT",
+  "NOTUSDT",
+  "IOUSDT",
+  "ZKUSDT",
+  "ZROUSDT",
+  "POPCATUSDT",
+  "NEIROUSDT",
+  "DOGSUSDT",
+  "TURBOUSDT",
+  "GOATUSDT",
+  "MOODENGUSDT",
+  "PNUTUSDT",
+  "ACTUSDT",
+  "HIPPOUSDT",
+  "VIRTUALUSDT",
+  "FARTCOINUSDT",
+  "AIXBTUSDT",
+  "PENGUUSDT",
+  "MEUSDT",
+  "MOVEUSDT",
+  "USUALUSDT",
+  "MEWUSDT",
+  "GRASSUSDT",
+  "DRIFTUSDT",
+  "CHILLGUYUSDT",
+  "1000CATUSDT",
+  "ORCAUSDT",
+  "BANUSDT",
+  "SWELLUSDT"
+ ],
+ "from": "2025-01",
+ "seconds": 108,
+ "variants": [
+  {
+   "id": "val_full_prompt",
+   "name": "البرومبت زي ما هو: الفلتر + BOS + نقاط ≥ 11، والخروج زي ما مكتوب (إغلاق عند +3%)",
+   "spec": {
+    "id": "val_full_prompt",
+    "name": "البرومبت زي ما هو: الفلتر + BOS + نقاط ≥ 11، والخروج زي ما مكتوب (إغلاق عند +3%)",
+    "gate": true,
+    "min_score": 11,
+    "exit": "prompt"
+   },
+   "stats": {
+    "all": {
+     "n": 4654,
+     "mean": 0.008,
+     "win": 40.4,
+     "t": 0.18,
+     "days": 353
+    },
+    "train": {
+     "n": 2607,
+     "mean": -0.013,
+     "win": 39.2,
+     "t": -0.21,
+     "days": 191
+    },
+    "holdout": {
+     "n": 2047,
+     "mean": 0.035,
+     "win": 42.0,
+     "t": 0.47,
+     "days": 162
+    },
+    "half1": {
+     "n": 2327,
+     "mean": -0.003,
+     "win": 39.3,
+     "t": -0.05,
+     "days": 169
+    },
+    "half2": {
+     "n": 2327,
+     "mean": 0.02,
+     "win": 41.6,
+     "t": 0.28,
+     "days": 185
+    },
+    "long": {
+     "n": 1784,
+     "mean": -0.021,
+     "win": 39.2
+    },
+    "short": {
+     "n": 2870,
+     "mean": 0.026,
+     "win": 41.2
+    },
+    "exits": {
+     "stop": 1913,
+     "close15": 1837,
+     "be": 790,
+     "time": 114
+    },
+    "coins": 75,
+    "per_month": 212.1
+   },
+   "verdict": [
+    "fragile",
+    "موجب بس مش ثابت"
+   ]
+  },
+  {
+   "id": "val_full_fixed",
+   "name": "نفس الدخول، بالخروج المعدّل: نص عند +2% والباقي عند +4%، وقف 2% بالإغلاق + طوارئ 3%",
+   "spec": {
+    "id": "val_full_fixed",
+    "name": "نفس الدخول، بالخروج المعدّل: نص عند +2% والباقي عند +4%، وقف 2% بالإغلاق + طوارئ 3%",
+    "gate": true,
+    "min_score": 11,
+    "exit": "fixed"
+   },
+   "stats": {
+    "all": {
+     "n": 4654,
+     "mean": 0.004,
+     "win": 56.9,
+     "t": 0.09,
+     "days": 353
+    },
+    "train": {
+     "n": 2607,
+     "mean": -0.016,
+     "win": 56.8,
+     "t": -0.27,
+     "days": 191
+    },
+    "holdout": {
+     "n": 2047,
+     "mean": 0.029,
+     "win": 57.1,
+     "t": 0.42,
+     "days": 162
+    },
+    "half1": {
+     "n": 2327,
+     "mean": -0.002,
+     "win": 57.3,
+     "t": -0.03,
+     "days": 169
+    },
+    "half2": {
+     "n": 2327,
+     "mean": 0.01,
+     "win": 56.5,
+     "t": 0.14,
+     "days": 185
+    },
+    "long": {
+     "n": 1784,
+     "mean": -0.016,
+     "win": 55.7
+    },
+    "short": {
+     "n": 2870,
+     "mean": 0.016,
+     "win": 57.7
+    },
+    "exits": {
+     "stop": 1762,
+     "tp2": 1385,
+     "be": 1188,
+     "hard": 167,
+     "time": 152
+    },
+    "coins": 75,
+    "per_month": 212.1
+   },
+   "verdict": [
+    "fragile",
+    "موجب بس مش ثابت"
+   ]
+  },
+  {
+   "id": "val_full_plain",
+   "name": "نفس الدخول، بخروج 1:2 عادي: وقف 2% وهدف 4%",
+   "spec": {
+    "id": "val_full_plain",
+    "name": "نفس الدخول، بخروج 1:2 عادي: وقف 2% وهدف 4%",
+    "gate": true,
+    "min_score": 11,
+    "exit": "plain"
+   },
+   "stats": {
+    "all": {
+     "n": 4654,
+     "mean": 0.049,
+     "win": 38.9,
+     "t": 0.81,
+     "days": 353
+    },
+    "train": {
+     "n": 2607,
+     "mean": 0.037,
+     "win": 38.1,
+     "t": 0.46,
+     "days": 191
+    },
+    "holdout": {
+     "n": 2047,
+     "mean": 0.064,
+     "win": 39.8,
+     "t": 0.71,
+     "days": 162
+    },
+    "half1": {
+     "n": 2327,
+     "mean": 0.056,
+     "win": 38.8,
+     "t": 0.66,
+     "days": 169
+    },
+    "half2": {
+     "n": 2327,
+     "mean": 0.042,
+     "win": 39.0,
+     "t": 0.49,
+     "days": 185
+    },
+    "long": {
+     "n": 1784,
+     "mean": 0.047,
+     "win": 39.1
+    },
+    "short": {
+     "n": 2870,
+     "mean": 0.05,
+     "win": 38.7
+    },
+    "exits": {
+     "stop": 2750,
+     "tp": 1693,
+     "time": 211
+    },
+    "coins": 75,
+    "per_month": 212.1
+   },
+   "verdict": [
+    "fragile",
+    "موجب بس مش ثابت"
+   ]
+  },
+  {
+   "id": "val_bos_only_fixed",
+   "name": "الفلتر + BOS بس (من غير شرط النقاط) — هل النقاط بتفرق؟",
+   "spec": {
+    "id": "val_bos_only_fixed",
+    "name": "الفلتر + BOS بس (من غير شرط النقاط) — هل النقاط بتفرق؟",
+    "gate": true,
+    "min_score": 8,
+    "exit": "fixed"
+   },
+   "stats": {
+    "all": {
+     "n": 4656,
+     "mean": 0.012,
+     "win": 57.4,
+     "t": 0.25,
+     "days": 331
+    },
+    "train": {
+     "n": 2609,
+     "mean": -0.001,
+     "win": 57.8,
+     "t": -0.01,
+     "days": 179
+    },
+    "holdout": {
+     "n": 2047,
+     "mean": 0.028,
+     "win": 56.9,
+     "t": 0.37,
+     "days": 152
+    },
+    "half1": {
+     "n": 2328,
+     "mean": 0.017,
+     "win": 58.5,
+     "t": 0.26,
+     "days": 158
+    },
+    "half2": {
+     "n": 2328,
+     "mean": 0.007,
+     "win": 56.3,
+     "t": 0.1,
+     "days": 174
+    },
+    "long": {
+     "n": 1812,
+     "mean": -0.02,
+     "win": 55.7
+    },
+    "short": {
+     "n": 2844,
+     "mean": 0.032,
+     "win": 58.5
+    },
+    "exits": {
+     "stop": 1743,
+     "tp2": 1383,
+     "be": 1218,
+     "hard": 161,
+     "time": 151
+    },
+    "coins": 75,
+    "per_month": 212.2
+   },
+   "verdict": [
+    "fragile",
+    "موجب بس مش ثابت"
+   ]
+  },
+  {
+   "id": "val_nogate_fixed",
+   "name": "BOS + نقاط ≥ 11 من غير الطبقة الأولى — هل الفلتر بيفرق؟",
+   "spec": {
+    "id": "val_nogate_fixed",
+    "name": "BOS + نقاط ≥ 11 من غير الطبقة الأولى — هل الفلتر بيفرق؟",
+    "gate": false,
+    "min_score": 11,
+    "exit": "fixed"
+   },
+   "stats": {
+    "all": {
+     "n": 4683,
+     "mean": -0.014,
+     "win": 56.5,
+     "t": -0.35,
+     "days": 239
+    },
+    "train": {
+     "n": 2612,
+     "mean": 0.015,
+     "win": 58.7,
+     "t": 0.32,
+     "days": 125
+    },
+    "holdout": {
+     "n": 2071,
+     "mean": -0.05,
+     "win": 53.6,
+     "t": -0.72,
+     "days": 114
+    },
+    "half1": {
+     "n": 2341,
+     "mean": 0.014,
+     "win": 58.6,
+     "t": 0.28,
+     "days": 110
+    },
+    "half2": {
+     "n": 2342,
+     "mean": -0.042,
+     "win": 54.3,
+     "t": -0.67,
+     "days": 130
+    },
+    "long": {
+     "n": 2207,
+     "mean": -0.074,
+     "win": 53.8
+    },
+    "short": {
+     "n": 2476,
+     "mean": 0.04,
+     "win": 58.8
+    },
+    "exits": {
+     "stop": 1801,
+     "tp2": 1341,
+     "be": 1225,
+     "hard": 167,
+     "time": 149
+    },
+    "coins": 75,
+    "per_month": 213.4
+   },
+   "verdict": [
+    "no",
+    "مش بيكسب"
+   ]
+  },
+  {
+   "id": "val_full_fixed_short",
+   "name": "الدخول الكامل بالخروج المعدّل — شورت بس",
+   "spec": {
+    "id": "val_full_fixed_short",
+    "name": "الدخول الكامل بالخروج المعدّل — شورت بس",
+    "gate": true,
+    "min_score": 11,
+    "exit": "fixed",
+    "side": -1
+   },
+   "stats": {
+    "all": {
+     "n": 4489,
+     "mean": -0.012,
+     "win": 56.5,
+     "t": -0.24,
+     "days": 399
+    },
+    "train": {
+     "n": 2538,
+     "mean": -0.029,
+     "win": 56.6,
+     "t": -0.43,
+     "days": 221
+    },
+    "holdout": {
+     "n": 1951,
+     "mean": 0.01,
+     "win": 56.3,
+     "t": 0.13,
+     "days": 178
+    },
+    "half1": {
+     "n": 2244,
+     "mean": -0.022,
+     "win": 56.6,
+     "t": -0.32,
+     "days": 190
+    },
+    "half2": {
+     "n": 2245,
+     "mean": -0.002,
+     "win": 56.3,
+     "t": -0.03,
+     "days": 209
+    },
+    "long": {
+     "n": 0
+    },
+    "short": {
+     "n": 4489,
+     "mean": -0.012,
+     "win": 56.5
+    },
+    "exits": {
+     "stop": 1721,
+     "tp2": 1309,
+     "be": 1156,
+     "hard": 165,
+     "time": 138
+    },
+    "coins": 75,
+    "per_month": 204.6
+   },
+   "verdict": [
+    "no",
+    "مش بيكسب"
+   ]
+  },
+  {
+   "id": "val_full_fixed_long",
+   "name": "الدخول الكامل بالخروج المعدّل — لونج بس",
+   "spec": {
+    "id": "val_full_fixed_long",
+    "name": "الدخول الكامل بالخروج المعدّل — لونج بس",
+    "gate": true,
+    "min_score": 11,
+    "exit": "fixed",
+    "side": 1
+   },
+   "stats": {
+    "all": {
+     "n": 3947,
+     "mean": -0.082,
+     "win": 52.9,
+     "t": -1.77,
+     "days": 339
+    },
+    "train": {
+     "n": 2200,
+     "mean": -0.101,
+     "win": 52.5,
+     "t": -1.65,
+     "days": 183
+    },
+    "holdout": {
+     "n": 1747,
+     "mean": -0.058,
+     "win": 53.3,
+     "t": -0.82,
+     "days": 156
+    },
+    "half1": {
+     "n": 1973,
+     "mean": -0.067,
+     "win": 53.9,
+     "t": -1.0,
+     "days": 158
+    },
+    "half2": {
+     "n": 1974,
+     "mean": -0.097,
+     "win": 51.8,
+     "t": -1.52,
+     "days": 182
+    },
+    "long": {
+     "n": 3947,
+     "mean": -0.082,
+     "win": 52.9
+    },
+    "short": {
+     "n": 0
+    },
+    "exits": {
+     "stop": 1673,
+     "tp2": 1069,
+     "be": 929,
+     "time": 149,
+     "hard": 127
+    },
+    "coins": 75,
+    "per_month": 180.4
+   },
+   "verdict": [
+    "no",
+    "مش بيكسب"
+   ]
+  }
+ ]
+}
