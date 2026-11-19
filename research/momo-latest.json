@@ -1,0 +1,596 @@
+{
+ "app": "sonar-momo-test",
+ "v": 1,
+ "at": "2026-11-19T18:57:13Z",
+ "rules_sha256": "bea83132f1671135346a915b8c61a9d8c5c85fd45e22c855a50da9c75a54fdce",
+ "registered": "2026-11-19",
+ "symbols": [
+  "WIFUSDT",
+  "1000PEPEUSDT",
+  "1000BONKUSDT",
+  "BOMEUSDT",
+  "ORDIUSDT",
+  "1000SATSUSDT",
+  "TIAUSDT",
+  "SEIUSDT",
+  "SUIUSDT",
+  "APTUSDT",
+  "ARBUSDT",
+  "OPUSDT",
+  "INJUSDT",
+  "FETUSDT",
+  "RENDERUSDT",
+  "WLDUSDT",
+  "JUPUSDT",
+  "PYTHUSDT",
+  "STRKUSDT",
+  "DYMUSDT",
+  "ALTUSDT",
+  "MANTAUSDT",
+  "PIXELUSDT",
+  "PORTALUSDT",
+  "AEVOUSDT",
+  "ETHFIUSDT",
+  "ENAUSDT",
+  "WUSDT",
+  "TNSRUSDT",
+  "SAGAUSDT",
+  "OMNIUSDT",
+  "REZUSDT",
+  "NOTUSDT",
+  "IOUSDT",
+  "ZKUSDT",
+  "ZROUSDT",
+  "POPCATUSDT",
+  "NEIROUSDT",
+  "DOGSUSDT",
+  "TURBOUSDT",
+  "GOATUSDT",
+  "MOODENGUSDT",
+  "PNUTUSDT",
+  "ACTUSDT",
+  "HIPPOUSDT",
+  "VIRTUALUSDT",
+  "FARTCOINUSDT",
+  "AIXBTUSDT",
+  "PENGUUSDT",
+  "MEUSDT",
+  "MOVEUSDT",
+  "USUALUSDT",
+  "MEWUSDT",
+  "GRASSUSDT",
+  "DRIFTUSDT",
+  "CHILLGUYUSDT",
+  "1000CATUSDT",
+  "ORCAUSDT",
+  "BANUSDT",
+  "SWELLUSDT"
+ ],
+ "from": "2025-01",
+ "seconds": 128,
+ "variants": [
+  {
+   "id": "momo_now",
+   "name": "الكاشف زي ما هو: وقف تحت آخر 4 شموع 5 دقايق (3–8%)، ويدخل تاني على نفس العملة بعد ساعتين",
+   "spec": {
+    "id": "momo_now",
+    "name": "الكاشف زي ما هو: وقف تحت آخر 4 شموع 5 دقايق (3–8%)، ويدخل تاني على نفس العملة بعد ساعتين",
+    "stop": "swing4",
+    "clamp": [
+     0.03,
+     0.08
+    ],
+    "cool_h": 2,
+    "cool_after_stop_h": 2
+   },
+   "stats": {
+    "all": {
+     "n": 3117,
+     "mean": -0.002,
+     "win": 44.1,
+     "t": -0.03,
+     "days": 571
+    },
+    "train": {
+     "n": 2003,
+     "mean": 0.069,
+     "win": 46.5,
+     "t": 0.95,
+     "days": 316
+    },
+    "holdout": {
+     "n": 1114,
+     "mean": -0.13,
+     "win": 39.7,
+     "t": -1.89,
+     "days": 255
+    },
+    "half1": {
+     "n": 1558,
+     "mean": 0.112,
+     "win": 49.3,
+     "t": 1.28,
+     "days": 240
+    },
+    "half2": {
+     "n": 1559,
+     "mean": -0.115,
+     "win": 38.9,
+     "t": -2.1,
+     "days": 332
+    },
+    "long": {
+     "n": 1681,
+     "mean": 0.018,
+     "win": 44.2
+    },
+    "short": {
+     "n": 1436,
+     "mean": -0.025,
+     "win": 43.9
+    },
+    "pct_mean": -0.03,
+    "exits": {
+     "time": 1811,
+     "stop": 834,
+     "tp2": 253,
+     "be": 219
+    },
+    "median_stop_pct": 7.4,
+    "coins": 60
+   },
+   "verdict": [
+    "no",
+    "مش بيكسب"
+   ]
+  },
+  {
+   "id": "momo_stop_start",
+   "name": "وقف تحت بداية الحركة (قاع الشموع قبل الـ15 دقيقة)، 3–25%",
+   "spec": {
+    "id": "momo_stop_start",
+    "name": "وقف تحت بداية الحركة (قاع الشموع قبل الـ15 دقيقة)، 3–25%",
+    "stop": "start",
+    "clamp": [
+     0.03,
+     0.25
+    ],
+    "cool_h": 2,
+    "cool_after_stop_h": 2
+   },
+   "stats": {
+    "all": {
+     "n": 3101,
+     "mean": -0.008,
+     "win": 45.0,
+     "t": -0.18,
+     "days": 571
+    },
+    "train": {
+     "n": 1994,
+     "mean": 0.058,
+     "win": 47.6,
+     "t": 0.92,
+     "days": 316
+    },
+    "holdout": {
+     "n": 1107,
+     "mean": -0.128,
+     "win": 40.4,
+     "t": -2.03,
+     "days": 255
+    },
+    "half1": {
+     "n": 1550,
+     "mean": 0.084,
+     "win": 50.0,
+     "t": 1.14,
+     "days": 240
+    },
+    "half2": {
+     "n": 1551,
+     "mean": -0.101,
+     "win": 40.1,
+     "t": -1.94,
+     "days": 332
+    },
+    "long": {
+     "n": 1675,
+     "mean": 0.016,
+     "win": 45.0
+    },
+    "short": {
+     "n": 1426,
+     "mean": -0.037,
+     "win": 45.2
+    },
+    "pct_mean": -0.03,
+    "exits": {
+     "time": 1966,
+     "stop": 659,
+     "tp2": 255,
+     "be": 221
+    },
+    "median_stop_pct": 7.81,
+    "coins": 60
+   },
+   "verdict": [
+    "no",
+    "مش بيكسب"
+   ]
+  },
+  {
+   "id": "momo_stop_atr",
+   "name": "وقف على قد تذبذب العملة: 1.5 × متوسط مدى شمعة الساعة (4–20%)",
+   "spec": {
+    "id": "momo_stop_atr",
+    "name": "وقف على قد تذبذب العملة: 1.5 × متوسط مدى شمعة الساعة (4–20%)",
+    "stop": "atr1h",
+    "atr_k": 1.5,
+    "clamp": [
+     0.04,
+     0.2
+    ],
+    "cool_h": 2,
+    "cool_after_stop_h": 2
+   },
+   "stats": {
+    "all": {
+     "n": 3146,
+     "mean": -0.035,
+     "win": 39.5,
+     "t": -0.43,
+     "days": 571
+    },
+    "train": {
+     "n": 2023,
+     "mean": 0.053,
+     "win": 42.0,
+     "t": 0.44,
+     "days": 316
+    },
+    "holdout": {
+     "n": 1123,
+     "mean": -0.195,
+     "win": 35.0,
+     "t": -2.44,
+     "days": 255
+    },
+    "half1": {
+     "n": 1573,
+     "mean": 0.124,
+     "win": 45.0,
+     "t": 0.84,
+     "days": 240
+    },
+    "half2": {
+     "n": 1573,
+     "mean": -0.195,
+     "win": 34.0,
+     "t": -2.77,
+     "days": 332
+    },
+    "long": {
+     "n": 1707,
+     "mean": -0.007,
+     "win": 38.0
+    },
+    "short": {
+     "n": 1439,
+     "mean": -0.069,
+     "win": 41.3
+    },
+    "pct_mean": -0.12,
+    "exits": {
+     "stop": 1494,
+     "time": 1209,
+     "tp2": 237,
+     "be": 206
+    },
+    "median_stop_pct": 4.0,
+    "coins": 60
+   },
+   "verdict": [
+    "no",
+    "مش بيكسب"
+   ]
+  },
+  {
+   "id": "momo_now_no_reentry",
+   "name": "الوقف الحالي + ممنوع يدخل نفس العملة 24 ساعة بعد ما الوقف يضرب",
+   "spec": {
+    "id": "momo_now_no_reentry",
+    "name": "الوقف الحالي + ممنوع يدخل نفس العملة 24 ساعة بعد ما الوقف يضرب",
+    "stop": "swing4",
+    "clamp": [
+     0.03,
+     0.08
+    ],
+    "cool_h": 2,
+    "cool_after_stop_h": 24
+   },
+   "stats": {
+    "all": {
+     "n": 2922,
+     "mean": -0.004,
+     "win": 44.0,
+     "t": -0.07,
+     "days": 569
+    },
+    "train": {
+     "n": 1880,
+     "mean": 0.065,
+     "win": 46.3,
+     "t": 0.84,
+     "days": 315
+    },
+    "holdout": {
+     "n": 1042,
+     "mean": -0.128,
+     "win": 39.8,
+     "t": -1.76,
+     "days": 254
+    },
+    "half1": {
+     "n": 1461,
+     "mean": 0.099,
+     "win": 48.8,
+     "t": 1.07,
+     "days": 240
+    },
+    "half2": {
+     "n": 1461,
+     "mean": -0.107,
+     "win": 39.2,
+     "t": -1.71,
+     "days": 330
+    },
+    "long": {
+     "n": 1579,
+     "mean": 0.014,
+     "win": 44.3
+    },
+    "short": {
+     "n": 1343,
+     "mean": -0.025,
+     "win": 43.7
+    },
+    "pct_mean": -0.05,
+    "exits": {
+     "time": 1729,
+     "stop": 768,
+     "tp2": 231,
+     "be": 194
+    },
+    "median_stop_pct": 7.33,
+    "coins": 60
+   },
+   "verdict": [
+    "no",
+    "مش بيكسب"
+   ]
+  },
+  {
+   "id": "momo_start_no_reentry",
+   "name": "وقف تحت بداية الحركة + ممنوع يدخل نفس العملة 24 ساعة بعد الوقف",
+   "spec": {
+    "id": "momo_start_no_reentry",
+    "name": "وقف تحت بداية الحركة + ممنوع يدخل نفس العملة 24 ساعة بعد الوقف",
+    "stop": "start",
+    "clamp": [
+     0.03,
+     0.25
+    ],
+    "cool_h": 2,
+    "cool_after_stop_h": 24
+   },
+   "stats": {
+    "all": {
+     "n": 2961,
+     "mean": -0.005,
+     "win": 45.1,
+     "t": -0.11,
+     "days": 570
+    },
+    "train": {
+     "n": 1909,
+     "mean": 0.062,
+     "win": 47.6,
+     "t": 0.94,
+     "days": 316
+    },
+    "holdout": {
+     "n": 1052,
+     "mean": -0.127,
+     "win": 40.5,
+     "t": -1.95,
+     "days": 254
+    },
+    "half1": {
+     "n": 1480,
+     "mean": 0.079,
+     "win": 49.7,
+     "t": 1.03,
+     "days": 240
+    },
+    "half2": {
+     "n": 1481,
+     "mean": -0.089,
+     "win": 40.5,
+     "t": -1.56,
+     "days": 331
+    },
+    "long": {
+     "n": 1602,
+     "mean": 0.023,
+     "win": 45.3
+    },
+    "short": {
+     "n": 1359,
+     "mean": -0.039,
+     "win": 44.8
+    },
+    "pct_mean": 0.0,
+    "exits": {
+     "time": 1888,
+     "stop": 622,
+     "tp2": 245,
+     "be": 206
+    },
+    "median_stop_pct": 7.74,
+    "coins": 60
+   },
+   "verdict": [
+    "no",
+    "مش بيكسب"
+   ]
+  },
+  {
+   "id": "momo_atr_no_reentry",
+   "name": "وقف على قد التذبذب + ممنوع يدخل نفس العملة 24 ساعة بعد الوقف",
+   "spec": {
+    "id": "momo_atr_no_reentry",
+    "name": "وقف على قد التذبذب + ممنوع يدخل نفس العملة 24 ساعة بعد الوقف",
+    "stop": "atr1h",
+    "atr_k": 1.5,
+    "clamp": [
+     0.04,
+     0.2
+    ],
+    "cool_h": 2,
+    "cool_after_stop_h": 24
+   },
+   "stats": {
+    "all": {
+     "n": 2817,
+     "mean": -0.033,
+     "win": 39.2,
+     "t": -0.36,
+     "days": 564
+    },
+    "train": {
+     "n": 1821,
+     "mean": 0.061,
+     "win": 42.0,
+     "t": 0.46,
+     "days": 314
+    },
+    "holdout": {
+     "n": 996,
+     "mean": -0.204,
+     "win": 34.2,
+     "t": -2.29,
+     "days": 250
+    },
+    "half1": {
+     "n": 1408,
+     "mean": 0.111,
+     "win": 44.3,
+     "t": 0.7,
+     "days": 239
+    },
+    "half2": {
+     "n": 1409,
+     "mean": -0.177,
+     "win": 34.1,
+     "t": -1.99,
+     "days": 326
+    },
+    "long": {
+     "n": 1510,
+     "mean": -0.001,
+     "win": 38.0
+    },
+    "short": {
+     "n": 1307,
+     "mean": -0.069,
+     "win": 40.6
+    },
+    "pct_mean": -0.11,
+    "exits": {
+     "stop": 1351,
+     "time": 1096,
+     "tp2": 204,
+     "be": 166
+    },
+    "median_stop_pct": 4.0,
+    "coins": 60
+   },
+   "verdict": [
+    "no",
+    "مش بيكسب"
+   ]
+  },
+  {
+   "id": "momo_time_only",
+   "name": "مقياس: من غير وقف قريب (طوارئ 25%) ومن غير أهداف — خروج بعد 6 ساعات. هل الدخول نفسه فيه ميزة؟",
+   "spec": {
+    "id": "momo_time_only",
+    "name": "مقياس: من غير وقف قريب (طوارئ 25%) ومن غير أهداف — خروج بعد 6 ساعات. هل الدخول نفسه فيه ميزة؟",
+    "stop": "fixed",
+    "fixed": 0.25,
+    "no_tp": true,
+    "cool_h": 2,
+    "cool_after_stop_h": 2
+   },
+   "stats": {
+    "all": {
+     "n": 2949,
+     "mean": -0.013,
+     "win": 40.9,
+     "t": -0.64,
+     "days": 571
+    },
+    "train": {
+     "n": 1895,
+     "mean": 0.014,
+     "win": 42.8,
+     "t": 0.53,
+     "days": 316
+    },
+    "holdout": {
+     "n": 1054,
+     "mean": -0.062,
+     "win": 37.3,
+     "t": -2.08,
+     "days": 255
+    },
+    "half1": {
+     "n": 1474,
+     "mean": 0.015,
+     "win": 45.0,
+     "t": 0.47,
+     "days": 240
+    },
+    "half2": {
+     "n": 1475,
+     "mean": -0.041,
+     "win": 36.7,
+     "t": -1.64,
+     "days": 332
+    },
+    "long": {
+     "n": 1618,
+     "mean": -0.004,
+     "win": 40.7
+    },
+    "short": {
+     "n": 1331,
+     "mean": -0.024,
+     "win": 41.0
+    },
+    "pct_mean": -0.32,
+    "exits": {
+     "time": 2911,
+     "stop": 38
+    },
+    "median_stop_pct": 25.0,
+    "coins": 60
+   },
+   "verdict": [
+    "no",
+    "مش بيكسب"
+   ]
+  }
+ ]
+}
