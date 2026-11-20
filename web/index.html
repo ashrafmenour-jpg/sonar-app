@@ -27,7 +27,7 @@
 } catch (e) {} })();
 </script>
 <script>
-window.SONAR_WEB = '3.0.23';
+window.SONAR_WEB = '3.0.24';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -15124,6 +15124,60 @@ setTimeout(function () { try {
   window.P3023 = 1;
 } catch (e) { console.warn('3.0.23', e); } }, 7000);
 } catch (e) { console.warn("baked 3.0.23", e); }
+
+/* ===== baked update 3.0.24 ===== */
+try {
+/* Sonar 3.0.24 (Ashraf, 20 Nov: «اعمل»)
+   1) Training longs while BTC is in a DOWN market are sampled 1 in 5. Since 17 Nov training longs lost −421R on 704 trades
+      (win 25 %, every half-day negative) while shorts made +32R, and every long rule in the 8-year test loses in DOWN except the
+      volume breakout. An engine whose own longs in a down market are positive (20+ such trades) keeps all its longs; real decisions
+      (PICK) and the proven-rule engines below are never sampled. When BTC leaves the down state, longs come back in full.
+   2) The rules proven on 8 years now trade live on paper, on the same 20 coins as the test, so their real numbers start today:
+      «مثبت: شورت سوينج يومي» (4h and daily trend down + market mood deep/pullback, stop 2.5×ATR4h) and
+      «مثبت: كسر قمة 20 يوم بحجم» (daily close above the 20-day high on ≥ 1.5× the 20-day volume, stop 2.5×ATR4h).
+      Approximation of the test's exit: half at +1.5R (stop to entry), the rest at +3R — same as the test's breakeven point. */
+setTimeout(function () { try {
+  if (window.P3024) return;
+  const LEDx = window.P221 && window.P221.LED, DAYMS = 864e5, H4 = 4 * 36e5;
+  const PR = { SRC_S: 'مثبت: شورت سوينج يومي', SRC_L: 'مثبت: كسر قمة 20 يوم بحجم',
+    SYMS: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'LTCUSDT', 'LINKUSDT', 'TRXUSDT', 'ETCUSDT', 'XLMUSDT', 'BCHUSDT', 'DOGEUSDT', 'ATOMUSDT', 'DOTUSDT', 'SOLUSDT', 'AVAXUSDT', 'NEARUSDT', 'UNIUSDT', 'FILUSDT', 'AAVEUSDT'],
+    st: Object.assign({ prev: {}, last4: 0, lastD: 0, opened: 0, sampled: 0, kept: 0 }, store.get('p3024', {})), busy: false,
+    save() { store.set('p3024', this.st); },
+    dir(c) { const n = c.length - 1, a = ema(c, 20), b = ema(c, 50); return c[n] > a[n] && a[n] > b[n] ? 1 : c[n] < a[n] && a[n] < b[n] ? -1 : 0; },
+    atr4(K) { const n = K.c.length; let s = 0; for (let j = n - 14; j < n; j++) s += Math.max(K.h[j] - K.l[j], Math.abs(K.h[j] - K.c[j - 1]), Math.abs(K.l[j] - K.c[j - 1])); return s / 14; },
+    // market mood exactly as research/backtest.py (deep / pullback / …) from BTC daily
+    mood(B) { const c = B.c, n = c.length - 1; if (n < 210) return 'side'; const avg = k => c.slice(n + 1 - k, n + 1).reduce((a, b) => a + b, 0) / k, s50 = avg(50), s200 = avg(200);
+      const hi60 = Math.max(...B.h.slice(n - 59, n + 1)), dd = (c[n] / hi60 - 1) * 100, r7 = (c[n] / c[n - 7] - 1) * 100, reg = c[n] < s50 && s50 < s200 ? 'down' : c[n] > s50 && s50 > s200 ? 'up' : 'side';
+      if (dd <= -15 || (c[n] < s200 && reg === 'down')) return 'deep'; if (dd <= -5 && (reg !== 'up' || r7 < 0)) return 'pullback'; return reg === 'up' || r7 >= 3 ? 'rally' : 'side'; },
+    open(src, sym, sg, K4, raw) { const p = S.prices[sym] || K4.c[K4.c.length - 1], R = 2.5 * this.atr4(K4); if (!(R > 0) || !N(p)) return false;
+      const ok = TRN.openCall(src, { sym, sg, stop: p - sg * R, tps: [p + sg * 1.5 * R, p + sg * 3 * R], raw }, src); if (ok) { this.st.opened++; this.save(); } return ok; },
+    async tick() { if (this.busy) return; const now = Date.now(), b4 = Math.floor(now / H4) * H4, bD = Math.floor(now / DAYMS) * DAYMS;
+      if (b4 <= this.st.last4 || now - b4 < 3 * 60e3) return; this.busy = true;
+      try { const B = closedK(await API.klines('BTCUSDT', '1d', 260)), md = this.mood(B), newDay = bD > this.st.lastD;
+        for (const sym of this.SYMS) { try {
+            const K4 = closedK(await API.klines(sym, '4h', 120)), KD = closedK(await API.klines(sym, '1d', 80)); if (K4.c.length < 60 || KD.c.length < 60) continue;
+            const on = this.dir(K4.c) === -1 && this.dir(KD.c) === -1 && (md === 'deep' || md === 'pullback'), was = !!this.st.prev[sym];
+            if (on && !was && this.st.last4) this.open(this.SRC_S, sym, -1, K4, `قاعدة مثبتة على 8 سنين: اليومي والـ4 ساعات هابطين والمزاج ${md} — وقف 2.5×ATR4س`);
+            this.st.prev[sym] = on;
+            if (newDay) { const n = KD.c.length - 1, hi20 = Math.max(...KD.h.slice(n - 20, n)), va = KD.v.slice(n - 20, n).reduce((a, b) => a + b, 0) / 20, ev = KD.c[n] > hi20 && KD.v[n] >= 1.5 * va,
+                y = KD.c[n - 1] > Math.max(...KD.h.slice(n - 21, n - 1)) && KD.v[n - 1] >= 1.5 * (KD.v.slice(n - 21, n - 1).reduce((a, b) => a + b, 0) / 20);
+              if (ev && !y && this.st.lastD) this.open(this.SRC_L, sym, 1, K4, `قاعدة مثبتة على 8 سنين: إغلاق يومي فوق قمة 20 يوم بحجم ${(KD.v[n] / va).toFixed(1)}× المتوسط — وقف 2.5×ATR4س`); }
+          } catch (e) {} await sleep(150); }
+        this.st.last4 = b4; if (newDay) this.st.lastD = bD; this.save(); } catch (e) { console.warn('p3024', e); } finally { this.busy = false; } },
+    // ---------- 1) longs in a DOWN market: 1 in 5
+    goodLongInDown(src) { try { const L = (LEDx && LEDx.st.L) || [], A = L.filter(r => r[2] === src && r[4] > 0 && r[6] === 'down').map(r => r[5]); return A.length >= 20 && A.reduce((a, b) => a + b, 0) / A.length > 0; } catch (e) { return false; } },
+    keepLong(src) { if (src === PICK.SRC || src === this.SRC_S || src === this.SRC_L) return true; let reg = ''; try { reg = TRN.regime(); } catch (e) {} if (reg !== 'down') return true;
+      if (this.goodLongInDown(src)) return true; this.st.k = (this.st.k || 0) + 1; return this.st.k % 5 === 0; } };
+  window.PR3024 = PR;
+  { const s0 = TRN.scan.bind(TRN); TRN.scan = function (rows) { const id0 = this.st.id, out = s0(rows); try { let rm = 0; this.st.open = this.st.open.filter(t => { if (t.id > id0 && t.sg > 0 && !PR.keepLong(t.src)) { rm++; return false; } if (t.id > id0 && t.sg > 0) PR.st.kept++; return true; }); if (rm) { PR.st.sampled += rm; PR.save(); this.save(); } } catch (e) {} return out; }; }
+  { const o0 = TRN.openCall.bind(TRN); TRN.openCall = function (name, c, src0, ap) { const src = src0 || 'قناة: ' + name; try { if (c && c.sg > 0 && !PR.keepLong(src)) { PR.st.sampled++; return false; } } catch (e) {} return o0(name, c, src0, ap); }; }
+  setTimeout(() => PR.tick(), 20000); setInterval(() => { try { PR.tick(); } catch (e) {} }, 5 * 60e3);
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { const ev = s => { try { return TRN.ev(TRN.st.C['E|' + s]); } catch (e) { return null; } }, f = e => e ? { n: e.n, m: +(+e.m).toFixed(3) } : null;
+      o.v3024 = { longsSampledOut: PR.st.sampled, longsKept: PR.st.kept, opened: PR.st.opened, last4: PR.st.last4, reg: (() => { try { return TRN.regime(); } catch (e) { return null; } })(), shortRule: f(ev(PR.SRC_S)), volBreak: f(ev(PR.SRC_L)) }; } catch (e) {} return o; }; } catch (e) {}
+  window.P3024 = 1;
+} catch (e) { console.warn('3.0.24', e); } }, 7400);
+
+} catch (e) { console.warn("baked 3.0.24", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
