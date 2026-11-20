@@ -1082,6 +1082,172 @@
     "DOWN",
     "REBOUND"
    ]
+  },
+  {
+   "id": "dss_trail_atr",
+   "name": "الشورت اليومي المثبت: وقف متحرك 3×ATR بعد +1R، من غير هدف ثابت",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": null,
+   "max_hours": 480,
+   "registered": "2026-11-20",
+   "no_tp": true,
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   }
+  },
+  {
+   "id": "dss_trail_struct",
+   "name": "الشورت اليومي المثبت: وقف متحرك فوق آخر قمة صغيرة (آخر 12 ساعة) بعد +1R، من غير هدف ثابت",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": null,
+   "max_hours": 480,
+   "registered": "2026-11-20",
+   "no_tp": true,
+   "trail": {
+    "mode": "struct",
+    "after_r": 1.0
+   }
+  },
+  {
+   "id": "dss_pyramid",
+   "name": "الشورت اليومي المثبت: تعزيز بوحدة تانية عند +1R بعد نقل الوقف للدخول، والاتنين بوقف متحرك 3×ATR",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": null,
+   "max_hours": 480,
+   "registered": "2026-11-20",
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   }
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "swing12h",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pfd_trail_atr",
+   "side": -1,
+   "trig": "ema4h",
+   "name": "شورت الطفرة والسوق نازل: وقف متحرك 3×ATR بعد +1R، من غير هدف ثابت",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "no_tp": true,
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   }
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "swing12h",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pfd_trail_struct",
+   "side": -1,
+   "trig": "ema4h",
+   "name": "شورت الطفرة والسوق نازل: وقف متحرك فوق آخر قمة صغيرة (آخر 12 ساعة) بعد +1R، من غير هدف ثابت",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "no_tp": true,
+   "trail": {
+    "mode": "struct",
+    "after_r": 1.0
+   }
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "swing12h",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pfd_pyramid",
+   "side": -1,
+   "trig": "ema4h",
+   "name": "شورت الطفرة والسوق نازل: تعزيز بوحدة تانية عند +1R بعد نقل الوقف للدخول، والاتنين بوقف متحرك 3×ATR",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   }
   }
  ]
 }
