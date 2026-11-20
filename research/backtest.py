@@ -190,6 +190,9 @@ def candidates(sym, f, ctx, rule):
         elif tr == 'daylow':
             kd = resample(f[['o', 'h', 'l', 'c']].assign(v=0), '1D'); x = pd.Series(np.where(kd.c < kd.l.shift(1), 1, 0), index=kd.index)
             ok = base & (pd.Series(closed_on_hours(x, f.index, '1D'), index=f.index) > 0)          # first daily close under the previous day's low
+        elif tr == 'zone':   # ASI-style «لا تطارد»: after the run, wait for a pullback into 50–61.8 % of it, enter on the first green hour closing above the previous hour's high
+            rng_ = pk - plo; mid = pk - .5 * rng_; deep = pk - .618 * rng_
+            ok = base & (f.l.rolling(6).min() <= mid) & (f.c >= deep) & (f.c > f.o) & (f.c > f.h.shift(1)) & (f.c < mid + .25 * rng_)
         elif tr == 'reclaim':   # pullback 12–30 % from the peak, then a 4h close back above EMA20 → long (continuation)
             ok = base & (f.l.rolling(48).min() <= pk * .88) & (f.c >= pk * .70) & (pd.Series(c4, index=f.index) > pd.Series(e4, index=f.index))
         else: ok = base & False
@@ -222,6 +225,10 @@ def simulate(f, t, sg, rule, cost_r_pct):
         n = int(rule.get('rng_h', 96)); rhi, rlo = f[f'rhi{n}'].iat[i - 1], f[f'rlo{n}'].iat[i - 1]; buf = rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]
         if not (rhi > rlo) or not (buf >= 0): return None
         rng = (rhi, rlo); risk = (entry - (min(rlo, f.l.iat[i - 1]) - buf)) if sg > 0 else ((max(rhi, f.h.iat[i - 1]) + buf) - entry)   # beyond the range and the rejection wick
+    elif rule.get('stop_mode') == 'zone':   # below the 78.6 % retrace of the run (the bottom of the follow zone)
+        pk_, plo_ = f['_pk'].iat[i - 1], f['_plo'].iat[i - 1]; lvl = plo_ + .214 * (pk_ - plo_) - rule.get('stop_buf_atr4h', .1) * f.atr4h.iat[i - 1]
+        risk = entry - lvl if sg > 0 else None
+        if risk is None: return None
     elif rule.get('stop_mode') == 'swing12h':   # tighter: just beyond the last 12 hours' extreme (≈ the last three 4h candles), not the whole pump
         w = f.h.values[max(0, i - 12):i].max() if sg < 0 else f.l.values[max(0, i - 12):i].min()
         risk = ((w - entry) if sg < 0 else (entry - w)) + rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]
@@ -233,7 +240,10 @@ def simulate(f, t, sg, rule, cost_r_pct):
     if not (risk > 0) or risk / entry > .25: return None
     stop = entry - sg * risk; be = False
     # targets: one target at tp_r · or the brain's picks: half at tp_pct[0] (stop → entry), the rest at tp_pct[1]
-    if rng and rule.get('tp_mode') in ('mid', 'far'):
+    if rule.get('tp_mode') == 'peak' and '_pk' in f:   # target: the day's high again
+        tps = [f['_pk'].iat[i - 1]]
+        if sg * (tps[0] - entry) <= 0: return None
+    elif rng and rule.get('tp_mode') in ('mid', 'far'):
         tps = [(rng[0] + rng[1]) / 2 if rule['tp_mode'] == 'mid' else (rng[0] if sg > 0 else rng[1])]
         if sg * (tps[0] - entry) <= 0: return None
     else:

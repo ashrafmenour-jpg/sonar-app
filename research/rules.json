@@ -1248,6 +1248,94 @@
     "k": 3.0,
     "after_r": 1.0
    }
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "trig": "zone",
+   "side": 1,
+   "min_pump": 1.2,
+   "pump_h": 24,
+   "max_age_h": 24,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "zone",
+   "stop_buf_atr4h": 0.1,
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-20",
+   "id": "day_pump_zone_peak",
+   "tp_mode": "peak",
+   "name": "ASI «لا تطارد»: عملة طلعت +20% في يوم، استنى ترجع لنص الحركة (50–61.8%) وادخل لونج مع أول ساعة خضرا تقفل فوق اللي قبلها — وقف تحت 78.6%، الهدف قمة اليوم"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "trig": "zone",
+   "side": 1,
+   "min_pump": 1.2,
+   "pump_h": 24,
+   "max_age_h": 24,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "zone",
+   "stop_buf_atr4h": 0.1,
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-20",
+   "id": "day_pump_zone_trail",
+   "no_tp": true,
+   "trail": {
+    "mode": "struct",
+    "after_r": 1.0
+   },
+   "name": "ASI «لا تطارد»: عملة طلعت +20% في يوم، استنى ترجع لنص الحركة (50–61.8%) وادخل لونج مع أول ساعة خضرا تقفل فوق اللي قبلها — وقف تحت 78.6%، من غير هدف ووقف متحرك بالهيكل بعد +1R"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "trig": "zone",
+   "side": 1,
+   "min_pump": 1.2,
+   "pump_h": 24,
+   "max_age_h": 24,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "zone",
+   "stop_buf_atr4h": 0.1,
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-20",
+   "id": "day_pump_zone_peak_down",
+   "tp_mode": "peak",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "name": "ASI «لا تطارد»: عملة طلعت +20% في يوم، استنى ترجع لنص الحركة (50–61.8%) وادخل لونج مع أول ساعة خضرا تقفل فوق اللي قبلها — وقف تحت 78.6%، الهدف قمة اليوم — والبيتكوين نازل"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "trig": "zone",
+   "side": 1,
+   "min_pump": 1.2,
+   "pump_h": 24,
+   "max_age_h": 24,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "zone",
+   "stop_buf_atr4h": 0.1,
+   "be_at_r": null,
+   "max_hours": 72,
+   "registered": "2026-11-20",
+   "id": "day_pump_zone_peak_up",
+   "tp_mode": "peak",
+   "regime": [
+    "UP",
+    "RANGE"
+   ],
+   "name": "ASI «لا تطارد»: عملة طلعت +20% في يوم، استنى ترجع لنص الحركة (50–61.8%) وادخل لونج مع أول ساعة خضرا تقفل فوق اللي قبلها — وقف تحت 78.6%، الهدف قمة اليوم — والبيتكوين صاعد أو عرضي"
   }
  ]
 }
