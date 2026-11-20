@@ -23,6 +23,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 UNIVERSE = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'LTCUSDT', 'LINKUSDT', 'TRXUSDT', 'ETCUSDT', 'XLMUSDT',
             'BCHUSDT', 'DOGEUSDT', 'ATOMUSDT', 'DOTUSDT', 'SOLUSDT', 'AVAXUSDT', 'NEARUSDT', 'UNIUSDT', 'FILUSDT', 'AAVEUSDT']
 BASE = 'https://data.binance.vision/data/spot'
+# smaller / younger coins where +70–100 % pumps happen — used ONLY by rules with "universe": "alts" (the old rules keep the 20 above)
+ALTS = ['AXSUSDT', 'SANDUSDT', 'MANAUSDT', 'GALAUSDT', 'CHZUSDT', 'ENJUSDT', 'RUNEUSDT', 'ONEUSDT', 'HBARUSDT', 'ALGOUSDT', 'VETUSDT', 'THETAUSDT',
+        'ZILUSDT', 'KAVAUSDT', 'LRCUSDT', 'IOTXUSDT', 'CELRUSDT', 'ANKRUSDT', 'COTIUSDT', 'HOTUSDT', 'RSRUSDT', 'OGNUSDT', 'CTSIUSDT', 'STORJUSDT',
+        'ARPAUSDT', 'DUSKUSDT', 'SKLUSDT', 'GRTUSDT', '1INCHUSDT', 'SUSHIUSDT', 'CRVUSDT', 'SNXUSDT', 'COMPUSDT', 'INJUSDT', 'DYDXUSDT', 'APEUSDT',
+        'GMTUSDT', 'OPUSDT', 'ARBUSDT', 'APTUSDT', 'SUIUSDT', 'PEPEUSDT', 'WLDUSDT', 'TIAUSDT', 'PENDLEUSDT', 'FETUSDT', 'IMXUSDT', 'LDOUSDT',
+        'STXUSDT', 'MASKUSDT', 'CFXUSDT', 'MAGICUSDT', 'IDUSDT', 'ORDIUSDT', 'BLURUSDT', 'TRBUSDT', 'ARKMUSDT', 'WIFUSDT', 'BOMEUSDT', 'ENAUSDT',
+        'BONKUSDT', 'FLOKIUSDT', 'SHIBUSDT', 'JASMYUSDT', 'ROSEUSDT', 'AUDIOUSDT', 'C98USDT', 'ALICEUSDT', 'BAKEUSDT', 'TWTUSDT']
 
 # ---------------------------------------------------------------------------------------------------- data
 def _get(url, tries=3):
@@ -167,6 +174,23 @@ def candidates(sym, f, ctx, rule):
         x = pd.Series(np.where(e, 1, 0), index=d.index)
         hit = pd.Series(closed_on_hours(x, f.index, '1D'), index=f.index).fillna(0)
         a = np.where(hit > 0, side if side else 1, 0)
+    elif sig == 'pump':   # a coin that pumped ≥ min_pump (e.g. +70 %) within 10 days — fade it after the top, or ride the first reclaim
+        W = int(rule.get('pump_h', 240)); hi = f.h.rolling(W).max(); lo = f.l.rolling(W).min(); newhi = f.h >= hi
+        pk = f.h.where(newhi).ffill(); plo = lo.where(newhi).ffill(); age = newhi.astype(int).groupby(newhi.cumsum()).cumcount()
+        f['_pk'], f['_plo'] = pk, plo
+        base = (pk / plo >= rule.get('min_pump', 1.7)) & (age >= 1) & (age <= rule.get('max_age_h', 120))
+        k4 = resample(f[['o', 'h', 'l', 'c']].assign(v=0), '4h'); e4 = closed_on_hours(ema(k4.c, 20), f.index, '4h'); c4 = closed_on_hours(k4.c, f.index, '4h')
+        tr = rule['trig']
+        if tr == 'top': ok = base & (age <= 3) & (f.c >= pk * .95)                                  # control: short right at the top
+        elif tr == 'ema4h': ok = base & (pd.Series(c4, index=f.index) < pd.Series(e4, index=f.index))   # first 4h close under its EMA20
+        elif tr == 'dd15': ok = base & (f.c <= pk * .85)                                             # 15 % off the peak
+        elif tr == 'daylow':
+            kd = resample(f[['o', 'h', 'l', 'c']].assign(v=0), '1D'); x = pd.Series(np.where(kd.c < kd.l.shift(1), 1, 0), index=kd.index)
+            ok = base & (pd.Series(closed_on_hours(x, f.index, '1D'), index=f.index) > 0)          # first daily close under the previous day's low
+        elif tr == 'reclaim':   # pullback 12–30 % from the peak, then a 4h close back above EMA20 → long (continuation)
+            ok = base & (f.l.rolling(48).min() <= pk * .88) & (f.c >= pk * .70) & (pd.Series(c4, index=f.index) > pd.Series(e4, index=f.index))
+        else: ok = base & False
+        a = np.where(ok.fillna(False), side, 0)
     else:
         a = f.brk4h.fillna(0).values.astype(int)
     a = pd.Series(a, index=f.index)
@@ -195,6 +219,9 @@ def simulate(f, t, sg, rule, cost_r_pct):
         n = int(rule.get('rng_h', 96)); rhi, rlo = f[f'rhi{n}'].iat[i - 1], f[f'rlo{n}'].iat[i - 1]; buf = rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]
         if not (rhi > rlo) or not (buf >= 0): return None
         rng = (rhi, rlo); risk = (entry - (min(rlo, f.l.iat[i - 1]) - buf)) if sg > 0 else ((max(rhi, f.h.iat[i - 1]) + buf) - entry)   # beyond the range and the rejection wick
+    elif rule.get('stop_mode') == 'peak':   # short a pump: stop just above its peak
+        risk = (f['_pk'].iat[i - 1] + rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]) - entry if sg < 0 else None
+        if risk is None: risk = rule['stop_atr4h'] * f.atr4h.iat[i - 1]
     else:
         risk = entry * rule['stop_pct'] / 100 if rule.get('stop_pct') else rule['stop_atr4h'] * f.atr4h.iat[i - 1]
     if not (risk > 0) or risk / entry > .25: return None
@@ -247,7 +274,7 @@ def verdict(s):
 
 # ---------------------------------------------------------------------------------------------------- main
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--symbols', default=','.join(UNIVERSE)); ap.add_argument('--from', dest='start', default='2018-01')
+    ap = argparse.ArgumentParser(); ap.add_argument('--symbols', default=','.join(UNIVERSE + ALTS)); ap.add_argument('--from', dest='start', default='2018-01')
     ap.add_argument('--out', default=os.path.join(HERE, 'out')); ap.add_argument('--cache', default=os.path.join(HERE, 'cache'))
     a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
     rules_raw = open(os.path.join(HERE, 'rules.json'), 'rb').read(); cfg = json.loads(rules_raw)
@@ -260,13 +287,15 @@ def main():
     if 'BTCUSDT' not in data: sys.exit('BTCUSDT data missing — cannot build market context')
     F = {s: features(d) for s, d in data.items()}
     r24 = pd.DataFrame({s: F[s].r24 for s in F if s != 'BTCUSDT'})
+    r24 = r24[[c for c in r24.columns if c in UNIVERSE]]              # breadth from the original 20 only, so old results don't move
     breadth = (r24 > 0).sum(axis=1) / r24.notna().sum(axis=1).replace(0, np.nan)
     breadth[r24.notna().sum(axis=1) < 8] = np.nan
     ctx = btc_context(data['BTCUSDT'], breadth)
     cost = 2 * (cfg['costs']['fee_pct_per_side'] + cfg['costs']['slippage_pct_per_side'])
     split = pd.Timestamp(cfg['split']['holdout_from'], tz='UTC'); out_rules = []
     for rule in cfg['rules']:
-        cands = sorted(c for s in F for c in candidates(s, F[s], ctx, rule))
+        pool = ALTS if rule.get('universe') == 'alts' else UNIVERSE
+        cands = sorted(c for s in F if s in pool for c in candidates(s, F[s], ctx, rule))
         open_until, per_coin, trades, stops = [], {}, [], []
         max_open = rule.get('max_open', cfg['max_open_per_rule'])                 # portfolio cap (all trades of a rule share one side)
         pause = pd.Timedelta(hours=rule['pause_after_stop_h']) if rule.get('pause_after_stop_h') else None

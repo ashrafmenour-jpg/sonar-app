@@ -778,6 +778,197 @@
    "registered": "2026-11-19",
    "id": "daily_swing_short_max2",
    "name": "السوينج اليومي المثبت + أقصى صفقتين مفتوحين"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "peak",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_top_tp10",
+   "side": -1,
+   "trig": "top",
+   "tp_pct": [
+    10
+   ],
+   "name": "عملة طلعت +70% أو أكتر في 10 أيام: شورت عند القمة على طول (مقارنة) — هدف 10%، وقف فوق القمة"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "peak",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_ema4h_tp5",
+   "side": -1,
+   "trig": "ema4h",
+   "tp_pct": [
+    5
+   ],
+   "name": "عملة طلعت +70% أو أكتر في 10 أيام: شورت أول إغلاق 4س تحت EMA20 بعد القمة — هدف 5%"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "peak",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_ema4h_tp10",
+   "side": -1,
+   "trig": "ema4h",
+   "tp_pct": [
+    10
+   ],
+   "name": "عملة طلعت +70% أو أكتر في 10 أيام: شورت أول إغلاق 4س تحت EMA20 بعد القمة — هدف 10%"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "peak",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_dd15_tp5",
+   "side": -1,
+   "trig": "dd15",
+   "tp_pct": [
+    5
+   ],
+   "name": "عملة طلعت +70% أو أكتر في 10 أيام: شورت لما ينزل 15% من القمة — هدف 5%"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "peak",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_dd15_tp10",
+   "side": -1,
+   "trig": "dd15",
+   "tp_pct": [
+    10
+   ],
+   "name": "عملة طلعت +70% أو أكتر في 10 أيام: شورت لما ينزل 15% من القمة — هدف 10%"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "peak",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_daylow_tp10",
+   "side": -1,
+   "trig": "daylow",
+   "tp_pct": [
+    10
+   ],
+   "name": "عملة طلعت +70% أو أكتر في 10 أيام: شورت أول إغلاق يومي تحت قاع اليوم اللي قبله — هدف 10%"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": null,
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_reclaim_long_tp5",
+   "side": 1,
+   "trig": "reclaim",
+   "stop_atr4h": 2.0,
+   "tp_pct": [
+    5
+   ],
+   "name": "عملة طلعت +70% أو أكتر في 10 أيام: لونج بعد تصحيح 12–30% ورجوع فوق EMA20 4س — هدف 5%"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": null,
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_reclaim_long_tp10",
+   "side": 1,
+   "trig": "reclaim",
+   "stop_atr4h": 2.0,
+   "tp_pct": [
+    10
+   ],
+   "name": "عملة طلعت +70% أو أكتر في 10 أيام: لونج بعد تصحيح 12–30% ورجوع فوق EMA20 4س — هدف 10%"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "peak",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 48,
+   "registered": "2026-11-20",
+   "id": "pump_fade_ema4h_tp5_48h",
+   "side": -1,
+   "trig": "ema4h",
+   "tp_pct": [
+    5
+   ],
+   "name": "عملة طلعت +70% أو أكتر في 10 أيام: شورت أول إغلاق 4س تحت EMA20 — هدف 5% وخروج خلال يومين بالكتير (دخول وخروج سريع)"
   }
  ]
 }
