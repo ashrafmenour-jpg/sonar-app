@@ -219,6 +219,9 @@ def simulate(f, t, sg, rule, cost_r_pct):
         n = int(rule.get('rng_h', 96)); rhi, rlo = f[f'rhi{n}'].iat[i - 1], f[f'rlo{n}'].iat[i - 1]; buf = rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]
         if not (rhi > rlo) or not (buf >= 0): return None
         rng = (rhi, rlo); risk = (entry - (min(rlo, f.l.iat[i - 1]) - buf)) if sg > 0 else ((max(rhi, f.h.iat[i - 1]) + buf) - entry)   # beyond the range and the rejection wick
+    elif rule.get('stop_mode') == 'swing12h':   # tighter: just beyond the last 12 hours' extreme (≈ the last three 4h candles), not the whole pump
+        w = f.h.values[max(0, i - 12):i].max() if sg < 0 else f.l.values[max(0, i - 12):i].min()
+        risk = ((w - entry) if sg < 0 else (entry - w)) + rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]
     elif rule.get('stop_mode') == 'peak':   # short a pump: stop just above its peak
         risk = (f['_pk'].iat[i - 1] + rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]) - entry if sg < 0 else None
         if risk is None: risk = rule['stop_atr4h'] * f.atr4h.iat[i - 1]

@@ -969,6 +969,119 @@
     5
    ],
    "name": "عملة طلعت +70% أو أكتر في 10 أيام: شورت أول إغلاق 4س تحت EMA20 — هدف 5% وخروج خلال يومين بالكتير (دخول وخروج سريع)"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "swing12h",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_ema4h_tight_tp5",
+   "side": -1,
+   "trig": "ema4h",
+   "tp_pct": [
+    5
+   ],
+   "name": "عملة طلعت +70% في 10 أيام: شورت أول إغلاق 4س تحت EMA20 — وقف قريب فوق أعلى سعر في آخر 12 ساعة، هدف 5%"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "swing12h",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_ema4h_tight_tp10",
+   "side": -1,
+   "trig": "ema4h",
+   "tp_pct": [
+    10
+   ],
+   "name": "نفس الدخول بالوقف القريب (آخر 12 ساعة) — هدف 10%"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "swing12h",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_dd15_tight_tp5",
+   "side": -1,
+   "trig": "dd15",
+   "tp_pct": [
+    5
+   ],
+   "name": "عملة طلعت +70%: شورت لما ينزل 15% من القمة — وقف قريب (آخر 12 ساعة)، هدف 5%"
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "peak",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_ema4h_down_tp5",
+   "side": -1,
+   "trig": "ema4h",
+   "tp_pct": [
+    5
+   ],
+   "name": "عملة طلعت +70%: شورت أول إغلاق 4س تحت EMA20 بس والبيتكوين نازل أو بيرتد في سوق نازل — هدف 5%، وقف فوق القمة",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ]
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "swing12h",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pump_fade_ema4h_down_tight_tp5",
+   "side": -1,
+   "trig": "ema4h",
+   "tp_pct": [
+    5
+   ],
+   "name": "نفس الشورت والسوق نازل، بالوقف القريب (آخر 12 ساعة) — هدف 5%",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ]
   }
  ]
 }
