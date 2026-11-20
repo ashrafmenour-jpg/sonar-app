@@ -27,7 +27,7 @@
 } catch (e) {} })();
 </script>
 <script>
-window.SONAR_WEB = '3.0.25';
+window.SONAR_WEB = '3.0.26';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -15239,6 +15239,36 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.25', e); } }, 7800);
 
 } catch (e) { console.warn("baked 3.0.25", e); }
+
+/* ===== baked update 3.0.26 ===== */
+try {
+/* Sonar 3.0.26 — «📊 سجل العملة» under every decision card (idea from the ASI indicator's «72/101», Ashraf 20 Nov: «اعمل اللي عاوزه»).
+   For the coin on the card: over its last ~166 days of 4h candles, every time it stood on the same side of its 4h EMA50 as now,
+   if you had entered in the card's direction with the card's stop and first-target distances — how often did the target come first?
+   Shown next to the break-even rate (stop ÷ (stop + target)), so you see at a glance if the plan fits how this coin really moves.
+   A fact, not a filter: it blocks nothing. One 4h-candle request per coin, cached 1 hour. */
+setTimeout(function () { try {
+  if (window.P3026) return;
+  const HX = window.HIST326 = { C: {}, busy: {},
+    key(sym, sg, sp, tp) { return sym + '|' + sg + '|' + sp.toFixed(1) + '|' + tp.toFixed(1); },
+    async calc(sym, sg, sp, tp) { const k = this.key(sym, sg, sp, tp), c = this.C[k]; if (c && Date.now() - c.at < 36e5) return c; if (this.busy[k]) return null; this.busy[k] = 1;
+      try { const K = closedK(await API.klines(sym, '4h', 1000)), n = K.c.length; if (n < 200) return null; const e = ema(K.c, 50), now = K.c[n - 1] > e[n - 1] ? 1 : -1; let N0 = 0, W = 0;
+        for (let i = 60; i < n - 1; i++) { if ((K.c[i] > e[i] ? 1 : -1) !== now) continue; const p = K.c[i], T = p * (1 + sg * tp / 100), St = p * (1 - sg * sp / 100); let res = 0;
+          for (let j = i + 1; j < Math.min(n, i + 61) && !res; j++) { const hitS = sg > 0 ? K.l[j] <= St : K.h[j] >= St, hitT = sg > 0 ? K.h[j] >= T : K.l[j] <= T; if (hitS) res = -1; else if (hitT) res = 1; }
+          if (res) { N0++; if (res > 0) W++; } }
+        const out = { at: Date.now(), n: N0, w: W, days: Math.round(n * 4 / 24), trend: now }; this.C[k] = out; return out; } catch (e) { return null; } finally { delete this.busy[k]; } },
+    line(x, sp, tp) { const be = sp / (sp + tp) * 100, wr = x.n ? x.w / x.n * 100 : 0, good = wr >= be + 5, bad = wr < be;
+      return `📊 <b>سجل العملة</b> (${x.days} يوم، و${x.trend > 0 ? 'هي فوق' : 'هي تحت'} متوسط 50 على 4س زي دلوقتي): الهدف قبل الوقف <b class="num ${good ? 'up21' : bad ? 'dn21' : ''}">${Math.round(wr)}%</b> من ${x.n} مرة · التعادل محتاج ${Math.round(be)}%`; } };
+  const d0 = V21.dcard.bind(V21);
+  V21.dcard = function (d, sym, extra) { let h = d0(d, sym, extra); try { if (!(N(d.e) && N(d.stop) && N(d.tp1) && d.sg)) return h;
+      const sp = Math.abs(d.e - d.stop) / d.e * 100, tp = Math.abs(d.tp1 - d.e) / d.e * 100; if (!(sp > 0 && tp > 0)) return h;
+      const k = HX.key(sym, d.sg, sp, tp), c = HX.C[k], inner = c && c.n ? HX.line(c, sp, tp) : '📊 سجل العملة: بيتحسب…';
+      if (!c) HX.calc(sym, d.sg, sp, tp).then(x => { try { if (!x) return; document.querySelectorAll(`.c326[data-k="${CSS.escape(k)}"]`).forEach(el => { el.innerHTML = x.n ? HX.line(x, sp, tp) : '📊 سجل العملة: مفيش تاريخ كفاية'; }); } catch (e) {} });
+      h = h.replace(/<\/article>\s*$/, `<div class="c326 mu21" data-k="${esc(k)}" style="font-size:12px;margin-top:6px;line-height:1.6">${inner}</div></article>`); } catch (e) {} return h; };
+  window.P3026 = 1;
+} catch (e) { console.warn('3.0.26', e); } }, 8200);
+
+} catch (e) { console.warn("baked 3.0.26", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
