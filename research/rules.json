@@ -1336,6 +1336,169 @@
     "RANGE"
    ],
    "name": "ASI «لا تطارد»: عملة طلعت +20% في يوم، استنى ترجع لنص الحركة (50–61.8%) وادخل لونج مع أول ساعة خضرا تقفل فوق اللي قبلها — وقف تحت 78.6%، الهدف قمة اليوم — والبيتكوين صاعد أو عرضي"
+  },
+  {
+   "id": "dss_quick_1r",
+   "name": "الشورت اليومي — صفقة سريعة: هدف +1R، أقصى يومين",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 1.0,
+   "be_at_r": null,
+   "max_hours": 48,
+   "registered": "2026-11-20",
+   "seen": true
+  },
+  {
+   "id": "dss_quick_2r",
+   "name": "الشورت اليومي — صفقة سريعة: هدف +2R، أقصى 4 أيام",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 2.0,
+   "be_at_r": null,
+   "max_hours": 96,
+   "registered": "2026-11-20",
+   "seen": true
+  },
+  {
+   "id": "dss_partial_half1r",
+   "name": "الشورت اليومي — سريعة وطويلة مع بعض: نص الصفقة يقفل عند +1R والوقف للدخول، والنص التاني يجري بوقف 3×ATR",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": null,
+   "max_hours": 480,
+   "registered": "2026-11-20",
+   "no_tp": true,
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "partial": {
+    "at_r": 1.0,
+    "frac": 0.5
+   },
+   "seen": true
+  },
+  {
+   "id": "dss_partial_pyr",
+   "name": "الشورت اليومي — نقفل نص عند +1R ونعزّز بوحدة، والباقي بوقف 3×ATR",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": null,
+   "max_hours": 480,
+   "registered": "2026-11-20",
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "partial": {
+    "at_r": 1.0,
+    "frac": 0.5
+   },
+   "seen": true
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "swing12h",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 48,
+   "registered": "2026-11-20",
+   "id": "pfd_quick_1r",
+   "side": -1,
+   "trig": "ema4h",
+   "name": "شورت الطفرة والسوق نازل — صفقة سريعة: هدف +1R، أقصى يومين",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "tp_r": 1.0,
+   "seen": true
+  },
+  {
+   "signal": "pump",
+   "universe": "alts",
+   "min_pump": 1.7,
+   "pump_h": 240,
+   "max_age_h": 120,
+   "mood": null,
+   "loc": null,
+   "stop_mode": "swing12h",
+   "stop_buf_atr4h": 0.25,
+   "be_at_r": null,
+   "max_hours": 240,
+   "registered": "2026-11-20",
+   "id": "pfd_partial_half1r",
+   "side": -1,
+   "trig": "ema4h",
+   "name": "شورت الطفرة والسوق نازل — نص يقفل عند +1R والباقي بوقف متحرك فوق آخر قمة صغيرة",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "no_tp": true,
+   "trail": {
+    "mode": "struct",
+    "after_r": 1.0
+   },
+   "partial": {
+    "at_r": 1.0,
+    "frac": 0.5
+   },
+   "seen": true
   }
  ]
 }

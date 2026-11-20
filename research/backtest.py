@@ -249,7 +249,9 @@ def simulate(f, t, sg, rule, cost_r_pct):
     else:
         tps = [entry * (1 + sg * x / 100) for x in rule['tp_pct']] if rule.get('tp_pct') else [entry + sg * rule.get('tp_r', 1e9) * risk]
     if rule.get('no_tp'): tps = [entry + sg * 1e9 * risk]          # flexible exits: no fixed target, the trailing stop decides
-    half = len(tps) > 1; banked = 0.0
+    half = len(tps) > 1; banked = 0.0; frac = .5
+    pf = rule.get('partial')                                        # quick + long in one trade: bank `frac` at +at_r, stop → entry, the rest runs
+    if pf: tps = [entry + sg * pf.get('at_r', 1.0) * risk, entry + sg * 1e9 * risk]; half = True; frac = pf.get('frac', .5)
     trail = rule.get('trail'); pyr = rule.get('pyramid'); e2 = None; A4 = f.atr4h.values
     end = min(len(f) - 1, i + rule['max_hours'] - 1); H, L, C = f.h.values, f.l.values, f.c.values
     D4 = f.d4h.values; dead = rule.get('dead'); mfe = 0.0
@@ -260,7 +262,7 @@ def simulate(f, t, sg, rule, cost_r_pct):
         hit_tp = H[j] >= tp if sg > 0 else L[j] <= tp
         if hit_stop: exit_p, why = stop, 'be' if be else 'stop'; break
         if hit_tp:
-            if half and not banked: banked = .5 * sg * (tp - entry) / risk; stop, be = entry, True; continue
+            if half and not banked: banked = frac * sg * (tp - entry) / risk; stop, be = entry, True; continue
             exit_p, why = tp, 'target'; break
         r_now = sg * (C[j] - entry) / risk; mfe = max(mfe, sg * ((H[j] if sg > 0 else L[j]) - entry) / risk)
         if pyr and e2 is None and r_now >= pyr.get('at_r', 1.0):   # add a second unit only once the first is risk-free
@@ -275,7 +277,7 @@ def simulate(f, t, sg, rule, cost_r_pct):
         if dead and j - i + 1 >= dead['hours'] and mfe < dead['mfe_r'] and not banked: exit_p, why = C[j], 'dead'; break
         if rule.get('flip4h') and D4[j] == -sg and not banked: exit_p, why = C[j], 'flip'; break
     if exit_p is None: exit_p = C[end]
-    gross = (banked + .5 * sg * (exit_p - entry) / risk) if (half and banked) else sg * (exit_p - entry) / risk
+    gross = (banked + (1 - frac) * sg * (exit_p - entry) / risk) if (half and banked) else sg * (exit_p - entry) / risk
     cost = cost_r_pct / 100 * entry / risk                       # round-trip fee + slippage in R
     if e2 is not None: gross += sg * (exit_p - e2) / risk; cost += cost_r_pct / 100 * e2 / risk   # the added unit, in the first unit's R
     return {'t': t, 'exit_t': f.index[j], 'entry': entry, 'R': gross - cost, 'gross': gross, 'why': why, 'stop_pct': risk / entry * 100}
