@@ -27,7 +27,7 @@
 } catch (e) {} })();
 </script>
 <script>
-window.SONAR_WEB = '3.0.24';
+window.SONAR_WEB = '3.0.25';
 /* Sonar 3.0 — runs BEFORE everything else.
    PERF · measures what the app costs the device: network (HTTP + live streams), main-thread blocking (long tasks), timer lag,
           memory and battery — so «does it drain the tablet?» is answered with numbers, not guesses.
@@ -15178,6 +15178,67 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.24', e); } }, 7400);
 
 } catch (e) { console.warn("baked 3.0.24", e); }
+
+/* ===== baked update 3.0.25 ===== */
+try {
+/* Sonar 3.0.25 (Ashraf, 20 Nov: «اعملهم») — flexible exits from the 8-year test, on paper:
+   • «مثبت: شورت سوينج يومي» now exits like the best tested version (dss_pyramid, +0.25R, t 3.0): no fixed target;
+     at +1R the stop goes to entry and a second unit is added («… · تعزيز»); both trail 3×ATR4h behind the best price; up to 20 days.
+   • New paper engine «واعد: شورت الطفرة والسوق نازل» (pfd_trail_struct, +0.13R): any scanned coin that rose ≥ 70 % within 10 days,
+     peak 4h–5 days ago, first 4h close under its EMA20, only while BTC is DOWN / REBOUND (same definition as the test);
+     stop just above the last 12 hours' high; after +1R the stop trails the last 12 hours' high; no fixed target; up to 10 days.
+     Scans the coin list every 4h (one 4h-candle request per coin, cached). */
+setTimeout(function () { try {
+  if (window.P3025) return;
+  const PR = window.PR3024; if (!PR) return;
+  const SRC_A = PR.SRC_S + ' · تعزيز', SRC_P = 'واعد: شورت الطفرة والسوق نازل', HR = 36e5, H4 = 4 * HR;
+  const M = { [PR.SRC_S]: { mode: 'atr', k: 3, maxH: 480, pyr: true }, [SRC_A]: { mode: 'atr', k: 3, maxH: 480 }, [SRC_P]: { mode: 'struct', maxH: 240 } };
+  // a managed trade: no fixed target (targets parked far away), trailing stop, own time limit
+  const far = (p, sg, R) => sg > 0 ? [p + 50 * R, p + 60 * R] : [p * .02, p * .01];   // parked out of reach (a short's target must stay a positive price)
+  function prep(T, a4) { T.flex = 1; T.a4 = a4; T.ext = T.entry; T.hh = []; }
+  const s0 = TRN.step.bind(TRN);
+  TRN.step = function (T, hi, lo, close, now) { const cfg = T.flex && M[T.src]; if (!cfg || T.shd) return s0(T, hi, lo, close, now); const sg = T.sg;
+    if (sg > 0 ? lo <= T.stop : hi >= T.stop) { this.settle(T, T.stop, sg * (T.stop - T.entry) > 0 ? 'trail' : (T.half ? 'be' : 'sl'), now); return true; }
+    T.ext = sg > 0 ? Math.max(T.ext || T.entry, hi) : Math.min(T.ext || T.entry, lo);
+    const hb = Math.floor(now / HR); if (!T.hh.length || T.hh[T.hh.length - 1][0] !== hb) T.hh.push([hb, hi, lo]); else { const z = T.hh[T.hh.length - 1]; z[1] = Math.max(z[1], hi); z[2] = Math.min(z[2], lo); } if (T.hh.length > 13) T.hh.shift();
+    const R0 = T.R0 || Math.abs(T.entry - T.stop0 || 1), mfe = sg * (T.ext - T.entry) / R0, rNow = sg * (close - T.entry) / R0;
+    if (cfg.pyr && !T.pyr && rNow >= 1) { T.pyr = 1; if (sg * (T.entry - T.stop) > 0) { T.stop = T.entry; T.half = false; }
+      try { const ok = TRN.openCall(SRC_A, { sym: T.sym, sg, stop: T.entry, tps: far(close, sg, R0), raw: 'تعزيز عند +1R بعد نقل وقف الصفقة الأولى للدخول' }, SRC_A); if (ok) { const A = TRN.st.open[TRN.st.open.length - 1]; if (A && A.src === SRC_A) { prep(A, T.a4); A.parent = T.id; } } } catch (e) {} }
+    if (mfe >= 1) { let cand; if (cfg.mode === 'atr') cand = T.ext - sg * cfg.k * T.a4; else { const ex = sg > 0 ? Math.min(...T.hh.map(z => z[2])) : Math.max(...T.hh.map(z => z[1])); cand = ex - sg * .25 * T.a4; }
+      if (N(cand) && sg * (cand - T.stop) > 0) T.stop = cand; }
+    if (T.parent) { const P = TRN.st.open.find(x => x.id === T.parent); if (P && sg * (P.stop - T.stop) > 0) T.stop = P.stop; }   // the add-on never keeps a looser stop than the first unit
+    if (now - T.t > cfg.maxH * HR) { this.settle(T, close, 'time', now); return true; } return false; };
+  // the proven daily short now opens with parked targets and is managed by the trailing logic above
+  PR.open = function (src, sym, sg, K4, raw) { const p = S.prices[sym] || K4.c[K4.c.length - 1], a4 = this.atr4(K4), R = 2.5 * a4; if (!(R > 0) || !N(p)) return false;
+    const flex = src === this.SRC_S, ok = TRN.openCall(src, { sym, sg, stop: p - sg * R, tps: flex ? far(p, sg, R) : [p + sg * 1.5 * R, p + sg * 3 * R], raw: raw + (flex ? ' · خروج مرن: وقف متحرك 3×ATR بعد +1R وتعزيز عند +1R' : '') }, src);
+    if (ok) { const T = TRN.st.open[TRN.st.open.length - 1]; if (flex && T && T.src === src) prep(T, a4); this.st.opened++; this.save(); } return ok; };
+  // ---------- the pump-fade engine
+  const PF = { st: Object.assign({ last: 0, opened: 0, seen: 0 }, store.get('p3025', {})), busy: false, save() { store.set('p3025', this.st); },
+    btcReg() { try { if (window.GATE320 && GATE320.reg) return GATE320.reg; } catch (e) {} return null; },
+    coins() { const out = new Set(); try { for (const r of [...(S.results || []), ...((S.extra) || [])]) if (r && r.sym && /USDT$/.test(r.sym) && !PR.SYMS.includes(r.sym)) out.add(r.sym); } catch (e) {} return [...out].slice(0, 220); },
+    async tick() { const now = Date.now(), b4 = Math.floor(now / H4) * H4; if (this.busy || b4 <= this.st.last || now - b4 < 4 * 60e3) return;
+      const g = this.btcReg(); if (g !== 'DOWN' && g !== 'REBOUND') { this.st.last = b4; this.save(); return; } this.busy = true;
+      try { for (const sym of this.coins()) { try { const K = closedK(await API.klines(sym, '4h', 64)), n = K.c.length - 1; if (n < 40) continue;
+            let pi = n - 59 < 0 ? 0 : n - 59; for (let j = pi; j <= n; j++) if (K.h[j] >= K.h[pi]) pi = j;
+            const age = (n - pi) * 4; if (age < 4 || age > 120) continue; let lo = Infinity; for (let j = Math.max(0, n - 59); j <= pi; j++) lo = Math.min(lo, K.l[j]); const pk = K.h[pi]; if (!(pk / lo >= 1.7)) continue; this.st.seen++;
+            const e = ema(K.c, 20); if (!(K.c[n] < e[n] && K.c[n - 1] >= e[n - 1])) continue;
+            if (TRN.st.open.some(t => t.src === SRC_P && t.sym === sym)) continue;
+            let a4 = 0; for (let j = n - 13; j <= n; j++) a4 += Math.max(K.h[j] - K.l[j], Math.abs(K.h[j] - K.c[j - 1]), Math.abs(K.l[j] - K.c[j - 1])); a4 /= 14;
+            const p = S.prices[sym] || K.c[n], hi12 = Math.max(K.h[n], K.h[n - 1], K.h[n - 2]), stop = hi12 + .25 * a4, R = stop - p; if (!(R > 0) || R / p > .25) continue;
+            const ok = TRN.openCall(SRC_P, { sym, sg: -1, stop, tps: far(p, -1, R), raw: `طلعت ${Math.round((pk / lo - 1) * 100)}% في 10 أيام، القمة من ${age} ساعة، وأول إغلاق 4س تحت EMA20 والسوق ${g === 'DOWN' ? 'نازل' : 'بيرتد في سوق نازل'} — وقف فوق أعلى سعر آخر 12 ساعة، خروج مرن` }, SRC_P);
+            if (ok) { const T = TRN.st.open[TRN.st.open.length - 1]; if (T && T.src === SRC_P) prep(T, a4); this.st.opened++; }
+          } catch (e) {} await sleep(120); }
+        this.st.last = b4; this.save(); } catch (e) { console.warn('p3025', e); } finally { this.busy = false; } } };
+  window.PF3025 = PF;
+  // the pump fades are shorts — the down-market long sampling of 3.0.24 never touches them; the add-on unit must not be sampled either
+  { const k0 = PR.keepLong.bind(PR); PR.keepLong = function (src) { return src === SRC_A || src === SRC_P ? true : k0(src); }; }
+  setTimeout(() => PF.tick(), 40000); setInterval(() => { try { PF.tick(); } catch (e) {} }, 5 * 60e3);
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0(); try { const ev = s => { try { const e = TRN.ev(TRN.st.C['E|' + s]); return e ? { n: e.n, m: +(+e.m).toFixed(3) } : null; } catch (e) { return null; } };
+      o.v3025 = { dssFlex: ev(PR.SRC_S), dssAddOn: ev(SRC_A), pumpFade: ev(SRC_P), pfOpened: PF.st.opened, pfSeen: PF.st.seen, pfLast: PF.st.last, open: TRN.st.open.filter(t => M[t.src]).map(t => ({ src: t.src, sym: t.sym, R: t.R0 ? +(t.sg * ((S.prices[t.sym] || t.entry) - t.entry) / t.R0).toFixed(2) : null, stop: t.stop })) }; } catch (e) {} return o; }; } catch (e) {}
+  window.P3025 = 1;
+} catch (e) { console.warn('3.0.25', e); } }, 7800);
+
+} catch (e) { console.warn("baked 3.0.25", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
