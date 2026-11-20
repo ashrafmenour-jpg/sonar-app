@@ -15269,6 +15269,33 @@ setTimeout(function () { try {
 } catch (e) { console.warn('3.0.26', e); } }, 8200);
 
 } catch (e) { console.warn("baked 3.0.26", e); }
+
+/* ===== baked update 3.0.27 ===== */
+try {
+/* Sonar 3.0.27 — the pump-fade short exits like a surgeon. 8-year test (20 Nov): on the same entries a quick +1R exit with a 2-day cap
+   (pfd_quick_1r: +0.128R, 61% wins, t 2.2, proven) matches the structure trailing (+0.126R, 57%, promising) with more wins and half the exposure.
+   New pump-fade trades: stop unchanged, target = entry − 1R, closed after 48h. Trades already open keep their trailing exit. */
+(function () {
+  const SRC_P = 'واعد: شورت الطفرة والسوق نازل', HR = 36e5;
+  window.Q3027 = { n: 0 };
+  if (typeof TRN === 'undefined' || !TRN.openCall || !TRN.step) { console.warn('3.0.27: TRN missing'); return; }
+  const oc = TRN.openCall.bind(TRN);
+  TRN.openCall = function (name, c, src0) { const ok = oc(name, c, src0);
+    try { if (ok && name === SRC_P) { const T = TRN.st.open[TRN.st.open.length - 1]; if (T && T.src === SRC_P) { T.qk = 1; T.why = (T.why || '') + ' · خروج سريع: هدف +1R، أقصى يومين'; } } } catch (e) {} return ok; };
+  const s1 = TRN.step.bind(TRN);
+  TRN.step = function (T, hi, lo, close, now) {
+    if (!T || !T.qk || T.src !== SRC_P) return s1(T, hi, lo, close, now);
+    const sg = T.sg, R0 = T.R0 || Math.abs(T.entry - (T.stop0 || T.stop));
+    if (sg > 0 ? lo <= T.stop : hi >= T.stop) return s1(T, hi, lo, close, now);          // the stop first, as in the test
+    const tp = T.entry + sg * R0;
+    if (R0 > 0 && (sg > 0 ? hi >= tp : lo <= tp)) { this.settle(T, tp, 'tp2', now); window.Q3027.n++; return true; }
+    if (now - T.t > 48 * HR) { this.settle(T, close, 'time', now); return true; }
+    return false; };
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { o.v3027 = { quickOpen: TRN.st.open.filter(t => t.qk).map(t => ({ sym: t.sym, R: t.R0 ? +(t.sg * ((S.prices[t.sym] || t.entry) - t.entry) / t.R0).toFixed(2) : null })), hitTp: Q3027.n }; } catch (e) {} return o; }; } catch (e) {}
+})();
+window.SONAR_WEB = '3.0.27';
+} catch (e) { console.warn("baked 3.0.27", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
