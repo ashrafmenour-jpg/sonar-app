@@ -15296,6 +15296,45 @@ try {
 })();
 window.SONAR_WEB = '3.0.27';
 } catch (e) { console.warn("baked 3.0.27", e); }
+
+/* ===== baked update 3.0.28 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.28 — new paper engine «مثبت: الاختراق الكاذب والسوق نازل» (sweep_hi_20d_short_down, 8 years: +0.21R, 47% wins, t 2.2,
+   +0.19R after 2023, both halves positive; designed after seeing the split, so its live trades are the real verdict).
+   Once a day, only when BTC is DOWN or REBOUND (GATE320): on the test's 20 coins, yesterday's daily candle went above the prior
+   20-day high and closed back under it → short; stop 0.25×ATR4h above that day's high; stop → entry at +1R; target +2R; 5-day cap. */
+  const SRC = 'مثبت: الاختراق الكاذب والسوق نازل', HR = 36e5, DAY = 864e5, PR = window.PR3024;
+  if (typeof TRN === 'undefined' || !PR || !TRN.openCall) { console.warn('3.0.28: missing TRN/PR3024'); return; }
+  const SW = { st: Object.assign({ lastD: 0, opened: 0, seen: 0, hit: 0 }, store.get('p3028', {})), busy: false, save() { store.set('p3028', this.st); },
+    async tick() { const now = Date.now(), bD = Math.floor(now / DAY) * DAY; if (this.busy || bD <= this.st.lastD || now - bD < 10 * 60e3) return;
+      let g = null; try { g = GATE320 && GATE320.reg; } catch (e) {} if (!g) return;          // wait for the gate's reading
+      const prime = !this.st.lastD; this.busy = true;
+      try { if (!prime && (g === 'DOWN' || g === 'REBOUND')) for (const sym of PR.SYMS) { try {
+            const KD = closedK(await API.klines(sym, '1d', 40)), n = KD.c.length - 1; if (n < 25) continue;
+            const hi20 = Math.max(...KD.h.slice(n - 20, n)); if (!(KD.h[n] > hi20 && KD.c[n] < hi20)) continue; this.st.seen++;
+            if (TRN.st.open.some(t => t.src === SRC && t.sym === sym)) continue;
+            const K4 = closedK(await API.klines(sym, '4h', 40)); if (K4.c.length < 20) continue; const a4 = PR.atr4(K4);
+            const p = S.prices[sym] || KD.c[n], stop = KD.h[n] + .25 * a4, R = stop - p; if (!(R > 0) || R / p > .25) continue;
+            const ok = TRN.openCall(SRC, { sym, sg: -1, stop, tps: [p - 2 * R, p - 2.1 * R], raw: `قاعدة مثبتة على 8 سنين: امبارح طلعت فوق قمة 20 يوم (${fp(hi20)}) وقفلت تحتها والسوق ${g === 'DOWN' ? 'نازل' : 'بيرتد في سوق نازل'} — وقف فوق ذيل اليوم، الوقف للدخول عند +1R، هدف +2R، أقصى 5 أيام` }, SRC);
+            if (ok) { const T = TRN.st.open[TRN.st.open.length - 1]; if (T && T.src === SRC) T.sw = 1; this.st.opened++; }
+          } catch (e) {} await sleep(150); }
+        this.st.lastD = bD; this.save(); } catch (e) { console.warn('p3028', e); } finally { this.busy = false; } } };
+  const s1 = TRN.step.bind(TRN);
+  TRN.step = function (T, hi, lo, close, now) {
+    if (!T || !T.sw || T.src !== SRC) return s1(T, hi, lo, close, now);
+    const sg = T.sg, R0 = T.R0 || Math.abs(T.entry - (T.stop0 || T.stop));
+    if (sg > 0 ? lo <= T.stop : hi >= T.stop) { this.settle(T, T.stop, T.be ? 'be' : 'sl', now); return true; }
+    const tp = T.entry + sg * 2 * R0; if (R0 > 0 && (sg > 0 ? hi >= tp : lo <= tp)) { this.settle(T, tp, 'tp2', now); SW.st.hit++; SW.save(); return true; }
+    if (!T.be && R0 > 0 && sg * (close - T.entry) >= R0) { T.stop = T.entry; T.be = 1; }
+    if (now - T.t > 120 * HR) { this.settle(T, close, 'time', now); return true; }
+    return false; };
+  window.SW3028 = SW;
+  setTimeout(() => SW.tick(), 60000); setInterval(() => { try { SW.tick(); } catch (e) {} }, 10 * 60e3);
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { o.v3028 = { opened: SW.st.opened, seen: SW.st.seen, hitTp: SW.st.hit, lastD: SW.st.lastD, open: TRN.st.open.filter(t => t.sw).map(t => ({ sym: t.sym, R: t.R0 ? +(t.sg * ((S.prices[t.sym] || t.entry) - t.entry) / t.R0).toFixed(2) : null, be: !!t.be })) }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.28', e); } }, 9000);
+window.SONAR_WEB = '3.0.28';
+} catch (e) { console.warn("baked 3.0.28", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
