@@ -169,9 +169,14 @@ def candidates(sym, f, ctx, rule):
         a = np.where(lg, 1, np.where(sh, -1, 0))
     elif sig == 'daily_event':   # daily-close events with volume vs its 20-day average (HanyStock: «كسر بحجم ضعيف = غالباً كاذب»، «حجم ضخم في القاع = استسلام»)
         d = f[['o', 'h', 'l', 'c', 'v']].resample('1D', label='left', closed='left').agg({'o': 'first', 'h': 'max', 'l': 'min', 'c': 'last', 'v': 'sum'}).dropna()
-        hi20, lo20, va = d.h.shift(1).rolling(20).max(), d.l.shift(1).rolling(20).min(), d.v.shift(1).rolling(20).mean()
+        nb = int(rule.get('lookback_d', 20))
+        hi20, lo20, va = d.h.shift(1).rolling(nb).max(), d.l.shift(1).rolling(nb).min(), d.v.shift(1).rolling(20).mean()
         vr = d.v / va.replace(0, np.nan); ev = rule['event']
-        e = (d.c > hi20) if ev == 'brk_hi' else (d.c < lo20) if ev == 'brk_lo' else (d.l <= lo20)   # 'capit': a new 20-day low
+        if ev in ('sweep_lo', 'sweep_hi'):   # false breakdown / breakout: the day pierces the N-day low (high) and closes back inside
+            e = ((d.l < lo20) & (d.c > lo20)) if ev == 'sweep_lo' else ((d.h > hi20) & (d.c < hi20))
+            f['_dl'] = closed_on_hours(d.l, f.index, '1D'); f['_dh'] = closed_on_hours(d.h, f.index, '1D')
+        else:
+            e = (d.c > hi20) if ev == 'brk_hi' else (d.c < lo20) if ev == 'brk_lo' else (d.l <= lo20)   # 'capit': a new N-day low
         if rule.get('vr_min') is not None: e &= vr >= rule['vr_min']
         if rule.get('vr_max') is not None: e &= vr < rule['vr_max']
         x = pd.Series(np.where(e, 1, 0), index=d.index)
@@ -232,6 +237,9 @@ def simulate(f, t, sg, rule, cost_r_pct):
     elif rule.get('stop_mode') == 'swing12h':   # tighter: just beyond the last 12 hours' extreme (≈ the last three 4h candles), not the whole pump
         w = f.h.values[max(0, i - 12):i].max() if sg < 0 else f.l.values[max(0, i - 12):i].min()
         risk = ((w - entry) if sg < 0 else (entry - w)) + rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]
+    elif rule.get('stop_mode') == 'sweep':   # beyond the wick of the sweep day
+        w = f['_dl'].iat[i - 1] if sg > 0 else f['_dh'].iat[i - 1]
+        risk = ((entry - w) if sg > 0 else (w - entry)) + rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]
     elif rule.get('stop_mode') == 'peak':   # short a pump: stop just above its peak
         risk = (f['_pk'].iat[i - 1] + rule.get('stop_buf_atr4h', .25) * f.atr4h.iat[i - 1]) - entry if sg < 0 else None
         if risk is None: risk = rule['stop_atr4h'] * f.atr4h.iat[i - 1]
