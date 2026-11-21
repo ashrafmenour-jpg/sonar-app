@@ -1583,6 +1583,52 @@
    "be_at_r": 1.0,
    "max_hours": 120,
    "name": "الاختراق الكاذب لقمة كبيرة: فوق قمة 6 شهور وقفل تحتها — شورت، الوقف فوق ذيل اليوم، هدف 2R"
+  },
+  {
+   "signal": "daily_event",
+   "mood": null,
+   "loc": null,
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25,
+   "registered": "2026-11-21",
+   "id": "sweep_hi_20d_short_down",
+   "side": -1,
+   "event": "sweep_hi",
+   "lookback_d": 20,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 120,
+   "name": "الاختراق الكاذب والسوق نازل: الارتداد يطلع فوق قمة 20 يوم ويقفل تحتها — شورت، الوقف فوق ذيل اليوم، هدف 2R",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "seen": true
+  },
+  {
+   "signal": "daily_event",
+   "mood": null,
+   "loc": null,
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25,
+   "registered": "2026-11-21",
+   "id": "sweep_hi_20d_short_down_trail",
+   "side": -1,
+   "event": "sweep_hi",
+   "lookback_d": 20,
+   "max_hours": 360,
+   "name": "الاختراق الكاذب والسوق نازل — شورت من غير هدف ثابت، وقف متحرك 3×ATR بعد +1R",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "seen": true,
+   "no_tp": true,
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   }
   }
  ]
 }
