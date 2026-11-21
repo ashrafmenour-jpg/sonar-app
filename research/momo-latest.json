@@ -1,7 +1,7 @@
 {
  "app": "sonar-momo-test",
  "v": 1,
- "at": "2026-11-21T21:29:42Z",
+ "at": "2026-11-21T21:33:41Z",
  "rules_sha256": "2503c3079d9031258e384b3d262340f588b1fab4a08c5dae385fe45df82028f4",
  "registered": "2026-11-19",
  "symbols": [
@@ -67,7 +67,7 @@
   "SWELLUSDT"
  ],
  "from": "2025-01",
- "seconds": 12,
+ "seconds": 8,
  "variants": [
   {
    "id": "momo_now",
