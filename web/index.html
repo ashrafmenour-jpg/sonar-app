@@ -15369,6 +15369,57 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.29', e); } }, 9500);
 window.SONAR_WEB = '3.0.29';
 } catch (e) { console.warn("baked 3.0.29", e); }
+
+/* ===== baked update 3.0.30 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.30 (Ashraf, 23 Nov: «كل التعلم شورت» → «ابدا») — the long side, ready for when the market turns.
+   The 8-year long batch (23 Nov): longs win by following the trend, not by buying dips or bottoms.
+     dsl_pyramid_regime  +0.20R, t 2.8, +0.18R after 2023, UP +0.18 / RANGE +0.23 — proven
+     brk_hi_55d_trail    +0.20R, t 2.7, +0.14R after 2023, UP +0.31 — proven
+     buying the dip ≈ 0, false-breakdown long −0.19R, small-coin trend long −0.04R — rejected
+   Two paper engines on the test's 20 coins, active only while BTC is UP or RANGE (GATE320), so they stay quiet in today's DOWN market:
+     «مثبت: لونج سوينج يومي + تعزيز» — onset of 4h and daily trend up; stop 2.5×ATR4h; at +1R stop → entry and a second unit;
+        both trail 3×ATR4h behind the best price; no fixed target; up to 20 days.
+     «مثبت: كسر قمة 55 يوم» — daily close above the prior 55-day high; stop 2.5×ATR4h; trail 3×ATR4h after +1R; up to 30 days. */
+  const PR = window.PR3024; if (typeof TRN === 'undefined' || !PR) { console.warn('3.0.30: missing TRN/PR3024'); return; }
+  const SRC_T = 'مثبت: لونج سوينج يومي + تعزيز', SRC_A = SRC_T + ' · تعزيز', SRC_B = 'مثبت: كسر قمة 55 يوم', HR = 36e5, H4 = 4 * HR, DAY = 864e5;
+  const CFG = { [SRC_T]: { k: 3, maxH: 480, pyr: true }, [SRC_A]: { k: 3, maxH: 480 }, [SRC_B]: { k: 3, maxH: 720 } };
+  const far = (p, R) => [p + 50 * R, p + 60 * R];
+  const LG = { st: Object.assign({ prev: {}, last4: 0, lastD: 0, opened: 0, breakouts: 0, adds: 0 }, store.get('p3030', {})), busy: false, save() { store.set('p3030', this.st); },
+    reg() { try { return GATE320 && GATE320.reg; } catch (e) { return null; } },
+    open(src, sym, K4, raw) { const p = S.prices[sym] || K4.c[K4.c.length - 1], a4 = PR.atr4(K4), R = 2.5 * a4; if (!(R > 0) || !N(p)) return false;
+      const ok = TRN.openCall(src, { sym, sg: 1, stop: p - R, tps: far(p, R), raw }, src);
+      if (ok) { const T = TRN.st.open[TRN.st.open.length - 1]; if (T && T.src === src) { T.lx = 1; T.a4 = a4; T.ext = T.entry; } src === SRC_B ? this.st.breakouts++ : this.st.opened++; this.save(); } return ok; },
+    async tick() { const now = Date.now(), b4 = Math.floor(now / H4) * H4, bD = Math.floor(now / DAY) * DAY; if (this.busy || b4 <= this.st.last4 || now - b4 < 5 * 60e3) return;
+      const g = this.reg(); if (!g) return; this.busy = true; const live = g === 'UP' || g === 'RANGE', prime = !this.st.last4, newDay = bD > this.st.lastD;
+      try { for (const sym of PR.SYMS) { try {
+            const K4 = closedK(await API.klines(sym, '4h', 120)), KD = closedK(await API.klines(sym, '1d', 80)); if (K4.c.length < 60 || KD.c.length < 60) continue;
+            const on = PR.dir(K4.c) === 1 && PR.dir(KD.c) === 1, was = !!this.st.prev[sym]; this.st.prev[sym] = on;
+            const has = src => TRN.st.open.some(t => t.src === src && t.sym === sym);
+            if (live && !prime && on && !was && !has(SRC_T)) this.open(SRC_T, sym, K4, `قاعدة مثبتة على 8 سنين (+0.20R): الـ4 ساعات واليومي بدأوا يطلعوا والسوق ${g === 'UP' ? 'صاعد' : 'عرضي'} — وقف 2.5×ATR4س، تعزيز عند +1R، وقف متحرك 3×ATR`);
+            if (newDay && this.st.lastD) { const n = KD.c.length - 1, hi = Math.max(...KD.h.slice(n - 55, n)), y = KD.c[n - 1] > Math.max(...KD.h.slice(n - 56, n - 1));
+              if (live && KD.c[n] > hi && !y && !has(SRC_B)) this.open(SRC_B, sym, K4, `قاعدة مثبتة على 8 سنين (+0.20R): إغلاق يومي فوق قمة 55 يوم (${fp(hi)}) والسوق ${g === 'UP' ? 'صاعد' : 'عرضي'} — وقف 2.5×ATR4س ووقف متحرك 3×ATR بعد +1R`); }
+          } catch (e) {} await sleep(150); }
+        this.st.last4 = b4; if (newDay) this.st.lastD = bD; this.save(); } catch (e) { console.warn('p3030', e); } finally { this.busy = false; } } };
+  // these longs are never sampled out (they only open outside a down market anyway)
+  { const k0 = PR.keepLong.bind(PR); PR.keepLong = function (src) { return src === SRC_T || src === SRC_A || src === SRC_B ? true : k0(src); }; }
+  const s1 = TRN.step.bind(TRN);
+  TRN.step = function (T, hi, lo, close, now) { const cfg = T && T.lx && CFG[T.src]; if (!cfg) return s1(T, hi, lo, close, now);
+    if (lo <= T.stop) { this.settle(T, T.stop, T.stop > T.entry ? 'trail' : (T.stop >= T.entry ? 'be' : 'sl'), now); return true; }
+    T.ext = Math.max(T.ext || T.entry, hi); const R0 = T.R0 || 1, mfe = (T.ext - T.entry) / R0, rNow = (close - T.entry) / R0;
+    if (cfg.pyr && !T.pyr && rNow >= 1) { T.pyr = 1; if (T.stop < T.entry) T.stop = T.entry;
+      try { const ok = TRN.openCall(SRC_A, { sym: T.sym, sg: 1, stop: T.entry, tps: far(close, R0), raw: 'تعزيز عند +1R بعد نقل وقف الصفقة الأولى للدخول' }, SRC_A);
+        if (ok) { const A = TRN.st.open[TRN.st.open.length - 1]; if (A && A.src === SRC_A) { A.lx = 1; A.a4 = T.a4; A.ext = A.entry; A.parent = T.id; } LG.st.adds++; LG.save(); } } catch (e) {} }
+    if (mfe >= 1) { const cand = T.ext - cfg.k * T.a4; if (N(cand) && cand > T.stop) T.stop = cand; }
+    if (T.parent) { const P = TRN.st.open.find(x => x.id === T.parent); if (P && P.stop > T.stop) T.stop = P.stop; }
+    if (now - T.t > cfg.maxH * HR) { this.settle(T, close, 'time', now); return true; } return false; };
+  window.LG3030 = LG;
+  setTimeout(() => LG.tick(), 45000); setInterval(() => { try { LG.tick(); } catch (e) {} }, 10 * 60e3);
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { o.v3030 = { reg: LG.reg(), trendOpened: LG.st.opened, adds: LG.st.adds, breakouts: LG.st.breakouts, last4: LG.st.last4, open: TRN.st.open.filter(t => t.lx).map(t => ({ src: t.src, sym: t.sym, R: t.R0 ? +(((S.prices[t.sym] || t.entry) - t.entry) / t.R0).toFixed(2) : null, stop: t.stop })) }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.30', e); } }, 10000);
+window.SONAR_WEB = '3.0.30';
+} catch (e) { console.warn("baked 3.0.30", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
