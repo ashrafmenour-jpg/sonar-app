@@ -1,7 +1,7 @@
 {
  "app": "sonar-validator-test",
  "v": 1,
- "at": "2026-11-22T23:04:20Z",
+ "at": "2026-11-22T23:19:45Z",
  "rules_sha256": "c89ae175f38476861bddcb73bb0a058557132e72bc8e2ce6bedb334578120af4",
  "registered": "2026-11-19",
  "symbols": [
@@ -82,7 +82,7 @@
   "SWELLUSDT"
  ],
  "from": "2025-01",
- "seconds": 53,
+ "seconds": 37,
  "variants": [
   {
    "id": "val_full_prompt",
