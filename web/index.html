@@ -15335,6 +15335,40 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.28', e); } }, 9000);
 window.SONAR_WEB = '3.0.28';
 } catch (e) { console.warn("baked 3.0.28", e); }
+
+/* ===== baked update 3.0.29 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.29 — shadow test of «protect the trade after +1R» on every training trade, before changing any exit.
+   On 17–22 Nov, 93 trades reached +1R and came back to the full stop (−97R). For every trade the page now also scores, on the same candles:
+     be1   — stop moved to entry once the trade is +1R in profit
+     half1 — half closed at +1R and the stop moved to entry
+   Nothing trades differently: the result per engine shows whether protecting earlier pays (it also cuts winners that dip back first).
+   The cross back through entry is only counted on a later candle than the one that reached +1R (conservative). */
+  if (typeof TRN === 'undefined' || !TRN.step || !TRN.settle) { console.warn('3.0.29: TRN missing'); return; }
+  const SH = { st: Object.assign({ n: 0, act: 0, be1: 0, half1: 0, hit1: 0, cut: 0, src: {} }, store.get('p3029', {})),
+    add(T, R) { const R0 = T.R0, cost = (T.cost || .0015) * T.entry / R0, sh = T._sh || {};
+      let be1 = sh.x ? -cost : R, half1 = sh.a ? (.5 * 1 + (sh.x ? 0 : .5 * (R + cost)) - cost) : R;
+      if (T.half) { be1 = R; half1 = R - .5 * (Math.abs(T.tp1 - T.entry) / R0 - 1); }   // reached the first target: same path, the half was banked later
+      const st = this.st, g = st.src[T.src] || (st.src[T.src] = { n: 0, act: 0, be1: 0, half1: 0 });
+      for (const o of [st, g]) { o.n++; o.act += R; o.be1 += be1; o.half1 += half1; }
+      if (sh.a) st.hit1++; if (sh.x && R > 0) st.cut++; if (st.n % 20 === 0) store.set('p3029', st); } };
+  const s1 = TRN.step.bind(TRN);
+  TRN.step = function (T, hi, lo, close, now) {
+    try { if (T && T.R0 > 0 && !T.half) { const sh = T._sh || (T._sh = {}), sg = T.sg;
+        if (sh.a && !sh.x && (sg > 0 ? lo <= T.entry : hi >= T.entry)) sh.x = 1;               // came back to entry after +1R
+        if (!sh.a && (sg > 0 ? hi - T.entry : T.entry - lo) >= T.R0) sh.a = 1; } } catch (e) {}
+    return s1(T, hi, lo, close, now); };
+  const st0 = TRN.settle.bind(TRN);
+  TRN.settle = function (T, px, why, now) { const r = st0(T, px, why, now);
+    try { if (N(r)) SH.add(T, r); } catch (e) {} return r; };
+  window.SH3029 = SH;
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { const st = SH.st, f = (x, n) => n ? +(x / n).toFixed(3) : null;
+      o.v3029 = { n: st.n, reached1R: st.hit1, winnersCut: st.cut, mean: { act: f(st.act, st.n), be1: f(st.be1, st.n), half1: f(st.half1, st.n) }, sum: { act: +st.act.toFixed(1), be1: +st.be1.toFixed(1), half1: +st.half1.toFixed(1) },
+        bySrc: Object.entries(st.src).filter(([, g]) => g.n >= 10).map(([k, g]) => ({ src: k, n: g.n, act: f(g.act, g.n), be1: f(g.be1, g.n), half1: f(g.half1, g.n) })).sort((a, b) => b.n - a.n).slice(0, 40) }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.29', e); } }, 9500);
+window.SONAR_WEB = '3.0.29';
+} catch (e) { console.warn("baked 3.0.29", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
