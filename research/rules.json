@@ -1629,6 +1629,262 @@
     "k": 3.0,
     "after_r": 1.0
    }
+  },
+  {
+   "id": "dsl_base",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": 1,
+    "d1d": 1
+   },
+   "mood": [
+    "rally",
+    "btc_only"
+   ],
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "name": "لونج سوينج يومي (مرآة الشورت المثبت): اليومي والـ4 ساعات طالعين والمزاج صعود — هدف 3R، لحد 10 أيام",
+   "loc": null,
+   "registered": "2026-11-23"
+  },
+  {
+   "id": "dsl_pyramid",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": 1,
+    "d1d": 1
+   },
+   "mood": [
+    "rally",
+    "btc_only"
+   ],
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "name": "لونج سوينج يومي + تعزيز عند +1R والوقف للدخول، والاتنين بوقف متحرك 3×ATR",
+   "loc": null,
+   "registered": "2026-11-23"
+  },
+  {
+   "id": "dsl_pyramid_regime",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": 1,
+    "d1d": 1
+   },
+   "regime": [
+    "UP",
+    "RANGE"
+   ],
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "name": "لونج سوينج يومي + تعزيز ووقف متحرك — بس لما البيتكوين صاعد أو عرضي (من غير شرط المزاج)",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23"
+  },
+  {
+   "id": "dsl_pyramid_alts",
+   "side": 1,
+   "signal": "cond",
+   "universe": "alts",
+   "dirs": {
+    "d4h": 1,
+    "d1d": 1
+   },
+   "mood": [
+    "rally",
+    "btc_only"
+   ],
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "name": "لونج سوينج يومي + تعزيز ووقف متحرك — على العملات الصغيرة (70 عملة)",
+   "loc": null,
+   "registered": "2026-11-23"
+  },
+  {
+   "id": "dip_long_up",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d1d": 1
+   },
+   "pos_max": 0.3,
+   "regime": [
+    "UP"
+   ],
+   "stop_atr4h": 2.5,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 120,
+   "name": "شراء التصحيح في سوق صاعد: اليومي طالع والسعر في أوطى 30% من نطاق 48 ساعة — هدف 2R، الوقف للدخول عند +1R",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23"
+  },
+  {
+   "id": "dip_long_up_trail",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d1d": 1
+   },
+   "pos_max": 0.3,
+   "regime": [
+    "UP"
+   ],
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 240,
+   "name": "شراء التصحيح في سوق صاعد — من غير هدف ثابت، وقف متحرك 3×ATR بعد +1R",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23"
+  },
+  {
+   "id": "dip_long_4hdown_up",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d1d": 1,
+    "d4h": -1
+   },
+   "regime": [
+    "UP",
+    "RANGE"
+   ],
+   "stop_atr4h": 2.5,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 120,
+   "name": "شراء التصحيح: اليومي طالع والـ4 ساعات نازلة (تصحيح جوه ترند) والبيتكوين صاعد أو عرضي — هدف 2R",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23"
+  },
+  {
+   "id": "vbu_pyramid",
+   "side": 1,
+   "signal": "daily_event",
+   "event": "brk_hi",
+   "vr_min": 1.5,
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "name": "كسر قمة 20 يوم بحجم ≥1.5× — من غير هدف ثابت: تعزيز عند +1R ووقف متحرك 3×ATR",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23"
+  },
+  {
+   "id": "vbu_regime_up",
+   "side": 1,
+   "signal": "daily_event",
+   "event": "brk_hi",
+   "vr_min": 1.5,
+   "regime": [
+    "UP",
+    "RANGE"
+   ],
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "name": "كسر قمة 20 يوم بحجم — بس لما البيتكوين صاعد أو عرضي، وقف متحرك 3×ATR",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23"
+  },
+  {
+   "id": "brk_hi_55d_trail",
+   "side": 1,
+   "signal": "daily_event",
+   "event": "brk_hi",
+   "lookback_d": 55,
+   "regime": [
+    "UP",
+    "RANGE"
+   ],
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 720,
+   "name": "كسر قمة 55 يوم (أسلوب السلاحف) والسوق صاعد أو عرضي — وقف متحرك 3×ATR، لحد 30 يوم",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23"
+  },
+  {
+   "id": "sweep_lo_20d_long_up",
+   "side": 1,
+   "signal": "daily_event",
+   "event": "sweep_lo",
+   "lookback_d": 20,
+   "regime": [
+    "UP",
+    "RANGE"
+   ],
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25,
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 120,
+   "name": "الكسر الكاذب لقاع 20 يوم والسوق صاعد أو عرضي — لونج، الوقف تحت ذيل اليوم، هدف 2R",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23"
   }
  ]
 }
