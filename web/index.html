@@ -15420,6 +15420,41 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.30', e); } }, 10000);
 window.SONAR_WEB = '3.0.30';
 } catch (e) { console.warn("baked 3.0.30", e); }
+
+/* ===== baked update 3.0.31 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.31 (Ashraf, 23 Nov: «المؤشرات كتير بس ممكن تنفع في اللونج أو السوق العرضي، وتركها يخلينا نفقد ميزة») —
+   every training engine runs at full size in the market state where it wins, and is sampled 1 in 5 (never switched off) where it
+   has clearly lost, judged per engine × side × BTC state from its own closed trades (last 12,000 in the ledger):
+     benched when that cell has ≥ 30 trades, mean ≤ −0.10R and t ≤ −1.5. When BTC's state changes, a different cell applies,
+     so an engine benched in a down market comes back by itself in a rising or sideways one, and is re-judged on what it does there.
+   The proven/promising rule engines («مثبت…», «واعد…») and real decisions are never sampled. The 3.0.24 rule (longs in a down
+   market) still applies first; this extends the same idea to shorts and to every state. */
+  if (typeof TRN === 'undefined' || !window.P221 || !P221.LED) { console.warn('3.0.31: missing TRN/LED'); return; }
+  const LED = P221.LED;
+  const RG = { cells: {}, at: 0, st: Object.assign({ k: 0, sampled: 0 }, store.get('p3031', {})),
+    exempt(src) { return !src || src === PICK.SRC || /^(مثبت|واعد)/.test(src) || /تعزيز$/.test(src); },
+    reg() { try { return TRN.regime(); } catch (e) { return ''; } },
+    build() { if (Date.now() - this.at < 10 * 60e3) return; this.at = Date.now(); const C = {};
+      for (const r of LED.st.L) { const key = r[2] + '|' + (r[4] > 0 ? 'L' : 'S') + '|' + (r[6] || ''), g = C[key] || (C[key] = { n: 0, s: 0, s2: 0 }); g.n++; g.s += r[5]; g.s2 += r[5] * r[5]; }
+      for (const g of Object.values(C)) { g.m = g.s / g.n; const v = Math.max(1e-9, g.s2 / g.n - g.m * g.m); g.t = g.m / Math.sqrt(v / g.n); g.bench = g.n >= 30 && g.m <= -.1 && g.t <= -1.5; }
+      this.cells = C; },
+    keep(src, sg) { if (this.exempt(src)) return true; this.build(); const g = this.cells[src + '|' + (sg > 0 ? 'L' : 'S') + '|' + this.reg()];
+      if (!g || !g.bench) return true; this.st.k++; if (this.st.k % 5 === 0) return true; this.st.sampled++; if (this.st.sampled % 25 === 0) store.set('p3031', this.st); return false; } };
+  { const s0 = TRN.scan.bind(TRN); TRN.scan = function (rows) { const id0 = this.st.id, out = s0(rows);
+      try { this.st.open = this.st.open.filter(t => !(t.id > id0 && !RG.keep(t.src, t.sg))); } catch (e) {} return out; }; }
+  { const o0 = TRN.openCall.bind(TRN); TRN.openCall = function (name, c, src0, ap) { const src = src0 || 'قناة: ' + name;
+      try { if (c && !RG.keep(src, c.sg)) return false; } catch (e) {} return o0(name, c, src0, ap); }; }
+  window.RG3031 = RG;
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { RG.build(); const reg = RG.reg(), E = Object.entries(RG.cells);
+      o.v3031 = { reg, sampledOut: RG.st.sampled,
+        benchedNow: E.filter(([k, g]) => g.bench && k.endsWith('|' + reg)).map(([k, g]) => ({ k: k.replace('|' + reg, ''), n: g.n, m: +g.m.toFixed(2) })).sort((a, b) => a.m - b.m).slice(0, 30),
+        benchedOther: E.filter(([k, g]) => g.bench && !k.endsWith('|' + reg)).length,
+        bestNow: E.filter(([k, g]) => k.endsWith('|' + reg) && g.n >= 30 && g.t >= 1.5).map(([k, g]) => ({ k: k.replace('|' + reg, ''), n: g.n, m: +g.m.toFixed(2) })).sort((a, b) => b.m - a.m).slice(0, 15) }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.31', e); } }, 10500);
+window.SONAR_WEB = '3.0.31';
+} catch (e) { console.warn("baked 3.0.31", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>

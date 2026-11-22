@@ -13,7 +13,7 @@ Honesty rules (from the TARGET review):
 Limits (written into the report): no USDT/BTC dominance history (that part of «مزاج السوق» is left out), no funding,
 spot candles not futures, 1h bars (no 15m), no order book.
 
-Data: https://data.binance.vision (public monthly/daily kline zips), cached in research/cache/.
+Data: https://data.binance.vision (public monthly/daily kline zips), cached in research/cache/. From Aug 2017 (Binance's start) since 23 Nov 2026 (was Jan 2018).
 Usage: python research/backtest.py [--symbols BTCUSDT,ETHUSDT] [--from 2018-01] [--out research/out]
 """
 import argparse, concurrent.futures as cf, datetime as dt, hashlib, io, json, math, os, sys, time, urllib.request, zipfile
@@ -311,7 +311,7 @@ def verdict(s):
 
 # ---------------------------------------------------------------------------------------------------- main
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--symbols', default=','.join(UNIVERSE + ALTS)); ap.add_argument('--from', dest='start', default='2018-01')
+    ap = argparse.ArgumentParser(); ap.add_argument('--symbols', default=','.join(UNIVERSE + ALTS)); ap.add_argument('--from', dest='start', default='2017-08')
     ap.add_argument('--out', default=os.path.join(HERE, 'out')); ap.add_argument('--cache', default=os.path.join(HERE, 'cache'))
     a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
     rules_raw = open(os.path.join(HERE, 'rules.json'), 'rb').read(); cfg = json.loads(rules_raw)

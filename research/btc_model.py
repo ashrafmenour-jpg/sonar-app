@@ -34,8 +34,34 @@ def day_end(s, idx):
     return s.resample('1D', label='left', closed='left').last().reindex(idx)
 
 
-def build(data):
-    btc = data['BTCUSDT']; kd = B.resample(btc, '1D'); k4 = B.resample(btc, '4h'); c = kd.c; X = pd.DataFrame(index=kd.index)
+def bitstamp_daily(cache, until):
+    """BTC/USD daily candles from Bitstamp (2011 →) for the years before Binance existed (Aug 2017); cached as CSV.
+    Only the daily frame uses them — 4h/hourly features, ETH and breadth stay empty for those years."""
+    f = os.path.join(cache, 'bitstamp-btcusd-1d.csv')
+    if os.path.exists(f): d = pd.read_csv(f)
+    else:
+        rows, start = [], 1325376000   # 2012-01-01
+        while start < 1504224000:      # 2017-09-01
+            try: j = json.loads(B._get(f'https://www.bitstamp.net/api/v2/ohlc/btcusd/?step=86400&limit=1000&start={start}'))
+            except Exception as e: print('bitstamp:', e); break
+            o = (j or {}).get('data', {}).get('ohlc', [])
+            if not o: break
+            rows += o; nxt = int(o[-1]['timestamp']) + 86400
+            if nxt <= start: break
+            start = nxt; time.sleep(.5)
+        if not rows: return None
+        d = pd.DataFrame(rows)[['timestamp', 'open', 'high', 'low', 'close', 'volume']]; os.makedirs(cache, exist_ok=True); d.to_csv(f, index=False)
+    d = d.astype(float).drop_duplicates('timestamp').sort_values('timestamp')
+    d.index = pd.to_datetime(d.timestamp.astype('int64'), unit='s', utc=True)
+    d = d.rename(columns={'open': 'o', 'high': 'h', 'low': 'l', 'close': 'c', 'volume': 'v'})[['o', 'h', 'l', 'c', 'v']]
+    return d[(d.index < until) & (d.c > 0)]
+
+
+def build(data, old=None):
+    btc = data['BTCUSDT']; kd = B.resample(btc, '1D'); k4 = B.resample(btc, '4h')
+    if old is not None and len(old):   # older BTC history before Binance (daily only)
+        kd = pd.concat([old[old.index < kd.index[0]], kd])
+    c = kd.c; X = pd.DataFrame(index=kd.index)
     # daily frame
     for n in (1, 3, 7, 14, 30, 90): X[f'ret_{n}d'] = c / c.shift(n) - 1
     for n in (20, 50, 200): X[f'dist_ema{n}'] = c / B.ema(c, n) - 1
@@ -49,6 +75,7 @@ def build(data):
     X['up_60d'] = c / kd.l.rolling(60).min() - 1
     X['pos_20d'] = (c - kd.l.rolling(20).min()) / (kd.h.rolling(20).max() - kd.l.rolling(20).min()).replace(0, np.nan)
     X['vol_ratio'] = kd.v / kd.v.rolling(20).mean()
+    if old is not None and len(old): X.loc[X.index < btc.index[0] + pd.Timedelta(days=21), 'vol_ratio'] = np.nan   # another exchange's volume
     X['streak'] = np.sign(c.diff()).groupby((np.sign(c.diff()) != np.sign(c.diff()).shift()).cumsum()).cumcount() * np.sign(c.diff())
     # weekly frame
     X['ret_4w'] = c / c.shift(28) - 1
@@ -116,7 +143,7 @@ def walk_forward(X, y, horizon, mk):
     for m0 in months:
         m1 = m0 + pd.offsets.MonthBegin(1); test = (X.index >= m0) & (X.index < m1)
         if not test.any(): continue
-        tr = (X.index < m0 - pd.Timedelta(days=horizon)) & y.notna() & (X.index >= X.index[0] + pd.Timedelta(days=200))
+        tr = (X.index < m0 - pd.Timedelta(days=horizon)) & y.notna() & (X.index >= X.index[0] + pd.Timedelta(days=200))   # older years train only; the test still starts in 2020
         if tr.sum() < 400: continue
         mdl = mk(); mdl.fit(X[tr].values, y[tr].values.astype(int))
         p[test] = mdl.predict_proba(X[test].values)[:, 1]
@@ -137,13 +164,18 @@ def score(y, p, ret, every):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--out', default=os.path.join(HERE, 'out')); ap.add_argument('--cache', default=os.path.join(HERE, 'cache'))
-    ap.add_argument('--from', dest='start', default='2018-01'); a = ap.parse_args(); os.makedirs(a.out, exist_ok=True); t0 = time.time()
+    ap.add_argument('--from', dest='start', default='2017-08'); ap.add_argument('--no-old', action='store_true'); a = ap.parse_args(); os.makedirs(a.out, exist_ok=True); t0 = time.time()
     y0, m0 = map(int, a.start.split('-')); data = {}
     for s in B.UNIVERSE:
         df = B.load(s, (y0, m0), a.cache)
         if df is not None and len(df) > 24 * 300: data[s] = df
     if 'BTCUSDT' not in data: sys.exit('no BTC data')
-    X, Y, reg, close = build(data); feats = list(X.columns); M = models(); res = {}; latest = {}
+    old = None
+    if not a.no_old:
+        try: old = bitstamp_daily(a.cache, data['BTCUSDT'].index[0])
+        except Exception as e: print('old history skipped:', e)
+        print('older BTC history:', 0 if old is None else len(old), 'days', '' if old is None or not len(old) else f'from {old.index[0].date()}')
+    X, Y, reg, close = build(data, old); feats = list(X.columns); M = models(); res = {}; latest = {}
     for k, h in HORIZONS.items():
         ret = Y[f'ret_{k}']; res[k] = {}
         base = {'persist': pd.Series(np.where(X[f'ret_{h}d' if f'ret_{h}d' in X else 'ret_7d'] > 0, .51, .49), index=X.index),
@@ -184,7 +216,7 @@ def main():
                         res['importance_d3_up'] = sorted([[f, round(float(v), 4)] for f, v in zip(feats, pi.importances_mean)], key=lambda z: -z[1])[:12]
                     except Exception as e: res['importance_d3_up'] = str(e)
             latest[f'{tgt}_{k}'] = round(float(np.mean(pr)), 3)
-    rep = {'generated': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'last_day': str(X.index[-1].date()), 'btc_close': round(float(close.iloc[-1]), 1),
+    rep = {'generated': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'last_day': str(X.index[-1].date()), 'first_day': str(X.index[0].date()), 'btc_close': round(float(close.iloc[-1]), 1),
            'regime_now': str(reg.iloc[-1]), 'features': feats, 'horizons_days': HORIZONS, 'test_from': START_TEST, 'holdout_from': HOLDOUT,
            'results': res, 'today': latest, 'secs': round(time.time() - t0)}
     json.dump(rep, open(os.path.join(a.out, 'btc-model-latest.json'), 'w'), ensure_ascii=False, indent=1, default=str)
