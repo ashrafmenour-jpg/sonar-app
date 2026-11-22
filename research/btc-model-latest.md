@@ -1,4 +1,4 @@
-# Sonar BTC model — 2026-11-22T04:15:03Z
+# Sonar BTC model — 2026-11-22T23:03:10Z
 BTC 60215.8 · regime DOWN · last closed day 2026-11-21
 
 | horizon | target | best | AUC 2023+ | best baseline AUC | acc 2023+ | best baseline acc | beats baselines |
