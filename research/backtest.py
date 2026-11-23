@@ -202,6 +202,9 @@ def candidates(sym, f, ctx, rule):
             ok = base & (f.l.rolling(48).min() <= pk * .88) & (f.c >= pk * .70) & (pd.Series(c4, index=f.index) > pd.Series(e4, index=f.index))
         else: ok = base & False
         a = np.where(ok.fillna(False), side, 0)
+    elif sig == 'revert':   # a big move over the last k hours, measured in 4h-ATRs, is faded (Target 4.2's minute bias pointed the wrong way at 1–4 h)
+        k = int(rule.get('k_h', 4)); mv = (f.c - f.c.shift(k)) / f.atr4h
+        thr = rule.get('thr_atr', 2.0); a = np.where(mv <= -thr, 1, np.where(mv >= thr, -1, 0))
     else:
         a = f.brk4h.fillna(0).values.astype(int)
     a = pd.Series(a, index=f.index)
