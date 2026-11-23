@@ -15505,6 +15505,21 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.33', e); } }, 11500);
 window.SONAR_WEB = '3.0.33';
 } catch (e) { console.warn("baked 3.0.33", e); }
+
+/* ===== baked update 3.0.34 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.34 — «دعم قوي قريب» no longer holds back a SHORT decision (it still holds back a long near resistance).
+   Live (decisions 17–23 Nov): shorts held back for a near support averaged +0.26R had they been taken (34 cases).
+   8 years (23 Nov, same check approximated by yesterday's low 0.8–3 % away): the proven daily short is still proven next to
+   a support (+0.22R, t 2.8; +0.09R after 2023) — weaker after 2023 than without one (+0.27R) but positive, so it is taken.
+   For longs the check is right: the proven long next to resistance falls to +0.08R (fragile, −0.04R after 2023) vs +0.25R. */
+  if (typeof JUDGE === 'undefined' || !JUDGE.classify) { console.warn('3.0.34: JUDGE missing'); return; }
+  const c0 = JUDGE.classify.bind(JUDGE); let n = 0;
+  JUDGE.classify = function (x) { try { if (x && x.sg < 0 && Array.isArray(x.no) && x.no.some(w => /^دعم قوي قريب/.test(w))) { n++; x = Object.assign({}, x, { no: x.no.filter(w => !/^دعم قوي قريب/.test(w)), supNear: 1 }); } } catch (e) {} return c0(x); };
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments); try { o.v3034 = { shortsNotHeldForSupport: n }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.34', e); } }, 12000);
+window.SONAR_WEB = '3.0.34';
+} catch (e) { console.warn("baked 3.0.34", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
