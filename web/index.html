@@ -15550,6 +15550,25 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.35', e); } }, 12500);
 window.SONAR_WEB = '3.0.35';
 } catch (e) { console.warn("baked 3.0.35", e); }
+
+/* ===== baked update 3.0.36 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.36 — training trades are protected once they are +1R: the stop moves to entry on the next candle.
+   Shadow test 3.0.29 on 1,241 live training trades (22–23 Nov, every engine): as traded +0.017R/trade (+20.6R),
+   stop → entry at +1R +0.055R/trade (+68.5R), half at +1R −0.020R; 445 trades reached +1R, 16 later winners would have been cut.
+   Better in most engines. Not applied to engines with their own tested exits (flexible/trailing/quick: «مثبت…», «واعد…»),
+   to trades already past their first target, nor to real decisions (account 2.1). The shadow keeps scoring, so the effect stays measured. */
+  if (typeof TRN === 'undefined' || !TRN.step) { console.warn('3.0.36: TRN missing'); return; }
+  let moved = 0;
+  const own = T => T.flex || T.lx || T.vb || T.sw || T.qk || /^(مثبت|واعد)/.test(T.src || '') || T.src === PICK.SRC;
+  const s1 = TRN.step.bind(TRN);
+  TRN.step = function (T, hi, lo, close, now) {
+    try { if (T && !T.half && !T.be1 && T._sh && T._sh.a && !own(T) && (T.sg > 0 ? T.stop < T.entry : T.stop > T.entry)) { T.stop = T.entry; T.be1 = 1; moved++; } } catch (e) {}
+    return s1(T, hi, lo, close, now); };
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments); try { o.v3036 = { protectedAt1R: moved, openProtected: TRN.st.open.filter(t => t.be1).length }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.36', e); } }, 13000);
+window.SONAR_WEB = '3.0.36';
+} catch (e) { console.warn("baked 3.0.36", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
