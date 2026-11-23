@@ -15455,6 +15455,31 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.31', e); } }, 10500);
 window.SONAR_WEB = '3.0.31';
 } catch (e) { console.warn("baked 3.0.31", e); }
+
+/* ===== baked update 3.0.32 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.32 — the server page restarts ~17 times a day. Every 15 minutes the server takes a snapshot that builds the whole
+   learning file (~7 MB) and the whole «all my data» backup (every saved key) as JSON strings inside the page, then copies them out;
+   with a 2 GB container that is the most likely cause of the out-of-memory crashes. On the server only (window.SONAR_SERVER), and
+   only for the server's own snapshot (not a person pressing export): the learning file is rebuilt at most once an hour and the full backup at most
+   once every 6 hours (the diagnosis stays every 15 minutes). The /f/ files then serve the last copy. Heap size is reported (v3032)
+   so the next diagnoses show whether memory was the cause. */
+  if (!window.SONAR_SERVER) return;
+  // the server's snapshot captures exporters by swapping the link-click function for a moment; a person's click leaves it alone
+  const human = () => { const f = HTMLAnchorElement.prototype.click; return !/got = \{ name: this\.download/.test(String(f)); };   // server/runner.py GRAB
+  const G = { st: Object.assign({ learnAt: 0, allAt: 0, skipL: 0, skipA: 0, mem: [] }, store.get('p3032', {})), save() { store.set('p3032', this.st); } };
+  if (typeof TRN !== 'undefined' && TRN.exportFile) { const e0 = TRN.exportFile.bind(TRN);
+    TRN.exportFile = function () { if (!human() && Date.now() - G.st.learnAt < 55 * 60e3) { G.st.skipL++; return; } G.st.learnAt = Date.now(); G.save(); return e0.apply(this, arguments); }; }
+  if (typeof MIG !== 'undefined' && MIG.export) { const m0 = MIG.export.bind(MIG);
+    MIG.export = function () { if (!human() && Date.now() - G.st.allAt < 6 * 3600e3) { G.st.skipA++; return; } G.st.allAt = Date.now(); G.save(); return m0.apply(this, arguments); }; }
+  const heap = () => { try { return Math.round(performance.memory.usedJSHeapSize / 1048576); } catch (e) { return null; } };
+  setInterval(() => { const h = heap(); if (h == null) return; G.st.mem.push([Date.now(), h]); if (G.st.mem.length > 96) G.st.mem.shift(); }, 15 * 60e3);
+  window.G3032 = G;
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { o.v3032 = { heapMB: heap(), heapLimitMB: (() => { try { return Math.round(performance.memory.jsHeapSizeLimit / 1048576); } catch (e) { return null; } })(), learnAt: G.st.learnAt, allAt: G.st.allAt, skippedLearning: G.st.skipL, skippedAll: G.st.skipA, heapLog: G.st.mem.slice(-24) }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.32', e); } }, 11000);
+window.SONAR_WEB = '3.0.32';
+} catch (e) { console.warn("baked 3.0.32", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
