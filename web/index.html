@@ -15480,6 +15480,31 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.32', e); } }, 11000);
 window.SONAR_WEB = '3.0.32';
 } catch (e) { console.warn("baked 3.0.32", e); }
+
+/* ===== baked update 3.0.33 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.33 — the online brain was down ~8 h a day: Groq's free daily limit ran out on the one chosen model, and the
+   OpenRouter fallback's free limit too. Groq counts the limit per model, so after a «rate limit» the other Groq models
+   (qwen3.8-27b, gpt-oss-20b) are tried before OpenRouter, and a model that hit its limit is skipped until the time Groq gives
+   («try again in 12m…», else 1 h) instead of being asked again and again. */
+  if (typeof FAI === 'undefined' || !FAI.order) { console.warn('3.0.33: FAI missing'); return; }
+  const CD = { st: Object.assign({ until: {}, hits: 0 }, store.get('p3033', {})), save() { store.set('p3033', this.st); } };
+  const wait = m => { const x = /try again in\s*(?:(\d+)h)?\s*(?:(\d+)m)?\s*(?:([\d.]+)s)?/i.exec(m || ''); if (!x) return 3600e3; return ((+x[1] || 0) * 3600 + (+x[2] || 0) * 60 + (+x[3] || 0)) * 1000 + 30e3; };
+  const f0 = window.fetch;
+  window.fetch = function (u, o) { const url = String((u && u.url) || u || ''); const p = f0.apply(this, arguments);
+    if (!/api\.groq\.com\/openai\/v1\/chat|openrouter\.ai\/api\/v1\/chat/.test(url)) return p;
+    return p.then(r => { try { if (r.status === 429 || r.status === 413) { let model = ''; try { model = JSON.parse(o.body).model; } catch (e) {}
+          r.clone().json().then(j => { const m = (j && j.error && (j.error.message || j.error)) || ''; CD.st.until[model] = Date.now() + wait(String(m)); CD.st.hits++; CD.save(); }).catch(() => { CD.st.until[model] = Date.now() + 3600e3; CD.save(); }); } } catch (e) {} return r; }); };
+  const o0 = FAI.order.bind(FAI);
+  FAI.order = function () { const L = o0(), out = [], now = Date.now();
+    for (const it of L) { out.push(it); if (it[0] === 'groq') for (const m of FAI.P.groq.models) if (m !== it[2]) out.push(['groq', it[1], m]); }
+    const ok = out.filter(it => !(CD.st.until[it[2]] > now)); return ok.length ? ok : L; };
+  window.CD3033 = CD;
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { const now = Date.now(); o.v3033 = { limitHits: CD.st.hits, coolingNow: Object.entries(CD.st.until).filter(([, t]) => t > now).map(([m, t]) => ({ m, mins: Math.round((t - now) / 60e3) })), via: FAI.st.via }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.33', e); } }, 11500);
+window.SONAR_WEB = '3.0.33';
+} catch (e) { console.warn("baked 3.0.33", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>

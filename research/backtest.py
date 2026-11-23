@@ -218,6 +218,12 @@ def candidates(sym, f, ctx, rule):
         # short: chase = price already at the bottom of the 48h range; long: chase = at the top
         chase = np.where(a < 0, p < .25, p > .75); mid = (p > .33) & (p < .67)
         onset &= ~pd.Series(chase, index=f.index) if loc == 'no_chase' else ~(pd.Series(chase, index=f.index) | mid)
+    sup = rule.get('sup')   # Sonar's live «دعم/مقاومة قوي قريب» check, approximated by yesterday's low (short) / high (long) 0.8–3 % away
+    if sup:
+        d = resample(f, '1D'); pl = closed_on_hours(d.l, f.index, '1D'); ph = closed_on_hours(d.h, f.index, '1D')
+        dist = pd.Series(np.where(a < 0, (f.c - pl) / f.c, (ph - f.c) / f.c), index=f.index)
+        near = (dist > .008) & (dist < .03)
+        onset &= ~near if sup == 'avoid' else near
     onset &= f.atr4h.notna() & (f.atr4h > 0)
     return [(t, sym, int(a[t])) for t in f.index[onset.values]]
 

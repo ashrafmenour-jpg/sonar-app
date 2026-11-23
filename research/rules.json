@@ -1885,6 +1885,166 @@
    "mood": null,
    "loc": null,
    "registered": "2026-11-23"
+  },
+  {
+   "id": "dss_pyramid_sup_avoid",
+   "name": "الشورت اليومي + تعزيز — بس لو مفيش دعم قريب (قاع امبارح مش على بعد 0.8–3%)",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": null,
+   "max_hours": 480,
+   "registered": "2026-11-23",
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "sup": "avoid"
+  },
+  {
+   "id": "dss_pyramid_sup_only",
+   "name": "الشورت اليومي + تعزيز — بس لو فيه دعم قريب (قاع امبارح على بعد 0.8–3%)",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": null,
+   "max_hours": 480,
+   "registered": "2026-11-23",
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "sup": "only"
+  },
+  {
+   "id": "dss_sup_avoid",
+   "name": "الشورت اليومي (هدف ثابت) — بس لو مفيش دعم قريب",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "registered": "2026-11-23",
+   "sup": "avoid"
+  },
+  {
+   "id": "dss_sup_only",
+   "name": "الشورت اليومي (هدف ثابت) — بس لو فيه دعم قريب",
+   "side": -1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": -1,
+    "d1d": -1
+   },
+   "mood": [
+    "deep",
+    "pullback"
+   ],
+   "loc": null,
+   "stop_atr4h": 2.5,
+   "tp_r": 3.0,
+   "be_at_r": 1.5,
+   "max_hours": 240,
+   "registered": "2026-11-23",
+   "sup": "only"
+  },
+  {
+   "id": "dsl_sup_avoid",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": 1,
+    "d1d": 1
+   },
+   "regime": [
+    "UP",
+    "RANGE"
+   ],
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "name": "لونج سوينج + تعزيز (صاعد/عرضي) — بس لو مفيش مقاومة قريبة (قمة امبارح مش على بعد 0.8–3%)",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23",
+   "sup": "avoid"
+  },
+  {
+   "id": "dsl_sup_only",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": 1,
+    "d1d": 1
+   },
+   "regime": [
+    "UP",
+    "RANGE"
+   ],
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "name": "لونج سوينج + تعزيز (صاعد/عرضي) — بس لو فيه مقاومة قريبة",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23",
+   "sup": "only"
   }
  ]
 }
