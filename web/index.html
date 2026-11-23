@@ -15520,6 +15520,36 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.34', e); } }, 12000);
 window.SONAR_WEB = '3.0.34';
 } catch (e) { console.warn("baked 3.0.34", e); }
+
+/* ===== baked update 3.0.35 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.35 — «مثبت: كسر قمة 20 يوم بحجم» exits like its still-proven version. With the test extended to Aug 2017 the
+   fixed-target version (vol_break_up_hi) dropped to «promising» (+0.02R after 2023); the same entry with an add-on at +1R and an
+   ATR trailing stop (vbu_pyramid) stays proven: +0.21R, t 2.3, +0.12R after 2023. New trades of this engine: no fixed target;
+   at +1R the stop goes to entry and a second unit opens («… · تعزيز»); both trail 3×ATR4h behind the best price; up to 20 days. */
+  const PR = window.PR3024; if (typeof TRN === 'undefined' || !PR) { console.warn('3.0.35: missing'); return; }
+  const SRC = PR.SRC_L, SRC_A = SRC + ' · تعزيز', HR = 36e5, K = 3, MAXH = 480;
+  const far = (p, R) => [p + 50 * R, p + 60 * R]; let adds = 0, opened = 0;
+  { const k0 = PR.keepLong.bind(PR); PR.keepLong = function (src) { return src === SRC_A ? true : k0(src); }; }
+  const op0 = PR.open.bind(PR);
+  PR.open = function (src, sym, sg, K4, raw) { if (src !== SRC || sg !== 1) return op0(src, sym, sg, K4, raw);
+    const p = S.prices[sym] || K4.c[K4.c.length - 1], a4 = this.atr4(K4), R = 2.5 * a4; if (!(R > 0) || !N(p)) return false;
+    const ok = TRN.openCall(src, { sym, sg: 1, stop: p - R, tps: far(p, R), raw: raw + ' · خروج مرن: تعزيز عند +1R ووقف متحرك 3×ATR (vbu_pyramid، مثبت)' }, src);
+    if (ok) { const T = TRN.st.open[TRN.st.open.length - 1]; if (T && T.src === src) { T.vb = 1; T.a4 = a4; T.ext = T.entry; } opened++; this.st.opened++; this.save(); } return ok; };
+  const s1 = TRN.step.bind(TRN);
+  TRN.step = function (T, hi, lo, close, now) { if (!T || !T.vb) return s1(T, hi, lo, close, now);
+    if (lo <= T.stop) { this.settle(T, T.stop, T.stop > T.entry ? 'trail' : (T.stop >= T.entry ? 'be' : 'sl'), now); return true; }
+    T.ext = Math.max(T.ext || T.entry, hi); const R0 = T.R0 || 1, mfe = (T.ext - T.entry) / R0, rNow = (close - T.entry) / R0;
+    if (T.src === SRC && !T.pyr && rNow >= 1) { T.pyr = 1; if (T.stop < T.entry) T.stop = T.entry;
+      try { const ok = TRN.openCall(SRC_A, { sym: T.sym, sg: 1, stop: T.entry, tps: far(close, R0), raw: 'تعزيز عند +1R بعد نقل وقف الصفقة الأولى للدخول' }, SRC_A);
+        if (ok) { const A = TRN.st.open[TRN.st.open.length - 1]; if (A && A.src === SRC_A) { A.vb = 1; A.a4 = T.a4; A.ext = A.entry; A.parent = T.id; } adds++; } } catch (e) {} }
+    if (mfe >= 1) { const c = T.ext - K * T.a4; if (N(c) && c > T.stop) T.stop = c; }
+    if (T.parent) { const P = TRN.st.open.find(x => x.id === T.parent); if (P && P.stop > T.stop) T.stop = P.stop; }
+    if (now - T.t > MAXH * HR) { this.settle(T, close, 'time', now); return true; } return false; };
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments); try { o.v3035 = { opened, adds, open: TRN.st.open.filter(t => t.vb).map(t => ({ sym: t.sym, src: t.src, R: t.R0 ? +(((S.prices[t.sym] || t.entry) - t.entry) / t.R0).toFixed(2) : null })) }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.35', e); } }, 12500);
+window.SONAR_WEB = '3.0.35';
+} catch (e) { console.warn("baked 3.0.35", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
