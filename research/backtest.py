@@ -202,6 +202,24 @@ def candidates(sym, f, ctx, rule):
             ok = base & (f.l.rolling(48).min() <= pk * .88) & (f.c >= pk * .70) & (pd.Series(c4, index=f.index) > pd.Series(e4, index=f.index))
         else: ok = base & False
         a = np.where(ok.fillna(False), side, 0)
+    elif sig == 'supertrend':   # Supertrend (ATR n, mult) on a higher frame: price tests the line against the trend and closes back → trade with the trend
+        tf = rule.get('tf', '12h'); k = resample(f, tf); n, m = int(rule.get('st_atr', 10)), float(rule.get('st_mult', 3.0))
+        tr = pd.concat([k.h - k.l, (k.h - k.c.shift()).abs(), (k.l - k.c.shift()).abs()], axis=1).max(axis=1); at = tr.ewm(alpha=1 / n, adjust=False).mean().values
+        hl2 = ((k.h + k.l) / 2).values; ub0, lb0, C = hl2 + m * at, hl2 - m * at, k.c.values; N_ = len(k)
+        ub, lb, up = ub0.copy(), lb0.copy(), np.ones(N_, bool)
+        for i in range(1, N_):
+            ub[i] = ub0[i] if (ub0[i] < ub[i - 1] or C[i - 1] > ub[i - 1]) else ub[i - 1]
+            lb[i] = lb0[i] if (lb0[i] > lb[i - 1] or C[i - 1] < lb[i - 1]) else lb[i - 1]
+            up[i] = (C[i] > ub[i - 1]) if not up[i - 1] else not (C[i] < lb[i - 1])
+        line = np.where(up, lb, ub); lp, upp = pd.Series(line, index=k.index).shift(1), pd.Series(up, index=k.index).shift(1)
+        rej_s = (upp == False) & (k.h >= lp) & (k.c < lp)          # down-trend: the high touches the line, the bar closes back under it
+        rej_l = (upp == True) & (k.l <= lp) & (k.c > lp)           # up-trend: the low touches the line, the bar closes back above it
+        ev = pd.Series(np.where(rej_l, 1, np.where(rej_s, -1, 0)), index=k.index)
+        f['_dl'] = closed_on_hours(k.l, f.index, tf); f['_dh'] = closed_on_hours(k.h, f.index, tf)
+        a = np.nan_to_num(closed_on_hours(ev, f.index, tf)).astype(int)
+        # a held event only counts on its first hour (onset below); a new bar with the same event is a new signal
+        newbar = pd.Series(closed_on_hours(pd.Series(np.arange(len(k)), index=k.index), f.index, tf), index=f.index)
+        a = np.where(newbar.ne(newbar.shift(1)).values, a, 0)
     elif sig == 'revert':   # a big move over the last k hours, measured in 4h-ATRs, is faded (Target 4.2's minute bias pointed the wrong way at 1–4 h)
         k = int(rule.get('k_h', 4)); mv = (f.c - f.c.shift(k)) / f.atr4h
         thr = rule.get('thr_atr', 2.0); a = np.where(mv <= -thr, 1, np.where(mv >= thr, -1, 0))

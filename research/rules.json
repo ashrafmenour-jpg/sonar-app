@@ -2144,6 +2144,135 @@
    "loc": null,
    "registered": "2026-11-23",
    "signal": "revert"
+  },
+  {
+   "id": "st12_reject_short",
+   "side": -1,
+   "tf": "12h",
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 120,
+   "name": "رفض السوبرترند (12 ساعة): السعر لمس خط السوبرترند الهابط وقفل تحته → شورت، الوقف فوق ذيل الشمعة، هدف 2R",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23",
+   "signal": "supertrend",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25
+  },
+  {
+   "id": "st12_reject_short_down",
+   "side": -1,
+   "tf": "12h",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 120,
+   "name": "رفض السوبرترند (12 ساعة) والسوق نازل → شورت، هدف 2R",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23",
+   "signal": "supertrend",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25
+  },
+  {
+   "id": "st12_reject_short_down_trail",
+   "side": -1,
+   "tf": "12h",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "no_tp": true,
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 360,
+   "name": "رفض السوبرترند (12 ساعة) والسوق نازل → شورت بوقف متحرك 3×ATR من غير هدف",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23",
+   "signal": "supertrend",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25
+  },
+  {
+   "id": "st12_reject_long",
+   "side": 1,
+   "tf": "12h",
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 120,
+   "name": "ارتداد من السوبرترند الصاعد (12 ساعة): السعر لمس الخط وقفل فوقه → لونج، الوقف تحت ذيل الشمعة، هدف 2R",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23",
+   "signal": "supertrend",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25
+  },
+  {
+   "id": "st12_reject_long_up",
+   "side": 1,
+   "tf": "12h",
+   "regime": [
+    "UP",
+    "RANGE"
+   ],
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 120,
+   "name": "ارتداد من السوبرترند الصاعد (12 ساعة) والسوق صاعد أو عرضي → لونج، هدف 2R",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23",
+   "signal": "supertrend",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25
+  },
+  {
+   "id": "st1d_reject_short_down",
+   "side": -1,
+   "tf": "1D",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 240,
+   "name": "رفض السوبرترند اليومي والسوق نازل → شورت، هدف 2R",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23",
+   "signal": "supertrend",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25
+  },
+  {
+   "id": "st4h_reject_short_down",
+   "side": -1,
+   "tf": "4h",
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 72,
+   "name": "رفض السوبرترند (4 ساعات) والسوق نازل → شورت، هدف 2R",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-23",
+   "signal": "supertrend",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25
   }
  ]
 }
