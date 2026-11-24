@@ -15587,6 +15587,102 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.37', e); } }, 13500);
 window.SONAR_WEB = '3.0.37';
 } catch (e) { console.warn("baked 3.0.37", e); }
+
+/* ===== baked update 3.0.38 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.38 — new layout, step 1 (Ashraf, 24 Nov: «الصفحة الأولى فيها صفقات النهارده … ابدع وابهرني»).
+   Tabs renamed to the agreed plan: 🏠 النهارده · 🧠 العقل والمؤشرات · 💼 السجل · ⚙️ الإعدادات والتشخيص (contents move in later steps).
+   The first tab opens with «النهارده»: one strip for the market (state, BTC, phase, «نتداول؟»), four numbers (real account,
+   training today, open now, closed today), then every trade alive today — your real trades, the brain's decisions and the
+   proven/promising rule engines — each with its live R on a bar from the stop (−1R) to +3R, and what closed today.
+   Refreshes itself every 20 s while the tab is open. The previous home content stays below it. */
+  if (!window.V21 || !V21.home) { console.warn('3.0.38: V21 missing'); return; }
+  const DAY0 = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const REG = { DOWN: ['نازل', 'dn21', '📉'], REBOUND: ['ارتداد جوه هبوط', 'wt21', '↗️'], RANGE: ['عرضي', 'wt21', '↔️'], UP: ['صاعد', 'up21', '📈'] };
+  const f2 = x => (x >= 0 ? '+' : '') + x.toFixed(2), pc = x => (x >= 0 ? '+' : '') + x.toFixed(1) + '%';
+  const ago = t => { const m = Math.max(0, Math.round((Date.now() - t) / 60000)); return m < 60 ? m + ' د' : m < 1440 ? Math.round(m / 60) + ' س' : Math.round(m / 1440) + ' يوم'; };
+  const kind = src => /^مثبت/.test(src) ? ['مثبت', 'k38p'] : /^واعد/.test(src) ? ['واعد', 'k38w'] : src === PICK.SRC ? ['قرار العقل', 'k38b'] : ['', ''];
+  const short = src => String(src || '').replace(/^(مثبت|واعد):\s*/, '');
+  const liveR = T => { const p = S.prices[T.sym]; return N(p) && T.R0 > 0 ? T.sg * (p - T.entry) / T.R0 : null; };
+  function bar(R) { if (R == null) return '<div class="b38"><i style="width:0"></i></div>'; const lo = -1, hi = 3, x = Math.max(lo, Math.min(hi, R)), z = (0 - lo) / (hi - lo) * 100, at = (x - lo) / (hi - lo) * 100;
+    const L = Math.min(z, at), W = Math.abs(at - z); return `<div class="b38"><span class="z" style="left:${z}%"></span><i style="left:${L}%;width:${W}%;background:${R >= 0 ? 'var(--v-long)' : 'var(--v-short)'}"></i></div>`; }
+  function row(T, tag) { const R = liveR(T), k = kind(T.src), c = T.sg > 0 ? 'var(--v-long)' : 'var(--v-short)', prot = T.be1 || T.be || (T.sg > 0 ? T.stop >= T.entry : T.stop <= T.entry);
+    return `<div class="r38" data-v21sym="${esc(T.sym)}"><span class="s38" style="background:${c}"></span><div class="m38"><div class="t38"><b>${esc(base(T.sym))}</b> <span class="${T.sg > 0 ? 'up21' : 'dn21'}">${T.sg > 0 ? 'لونج' : 'شورت'}</span>${k[0] ? ` <span class="k38 ${k[1]}">${k[0]}</span>` : ''}${prot ? ' <span class="k38 k38s" title="الوقف عند الدخول أو أحسن">🛡 محمية</span>' : ''}${tag || ''}</div>
+      <div class="mu21 d38">${esc(short(T.src)).slice(0, 48)} · من ${ago(T.t)}</div>${bar(R)}</div><div class="v38 num ${R == null ? '' : R >= 0 ? 'up21' : 'dn21'}">${R == null ? '—' : f2(R) + 'R'}</div></div>`; }
+  function realRow(t) { const p = S.prices[t.sym], up = t.side !== 'SHORT', ch = N(p) && t.entry ? (up ? 1 : -1) * (p / t.entry - 1) * 100 * (t.lev || 1) : null;
+    return `<div class="r38" data-v21sym="${esc(t.sym)}"><span class="s38" style="background:${up ? 'var(--v-long)' : 'var(--v-short)'}"></span><div class="m38"><div class="t38"><b>${esc(base(t.sym))}</b> <span class="${up ? 'up21' : 'dn21'}">${up ? 'لونج' : 'شورت'}</span> <span class="k38 k38r">💰 حقيقية</span></div>
+      <div class="mu21 d38">دخول ${fp(t.entry)}${t.lev ? ` · ${t.lev}x` : ''}${t.t ? ' · من ' + ago(t.t) : ''}</div></div><div class="v38 num ${ch == null ? '' : ch >= 0 ? 'up21' : 'dn21'}">${ch == null ? '—' : pc(ch)}</div></div>`; }
+  function html() { const d0 = DAY0(), O = TRN.st.open || [], CL = (TRN.st.closed || []).filter(c => c.x >= d0);
+    let g = null; try { g = GATE320.reg; } catch (e) {} const gr = REG[g] || ['—', '', '•']; let edge = 0; try { const r = GATE320.read && GATE320.read(); edge = r && r.edge ? r.edge.length : 0; } catch (e) {}
+    let ph = ''; try { const c = P307.PH.st.cur, L = c && P307.PH.LAB[c.k]; if (L) ph = L[0] + ' ' + L[1]; } catch (e) {}
+    const bp = S.prices.BTCUSDT, b24 = S.btc && S.btc.chg24;
+    // numbers
+    let acc = null; try { ACC.sync(); const m = ACC.m(), L = ACC.st.led, tR = L.filter(l => l.x >= d0).reduce((a, l) => a + l.R, 0), tn = L.filter(l => l.x >= d0).length; acc = { eq: m.eq, pct: (m.eq / m.eq0 - 1) * 100, tR, tn, n: m.n }; } catch (e) {}
+    const trR = CL.reduce((a, c) => a + (N(c.R) ? c.R : 0), 0), trU = CL.reduce((a, c) => a + (N(c.usd) ? c.usd : 0), 0);
+    const real = S.trades || [], mine = O.filter(T => T.src === PICK.SRC), rules = O.filter(T => /^(مثبت|واعد)/.test(T.src));
+    const top = O.filter(T => !rules.includes(T) && !mine.includes(T) && T.t >= d0).map(T => [T, liveR(T)]).filter(x => x[1] != null).sort((a, b) => b[1] - a[1]);
+    const shut = CL.filter(c => /^(مثبت|واعد)/.test(c.src) || c.src === PICK.SRC).sort((a, b) => b.x - a.x);
+    const k = (lab, val, sub, cls) => `<div class="v-card q38"><div class="mu21">${lab}</div><div class="num ${cls || ''}" style="font-size:24px;font-weight:800;margin-top:4px">${val}</div><div class="mu21" style="font-size:12px;margin-top:2px">${sub}</div></div>`;
+    return `<div id="n38">
+      <div class="v-card h38"><div class="h38a"><div><div class="mu21" style="font-size:12px">${new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+          <div style="font-size:22px;font-weight:800;margin-top:2px">السوق ${gr[2]} <span class="${gr[1]}">${gr[0]}</span></div>
+          <div class="mu21" style="font-size:13px;margin-top:4px">${ph ? esc(ph) + ' · ' : ''}<span data-gate="1" style="cursor:pointer;text-decoration:underline dotted">${edge ? `🚦 ${edge} قاعدة مثبتة ليها ميزة دلوقتي` : '🚦 مفيش قاعدة مثبتة ليها ميزة دلوقتي — اقعد على الورق'}</span></div></div>
+        <div class="h38b" data-btcv="1"><div class="mu21" style="font-size:12px">₿ البيتكوين</div><div class="num" style="font-size:22px;font-weight:800">${N(bp) ? fp(bp) : '—'}</div>${N(b24) ? `<div style="font-size:13px"><span class="num ${b24 >= 0 ? 'up21' : 'dn21'}" dir="ltr">${pc(b24)}</span> <span class="mu21">في 24 ساعة</span></div>` : ''}</div></div></div>
+      <div class="g38">${k('💰 الحساب الحقيقي (2.1)', acc ? fp(acc.eq).replace(/\.\d+$/, '') : '—', acc ? `${pc(acc.pct)} من البداية · النهارده ${acc.tn ? f2(acc.tR) + 'R' : 'مفيش'}` : '', acc && acc.pct >= 0 ? 'up21' : 'dn21')}
+        ${k('🎓 التدريب النهارده', (trR >= 0 ? '+' : '') + Math.round(trR) + 'R', `${CL.length} صفقة اتقفلت · ${trU >= 0 ? '+' : ''}${Math.round(trU)}$`, Math.abs(trR) < .5 ? '' : trR >= 0 ? 'up21' : 'dn21')}
+        ${k('📂 مفتوح دلوقتي', String(real.length + mine.length + rules.length), `${real.length} حقيقية · ${mine.length} للعقل · ${rules.length} للقواعد`)}
+        ${k('✅ اتقفل النهارده', String(shut.length), shut.length ? `${shut.filter(c => c.R > 0).length} كسبان · ${f2(shut.reduce((a, c) => a + c.R, 0))}R` : 'من الحقيقي والقواعد')}</div>
+      ${real.length ? `<div class="v-sec"><h2>💰 صفقاتك الحقيقية</h2><div class="v-card l38">${real.map(realRow).join('')}</div></div>` : ''}
+      <div class="v-sec"><h2>📂 شغالة النهارده <small>العقل والقواعد المثبتة — الشريط من الوقف (−1R) لـ +3R</small></h2><div class="v-card l38">${mine.concat(rules).length ? mine.concat(rules).sort((a, b) => (liveR(b) || 0) - (liveR(a) || 0)).map(T => row(T)).join('') : '<div class="v-empty">مفيش صفقات للعقل أو للقواعد المثبتة مفتوحة دلوقتي.</div>'}</div></div>
+      ${top.length ? `<details class="v-det x38"><summary>🎓 أحسن صفقات التدريب اللي اتفتحت النهارده (${top.length})</summary><div class="v-card l38">${top.slice(0, 8).map(([T]) => row(T)).join('')}</div></details>` : ''}
+      ${shut.length ? `<div class="v-sec"><h2>✅ اتقفلت النهارده</h2><div class="v-card l38">${shut.slice(0, 12).map(c => `<div class="r38" data-v21sym="${esc(c.sym)}"><span class="s38" style="background:${c.sg > 0 ? 'var(--v-long)' : 'var(--v-short)'}"></span><div class="m38"><div class="t38"><b>${esc(base(c.sym))}</b> <span class="mu21">${c.sg > 0 ? 'لونج' : 'شورت'}</span> <span class="k38 ${kind(c.src)[1]}">${kind(c.src)[0]}</span></div><div class="mu21 d38">${esc(short(c.src)).slice(0, 48)} · ${{ sl: 'الوقف', tp2: 'الهدف', tp1: 'الهدف الأول', trail: 'الوقف المتحرك', be: 'عند الدخول', time: 'خلص وقتها' }[c.why] || esc(c.why || '')}</div></div><div class="v38 num ${c.R >= 0 ? 'up21' : 'dn21'}">${f2(c.R)}R</div></div>`).join('')}</div></div>` : ''}
+      <div class="mu21" style="font-size:12px;margin:2px 4px 14px">بيتحدّث لوحده كل 20 ثانية · تحت: قراءة السوق وقرارات «ادخل دلوقتي»</div></div>`; }
+  function paint() { const w = $('#v21-home'); if (!w || w.hidden) return; const o = w.querySelector('#n38'); const h = html();
+    if (o) o.outerHTML = h; else w.insertAdjacentHTML('afterbegin', h);
+    const n = w.querySelector('#n38'); if (n && n !== w.firstElementChild) w.insertBefore(n, w.firstElementChild);
+    // the long «🚦 نتداول دلوقتي؟» card folds under the strip (its short answer is already in it)
+    const g = w.querySelector('.c320'); if (g && n) { let d = w.querySelector('#d38g'); if (!d) { d = document.createElement('details'); d.id = 'd38g'; d.className = 'v-det x38'; d.innerHTML = '<summary>🚦 تفاصيل البوابة: ليه بنتداول أو لأ، وبأنهي قاعدة</summary>'; }
+      n.after(d); if (g.parentElement !== d) d.appendChild(g); }
+    const e = w.querySelector('#n38 [data-gate]'); if (e) e.onclick = () => { const d = w.querySelector('#d38g'); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
+    const b = w.querySelector('#n38 [data-btcv]'); if (b) b.onclick = () => { try { BTCV.open(); } catch (e) {} }; }
+  function fold() { const w = $('#v21-home'), n = w && w.querySelector('#n38'), g = w && w.querySelector(':scope > .c320'); if (!n || !g) return;
+    let d = w.querySelector('#d38g'); if (!d) { d = document.createElement('details'); d.id = 'd38g'; d.className = 'v-det x38'; d.innerHTML = '<summary>🚦 تفاصيل البوابة: ليه بنتداول أو لأ، وبأنهي قاعدة</summary>'; }
+    if (n !== w.firstElementChild) w.insertBefore(n, w.firstElementChild); n.after(d); d.querySelectorAll('.c320').forEach(x => x !== g && x.remove()); d.appendChild(g); }
+  try { const w = $('#v21-home'); if (w) new MutationObserver(() => { try { fold(); } catch (e) {} }).observe(w, { childList: true }); } catch (e) {}
+  const h0 = V21.home.bind(V21); V21.home = function () { const v = h0.apply(this, arguments); try { paint(); fold(); } catch (e) { console.warn('n38', e); } return v; };
+  setInterval(() => { try { if (V21.tab === 'home' && !document.hidden) paint(); } catch (e) {} }, 20000);
+  // the agreed tab names
+  const NM = { home: ['🏠 النهارده', '🏠 النهارده'], brain: ['🧠 العقل والمؤشرات', '🧠 العقل'], trades: ['💼 السجل', '💼 السجل'], center: ['⚙️ الإعدادات والتشخيص', '⚙️ الإعدادات'] };
+  const names = () => { for (const [k, [t, sh]] of Object.entries(NM)) { const b = document.querySelector(`#v21nav [data-v21="${k}"]`); if (b && !b.dataset.n38) { const c = b.querySelector('span'); b.textContent = ''; b.insertAdjacentHTML('beforeend', `<span class="nf38">${t}</span><span class="ns38">${sh}</span> `); if (c) b.appendChild(c); b.dataset.n38 = 1; } } };
+  names(); setInterval(names, 3000);
+  { const st = document.createElement('style'); st.textContent = `
+    #n38 .h38{padding:16px 18px;margin-bottom:12px;background:linear-gradient(135deg,var(--v-s2),var(--v-s1))}
+    #n38 .h38a{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+    #n38 .h38b{cursor:pointer;text-align:left;padding:8px 12px;border:1px solid var(--v-line2);border-radius:12px}
+    #n38 .h38b:hover{border-color:var(--v-acc)}
+    #n38 .g38{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+    @media (max-width:760px){#n38 .g38{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    #n38 .q38{padding:12px 14px}
+    #n38 .l38{padding:6px 10px}
+    #n38 .r38{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--v-line);cursor:pointer}
+    #n38 .r38:last-child{border-bottom:0}
+    #n38 .s38{width:4px;align-self:stretch;border-radius:2px;flex:none}
+    #n38 .m38{flex:1;min-width:0}
+    #n38 .t38{font-size:15px;line-height:1.5}
+    #n38 .d38{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #n38 .v38{font-size:17px;font-weight:800;min-width:74px;text-align:left}
+    #n38 .k38{font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--v-line2);white-space:nowrap}
+    #n38 .k38p{color:var(--v-long);border-color:rgba(47,216,160,.35)} #n38 .k38w{color:var(--v-wait);border-color:rgba(244,184,96,.35)}
+    #n38 .k38b{color:var(--v-acc);border-color:rgba(138,180,255,.35)} #n38 .k38r{color:#ffd36e;border-color:rgba(255,211,110,.4)} #n38 .k38s{color:var(--v-mu)}
+    #n38 .b38{position:relative;height:6px;border-radius:3px;background:var(--v-s3);margin-top:7px;overflow:hidden}
+    #n38 .b38 i{position:absolute;top:0;bottom:0;border-radius:3px}
+    #n38 .b38 .z{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--v-mu);opacity:.6}
+    .x38 summary{cursor:pointer;padding:8px 4px;color:var(--v-mu)} #d38g{margin:0 0 12px} #d38g .c320{margin-top:8px}
+    #v21nav .ns38{display:none} @media (max-width:760px){#v21nav .nf38{display:none} #v21nav .ns38{display:inline}}`; document.head.appendChild(st); }
+  if (V21.tab === 'home') paint();
+} catch (e) { console.warn('3.0.38', e); } }, 14000);
+window.SONAR_WEB = '3.0.38';
+} catch (e) { console.warn("baked 3.0.38", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
