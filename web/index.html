@@ -15802,6 +15802,31 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.42', e); } }, 16500);
 window.SONAR_WEB = '3.0.42';
 } catch (e) { console.warn("baked 3.0.42", e); }
+
+/* ===== baked update 3.0.43 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.43 — the server alone now spends the free online-brain allowance, and it still ran out ~12 h a day (24 Nov: 143 «bad»
+   checks, 40 rate limits). Every call goes through FAI.chat, so on the server: at most 12 calls in any 60 minutes (the health ping
+   and the market note are always allowed), the market note at most once an hour, and a count of who called (v3043) so the next
+   diagnosis shows where the allowance goes. Calls over the budget answer «ميزانية الساعة خلصت» and are retried by their owners later. */
+  if (!window.SONAR_SERVER || typeof FAI === 'undefined') return;
+  const B = { st: Object.assign({ t: [], by: {}, over: 0, day: '' }, store.get('p3043', {})), save() { store.set('p3043', this.st); } };
+  let ctx = '';
+  const who = () => ctx || (/DREAM|dream|SCOUT|scout/.test(String(new Error().stack || '')) ? 'Dream / البحث' : 'تاني');
+  const tag = (o, k, label) => { if (!o || typeof o[k] !== 'function') return; const f0 = o[k].bind(o); o[k] = async function () { const was = ctx; ctx = label; try { return await f0.apply(this, arguments); } finally { ctx = was; } }; };
+  tag(window.HC, 'ai', 'فحص الصحة');
+  const c0 = FAI.chat.bind(FAI);
+  FAI.chat = async function () { const now = Date.now(), d = new Date().toISOString().slice(0, 10), k = who();
+    if (B.st.day !== d) { B.st.day = d; B.st.by = {}; B.st.over = 0; }
+    B.st.t = B.st.t.filter(x => now - x < 3600e3); const free = k === 'فحص الصحة' || k === 'ملاحظة السوق';
+    if (!free && B.st.t.length >= 12) { B.st.over++; B.save(); throw new Error('ميزانية العقل الأونلاين للساعة خلصت — هيرجع يحاول بعدين'); }
+    B.st.t.push(now); B.st.by[k] = (B.st.by[k] || 0) + 1; B.save(); return c0.apply(this, arguments); };
+  // the market note: once an hour is enough
+  try { if (window.V21 && typeof V21.ai === 'function') { const a0 = V21.ai.bind(V21); V21.ai = async function (force) { const c = this.aiTxt; if (!force && c && Date.now() - c.at < 60 * 60000) return; const was = ctx; ctx = 'ملاحظة السوق'; try { return await a0(force); } finally { ctx = was; } }; } } catch (e) {}
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments); try { o.v3043 = { lastHour: B.st.t.filter(x => Date.now() - x < 3600e3).length, today: B.st.by, overBudgetToday: B.st.over }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.43', e); } }, 17000);
+window.SONAR_WEB = '3.0.43';
+} catch (e) { console.warn("baked 3.0.43", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
