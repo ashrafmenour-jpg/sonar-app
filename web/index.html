@@ -15714,6 +15714,59 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.39', e); } }, 15000);
 window.SONAR_WEB = '3.0.39';
 } catch (e) { console.warn("baked 3.0.39", e); }
+
+/* ===== baked update 3.0.40 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.40 (Ashraf, 24 Nov 16:08: «جزء السوق نازل والتفاصيل دي المفروض فوق — دي بيانات السوق»).
+   «النهارده» reads top-down like a briefing: first the MARKET (state strip, the market reading with BTC's movement, the bear-market
+   note, the market phase), then the TRADES (your real ones, ready to enter now, the brain's open ones, every live trade with its bar,
+   orders waiting for a price), then the numbers and what closed today, then the rest. Applied after every repaint. */
+  const w0 = $('#v21-home'); if (!w0 || !window.V21) return;
+  const top = el => el ? el.closest('#v21-home > *') : null;
+  const sec = (w, re) => [...w.querySelectorAll(':scope > .v-sec, :scope > .m39 > .v-sec')].map(top).find(x => re.test(((x.querySelector('h2') || {}).textContent) || ''));
+  let busy = false;
+  function arrange() { const w = $('#v21-home'); if (!w || busy) return;
+    const strip = top(w.querySelector('.m39 .h38')), hero = top(w.querySelector('.v-hero')), bear = top(w.querySelector('.c30bear')), phase = top(w.querySelector('.c37ph'));
+    const real = sec(w, /صفقاتك الحقيقية/), dec = sec(w, /ادخل دلوقتي|قرارات تجريبية/), open = sec(w, /صفقات العقل المفتوحة/), live = sec(w, /شغالة النهارده/), pend = sec(w, /ادخل عند سعر/);
+    const kp = top(w.querySelector('.m39 .g38')), closed = sec(w, /اتقفلت النهارده/), tr = top(w.querySelector('.m39 > details.x38')), gate = w.querySelector(':scope > #d38g');
+    const want = [strip, hero, bear, phase, real, dec, open, live, pend, kp, closed, tr, gate].filter((x, i, a) => x && a.indexOf(x) === i);
+    if (want.length < 3) return; const kids = [...w.children]; if (want.every((x, i) => kids[i] === x)) return;
+    busy = true; try { const f = document.createDocumentFragment(); for (const e of want) f.appendChild(e); w.insertBefore(f, w.firstElementChild);
+      for (const e of [hero, bear, phase]) if (e) e.classList.add('mk40'); } catch (e) { console.warn('a40', e); } finally { busy = false; } }
+  new MutationObserver(() => { try { arrange(); } catch (e) {} }).observe(w0, { childList: true });
+  const h0 = V21.home.bind(V21); V21.home = function () { const v = h0.apply(this, arguments); try { arrange(); } catch (e) {} return v; };
+  { const st = document.createElement('style'); st.textContent = '#v21-home > .mk40{margin-bottom:10px} #v21-home > .mk40.v-grid{margin-top:0}'; document.head.appendChild(st); }
+  arrange(); setInterval(() => { try { if (V21.tab === 'home') arrange(); } catch (e) {} }, 5000);
+} catch (e) { console.warn('3.0.40', e); } }, 15500);
+window.SONAR_WEB = '3.0.40';
+} catch (e) { console.warn("baked 3.0.40", e); }
+
+/* ===== baked update 3.0.41 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.41 (Ashraf, 24 Nov 16:09: «الفقرات الطويلة اللي ورا بعض شكلها مزعج — خليها دروب داون منيو»).
+   On «النهارده» every long explanation folds into a tap-to-open line, the headline stays visible:
+     decision cards: entry/stop/targets stay; reasons, trigger, the «تجريبي» note and «📊 سجل العملة» go under «ليه؟ والتفاصيل»
+     the market reading's 🤖 paragraph → «🤖 رأي العقل الأونلاين»; the bear-market note keeps its title, its paragraph folds;
+     the «ولا قرار هنا مثبت…» note above the decisions → one line «⏸ ملاحظة على القرارات دي».
+   Re-applied whenever the tab repaints. */
+  const w0 = $('#v21-home'); if (!w0) return;
+  const dd = (sum, nodes, cls) => { const d = document.createElement('details'); d.className = 'dd41 ' + (cls || ''); d.innerHTML = `<summary>${sum}</summary>`; nodes[0].before(d); for (const n of nodes) d.appendChild(n); return d; };
+  function fold() { const w = $('#v21-home'); if (!w) return;
+    for (const c of w.querySelectorAll('.v-dec:not([data-f41])')) { c.dataset.f41 = 1;
+      const keep = c.querySelector('.v-meter') || c.querySelector('.v-nums'); if (!keep) continue; const rest = []; let n = keep.nextElementSibling; while (n) { rest.push(n); n = n.nextElementSibling; }
+      const parts = rest.filter(x => x.textContent.trim()); if (parts.length) dd('ليه؟ والتفاصيل ▾', parts, 'dd41c'); }
+    for (const p of w.querySelectorAll('.v-hero p.sub:not([data-f41])')) { if (!/🤖/.test(p.textContent)) continue; p.dataset.f41 = 1; const d = dd('🤖 رأي العقل الأونلاين ▾', [p]); p.style.borderTop = '0'; p.style.marginTop = '6px'; }
+    for (const b of w.querySelectorAll('.c30bear:not([data-f41])')) { b.dataset.f41 = 1; const t = b.querySelector(':scope > div'); if (t) dd('ليه؟ ▾', [t]); }
+    for (const n of w.querySelectorAll('.n322:not([data-f41])')) { n.dataset.f41 = 1; const kids = [...n.childNodes]; const box = document.createElement('div'); kids.forEach(k => box.appendChild(k)); n.appendChild(box); dd('⏸ ملاحظة على القرارات دي ▾', [box]); n.style.padding = '8px 12px'; } }
+  let q = 0; new MutationObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; try { fold(); } catch (e) {} }); }).observe(w0, { childList: true, subtree: true });
+  { const st = document.createElement('style'); st.textContent = `
+    #v21-home details.dd41{margin-top:8px} #v21-home details.dd41>summary{cursor:pointer;list-style:none;color:var(--v-mu);font-size:13px;padding:4px 0;user-select:none}
+    #v21-home details.dd41>summary::-webkit-details-marker{display:none} #v21-home details.dd41[open]>summary{color:var(--v-tx)}
+    #v21-home details.dd41c{border-top:1px solid var(--v-line);margin-top:10px;padding-top:4px}`; document.head.appendChild(st); }
+  fold();
+} catch (e) { console.warn('3.0.41', e); } }, 16000);
+window.SONAR_WEB = '3.0.41';
+} catch (e) { console.warn("baked 3.0.41", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
