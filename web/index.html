@@ -15767,6 +15767,41 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.41', e); } }, 16000);
 window.SONAR_WEB = '3.0.41';
 } catch (e) { console.warn("baked 3.0.41", e); }
+
+/* ===== baked update 3.0.42 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.42 (Ashraf, 24 Nov 16:17, screenshot of «شغالة النهارده»: «برضه ده لسه متغيرش»).
+   The long column of live trades becomes one dropdown per engine: «مثبت: شورت سوينج يومي — 6 صفقات · +2.4R · 🛡 2 ▾».
+   Tap a line to see its trades (open/closed state is kept across the 20-second refresh). Rows inside are tighter, with a short bar. */
+  const w0 = $('#v21-home'); if (!w0) return;
+  const OPEN = new Set(), f2 = x => (x >= 0 ? '+' : '') + x.toFixed(2);
+  function group() { const w = $('#v21-home'); if (!w) return;
+    for (const sec of w.querySelectorAll('.m39 > .v-sec')) { const h = sec.querySelector('h2'); if (!h || !/شغالة النهارده/.test(h.textContent)) continue;
+      const card = sec.querySelector('.v-card'); if (!card || card.dataset.g42) continue; const rows = [...card.querySelectorAll(':scope > .r38')]; if (!rows.length) continue; card.dataset.g42 = 1;
+      const G = new Map();
+      for (const r of rows) { const k = r.querySelector('.k38'), kind = k ? k.textContent.trim() : '', src = ((r.querySelector('.d38') || {}).textContent || '').split(' · ')[0].trim();
+        const name = (kind && kind !== 'قرار العقل' ? kind + ': ' : '') + (kind === 'قرار العقل' ? 'قرارات العقل' : src); const v = parseFloat(((r.querySelector('.v38') || {}).textContent || '').replace(/[^\d.+-]/g, ''));
+        const g = G.get(name) || { name, kind, rows: [], s: 0, n: 0, prot: 0, win: 0 }; g.rows.push(r); if (N(v)) { g.s += v; g.n++; if (v > 0) g.win++; } if (r.querySelector('.k38s')) g.prot++; G.set(name, g); }
+      const order = [...G.values()].sort((a, b) => (a.kind === 'قرار العقل' ? -1 : 0) - (b.kind === 'قرار العقل' ? -1 : 0) || b.rows.length - a.rows.length);
+      card.innerHTML = '';
+      for (const g of order) { const d = document.createElement('details'); d.className = 'g42'; d.open = OPEN.has(g.name); d.ontoggle = () => { d.open ? OPEN.add(g.name) : OPEN.delete(g.name); };
+        d.innerHTML = `<summary><span class="gn42">${esc(g.name)}</span><span class="gm42 mu21">${g.rows.length} ${g.rows.length === 1 ? 'صفقة' : 'صفقات'} · ${g.win} كسبانة${g.prot ? ` · 🛡 ${g.prot}` : ''}</span><b class="num ${g.s >= 0 ? 'up21' : 'dn21'}">${f2(g.s)}R</b><span class="ch42">▾</span></summary>`;
+        const box = document.createElement('div'); box.className = 'gb42'; g.rows.forEach(r => box.appendChild(r)); d.appendChild(box); card.appendChild(d); } } }
+  let q = 0; new MutationObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; try { group(); } catch (e) { console.warn('g42', e); } }); }).observe(w0, { childList: true, subtree: true });
+  { const st = document.createElement('style'); st.textContent = `
+    #v21-home .g42{border-bottom:1px solid var(--v-line)} #v21-home .g42:last-child{border-bottom:0}
+    #v21-home .g42>summary{display:flex;align-items:center;gap:12px;padding:12px 6px;cursor:pointer;list-style:none}
+    #v21-home .g42>summary::-webkit-details-marker{display:none}
+    #v21-home .g42 .gn42{font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #v21-home .g42 .gm42{font-size:12px;white-space:nowrap} #v21-home .g42 b{min-width:70px;text-align:left;font-size:16px}
+    #v21-home .g42 .ch42{color:var(--v-mu);transition:transform .15s} #v21-home .g42[open] .ch42{transform:rotate(180deg)}
+    #v21-home .g42 .gb42{padding:0 6px 8px} #v21-home .g42 .r38{padding:7px 4px} #v21-home .g42 .t38{font-size:14px}
+    #v21-home .g42 .b38{height:4px;margin-top:5px;max-width:360px} #v21-home .g42 .v38{font-size:15px}
+    @media (max-width:760px){#v21-home .g42 .gm42{display:none}}`; document.head.appendChild(st); }
+  group();
+} catch (e) { console.warn('3.0.42', e); } }, 16500);
+window.SONAR_WEB = '3.0.42';
+} catch (e) { console.warn("baked 3.0.42", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
