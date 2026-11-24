@@ -15683,6 +15683,37 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.38', e); } }, 14000);
 window.SONAR_WEB = '3.0.38';
 } catch (e) { console.warn("baked 3.0.38", e); }
+
+/* ===== baked update 3.0.39 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.39 (Ashraf, 24 Nov, screenshot: «الجزء ده المفروض يكون تحت، والصفقات الموجودة دلوقتي والجاهزة للدخول تكون فوق، بعدها صفقات العقل»).
+   «النهارده» order: market strip (one line) → your real trades → ready to enter now («ادخل دلوقتي» cards) → trades alive today
+   (the brain's and the rule engines') → orders waiting for a price → the four numbers → closed today → everything else
+   (market reading, BTC movement, bear-market note, market phase, gate details) underneath. Re-applied after every repaint. */
+  const w0 = $('#v21-home'); if (!w0 || !window.V21) return;
+  { const st = [...document.querySelectorAll('style')].find(x => x.textContent.includes('#n38 .h38{')); if (st) { const c = document.createElement('style'); c.textContent = st.textContent.replace(/#n38 /g, '.m39 '); document.head.appendChild(c); } }
+  const sec = (root, re) => [...root.querySelectorAll(':scope > .v-sec')].find(x => re.test(((x.querySelector('h2') || {}).textContent) || ''));
+  let busy = false;
+  function order() { const w = $('#v21-home'), n = w && w.querySelector('#n38');
+    if (!busy && w && !n) { const g = w.querySelector(':scope > .c320'), d = w.querySelector('#d38g'); if (g && d) { busy = true; try { d.querySelectorAll('.c320').forEach(x => x.remove()); d.appendChild(g); } finally { busy = false; } } }
+    if (busy || !n || !n.querySelector('.h38')) return; busy = true;
+    try { w.querySelectorAll(':scope > .m39').forEach(e => e.remove());
+      const wrap = el => { if (!el) return null; const d = document.createElement('div'); d.className = 'm39'; d.appendChild(el); return d; };
+      const strip = n.querySelector('.h38'), kp = n.querySelector('.g38'), real = sec(n, /صفقاتك الحقيقية/), live = sec(n, /شغالة النهارده/), closed = sec(n, /اتقفلت النهارده/), tr = n.querySelector(':scope > details.x38');
+      const dec = sec(w, /ادخل دلوقتي|قرارات تجريبية/), pend = sec(w, /ادخل عند سعر/);
+      const seq = [wrap(strip), wrap(real), dec, wrap(live), pend, wrap(kp), wrap(closed), wrap(tr)].filter(Boolean), f = document.createDocumentFragment();
+      for (const e of seq) f.appendChild(e); w.insertBefore(f, w.firstElementChild);
+      const last = seq[seq.length - 1]; n.remove();   // its pieces now live in .m39 wrappers; the next repaint builds a fresh one
+      let d = w.querySelector('#d38g'); if (!d) { d = document.createElement('details'); d.id = 'd38g'; d.className = 'v-det x38'; d.innerHTML = '<summary>🚦 تفاصيل البوابة: ليه بنتداول أو لأ، وبأنهي قاعدة</summary>'; }
+      const g = w.querySelector(':scope > .c320'); if (g) { d.querySelectorAll('.c320').forEach(x => x.remove()); d.appendChild(g); } last.after(d);
+    } catch (e) { console.warn('m39', e); } finally { busy = false; } }
+  new MutationObserver(() => { try { order(); } catch (e) {} }).observe(w0, { childList: true });
+  const h0 = V21.home.bind(V21); V21.home = function () { const v = h0.apply(this, arguments); try { order(); } catch (e) {} return v; };
+  { const st = document.createElement('style'); st.textContent = '.m39 .h38{padding:12px 16px!important} .m39 .h38 [style*="font-size:22px"]{font-size:19px!important} .m39 > .v-sec, .m39 > .g38, .m39 > details{margin-top:4px}'; document.head.appendChild(st); }
+  order();
+} catch (e) { console.warn('3.0.39', e); } }, 15000);
+window.SONAR_WEB = '3.0.39';
+} catch (e) { console.warn("baked 3.0.39", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
