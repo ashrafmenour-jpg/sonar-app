@@ -15569,6 +15569,24 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.36', e); } }, 13000);
 window.SONAR_WEB = '3.0.36';
 } catch (e) { console.warn("baked 3.0.36", e); }
+
+/* ===== baked update 3.0.37 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.37 (Ashraf, 24 Nov: «جروك شغال بس على السيرفر، والاب اللي على الماك مراية له — بياخد منه الداتا بس»).
+   The online brain (Groq / OpenRouter) now runs only on the server (window.SONAR_SERVER). The apps and any other copy never call
+   it: the server and the Mac app shared one key, and the shared free daily limit ran out (~12 h a day «bad» on 24 Nov).
+   Elsewhere a call answers «بيشتغل على السيرفر بس», and the health line says the same instead of pinging.
+   Also: the memory figures the server records (3.0.32) are shown in the mirror's diagnosis (they come with the server's data). */
+  if (window.SONAR_SERVER) return;
+  const MSG = 'العقل الأونلاين بيشتغل على السيرفر بس — افتح 🖥 مباشر لو محتاجه';
+  if (typeof FAI !== 'undefined') { for (const k of ['chat', 'text', 'withTools', 'test']) if (typeof FAI[k] === 'function') FAI[k] = async function () { throw new Error(MSG); }; }
+  if (typeof HC !== 'undefined') { HC.ai = async function () { this.aiOk = true; this.aiMsg = 'على السيرفر بس — التطبيق ده مراية وبياخد الداتا منه'; }; HC.aiOk = true; HC.aiMsg = 'على السيرفر بس — التطبيق ده مراية وبياخد الداتا منه'; }
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { o.v3037 = { aiHere: false, mirror: !!window.SONAR_MIRROR };
+      const g = store.get('p3032', null); if (g && !o.v3032) o.v3032 = { fromServer: true, learnAt: g.learnAt, allAt: g.allAt, skippedLearning: g.skipL, skippedAll: g.skipA, heapLog: (g.mem || []).slice(-24) }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.37', e); } }, 13500);
+window.SONAR_WEB = '3.0.37';
+} catch (e) { console.warn("baked 3.0.37", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
