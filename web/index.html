@@ -15827,6 +15827,18 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.43', e); } }, 17000);
 window.SONAR_WEB = '3.0.43';
 } catch (e) { console.warn("baked 3.0.43", e); }
+
+/* ===== baked update 3.0.44 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.44 — the diagnosis Ashraf exports comes from the Mac app's mirror, where the server-only report lines are absent.
+   Show the server's own online-brain counters (3.0.43: calls by caller today, over-budget count) from the server's data in it. */
+  if (window.SONAR_SERVER) return;
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { const b = store.get('p3043', null); if (b && !o.v3043) o.v3043 = { fromServer: true, day: b.day, today: b.by, overBudgetToday: b.over, lastHour: (b.t || []).filter(x => Date.now() - x < 3600e3).length };
+      const c = store.get('p3033', null); if (c) o.v3033server = { limitHits: c.hits, cooling: Object.entries(c.until || {}).filter(([, t]) => t > Date.now()).map(([m, t]) => ({ m, mins: Math.round((t - Date.now()) / 60e3) })) }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.44', e); } }, 17500);
+window.SONAR_WEB = '3.0.44';
+} catch (e) { console.warn("baked 3.0.44", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
