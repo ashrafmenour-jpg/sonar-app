@@ -2273,6 +2273,83 @@
    "signal": "supertrend",
    "stop_mode": "sweep",
    "stop_buf_atr4h": 0.25
+  },
+  {
+   "id": "rbd_long_quick",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": 1
+   },
+   "regime": [
+    "REBOUND"
+   ],
+   "stop_atr4h": 2.0,
+   "tp_r": 1.0,
+   "max_hours": 48,
+   "name": "لونج سريع في «ارتداد جوه هبوط»: البيتكوين تحت متوسط 200 يوم بس طالع ≥8% في أسبوع، والـ4 ساعات بدأت تطلع — هدف 1R، أقصى يومين",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-26"
+  },
+  {
+   "id": "down_4hup_long_quick",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": 1
+   },
+   "regime": [
+    "DOWN"
+   ],
+   "stop_atr4h": 2.0,
+   "tp_r": 1.0,
+   "max_hours": 48,
+   "name": "لونج سريع والسوق نازل على اليومي: الـ4 ساعات بدأت تطلع — هدف 1R، أقصى يومين",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-26"
+  },
+  {
+   "id": "down_4hup_long_quick_rally",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": 1
+   },
+   "regime": [
+    "DOWN",
+    "REBOUND"
+   ],
+   "mood": [
+    "rally",
+    "btc_only"
+   ],
+   "stop_atr4h": 2.0,
+   "tp_r": 1.0,
+   "max_hours": 48,
+   "name": "لونج سريع والسوق نازل/بيرتد، بس المزاج صعود: الـ4 ساعات بدأت تطلع — هدف 1R، أقصى يومين",
+   "loc": null,
+   "registered": "2026-11-26"
+  },
+  {
+   "id": "rbd_long_quick_tp1p5",
+   "side": 1,
+   "signal": "cond",
+   "dirs": {
+    "d4h": 1
+   },
+   "regime": [
+    "REBOUND"
+   ],
+   "stop_atr4h": 2.0,
+   "tp_r": 1.5,
+   "be_at_r": 1.0,
+   "max_hours": 72,
+   "name": "لونج في «ارتداد جوه هبوط» — هدف 1.5R والوقف للدخول عند +1R، أقصى 3 أيام",
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-26"
   }
  ]
 }
