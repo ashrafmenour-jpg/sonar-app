@@ -15855,6 +15855,45 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.45', e); } }, 9000);
 window.SONAR_WEB = '3.0.45';
 } catch (e) { console.warn("baked 3.0.45", e); }
+
+/* ===== baked update 3.0.46 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.46 — shadow test of Ashraf's exit (26 Nov: «لما بنفتح شورت بنراقب البيتكوين، ولو حسينا بضعف النزول أو احتمالات الصعود
+   بتزيد بنقفل على التعادل أو مكسب قليل، إلا لو الاستحواذ قوي جدًا أو داخلين شورت طويل»). Nothing trades differently.
+   Every training SHORT (not the proven/promising engines, which have their own tested exits) is also scored as if closed the
+   moment BTC turns up — BTC +1% in 60 minutes or +2% in 4 hours — provided the trade is at or above breakeven then.
+   Exception («الاستحواذ»): if the coin itself fell over the same 60 minutes while BTC rose, the short is kept.
+   Verdict (set before testing): over ≥ 1,000 shorts the exit must add ≥ +0.03R per trade AND not lose on trades whose life
+   saw BTC fall; else it is dropped. Report v3046 (totals, BTC-down vs BTC-up trades, kept by the exception). */
+  if (typeof TRN === 'undefined' || !TRN.settle) return;
+  const own = T => /^(مثبت|واعد)/.test(T.src || '') || T.flex || T.qk || T.lx || T.vb || T.sw;
+  const H = { btc: [], px: new Map() }, MIN = 60e3;
+  const Z = () => ({ n: 0, act: 0, bx: 0 });
+  const G = { st: Object.assign({ all: Z(), down: Z(), up: Z(), exits: 0, kept: 0, keptAct: 0, trig: 0, lastTrig: 0 }, store.get('p3046', {})), save() { store.set('p3046', this.st); } };
+  const at = (arr, ago) => { const t = Date.now() - ago; let v = null; for (let i = arr.length - 1; i >= 0; i--) { if (arr[i][0] <= t) { v = arr[i][1]; break; } } return v; };
+  function tick() { const now = Date.now(), b = S.prices.BTCUSDT; if (!N(b)) return;
+    H.btc.push([now, b]); while (H.btc.length && now - H.btc[0][0] > 5 * 3600e3) H.btc.shift();
+    const shorts = (TRN.st.open || []).filter(T => T.sg < 0 && !T.shd && !own(T));
+    for (const T of shorts) { const p = S.prices[T.sym]; if (!N(p)) continue; const a = H.px.get(T.sym) || []; a.push([now, p]); while (a.length && now - a[0][0] > 2 * 3600e3) a.shift(); H.px.set(T.sym, a); if (!T._b0) T._b0 = b; }
+    const b60 = at(H.btc, 60 * MIN), b240 = at(H.btc, 240 * MIN); if (!N(b60)) return;
+    const up = b / b60 - 1 >= .01 || (N(b240) && b / b240 - 1 >= .02); if (!up) return;
+    if (now - G.st.lastTrig > 30 * MIN) { G.st.trig++; G.st.lastTrig = now; G.save(); }
+    for (const T of shorts) { if (T._bx || T._bk) continue; const p = S.prices[T.sym]; if (!N(p) || !(T.R0 > 0)) continue; const R = (T.entry - p) / T.R0; if (R < 0) continue;
+      const a = H.px.get(T.sym) || [], p60 = at(a, 60 * MIN); if (N(p60) && p < p60) { T._bk = 1; continue; }   // the coin fell while BTC rose: keep
+      T._bx = { R, t: now }; } }
+  setInterval(() => { try { tick(); } catch (e) {} }, MIN); window.G3046 = { G, H, tick };
+  const st0 = TRN.settle.bind(TRN);
+  TRN.settle = function (T, px, why, now) { const r = st0(T, px, why, now);
+    try { if (T && T.sg < 0 && !own(T) && N(r)) { const cost = (TRN.costR ? TRN.costR(T) : 0) || 0, bx = T._bx ? T._bx.R - cost : r, b = S.prices.BTCUSDT;
+        const side = N(T._b0) && N(b) ? (b < T._b0 ? 'down' : 'up') : null; for (const g of [G.st.all, side && G.st[side]].filter(Boolean)) { g.n++; g.act += r; g.bx += bx; }
+        if (T._bx) G.st.exits++; if (T._bk) { G.st.kept++; G.st.keptAct += r; } if (G.st.all.n % 10 === 0) G.save(); } } catch (e) {} return r; };
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { const st = window.SONAR_SERVER ? G.st : (store.get('p3046', null) || G.st), f = g => g && g.n ? { n: g.n, act: +(g.act / g.n).toFixed(3), btcExit: +(g.bx / g.n).toFixed(3), diff: +((g.bx - g.act) / g.n).toFixed(3), sumDiff: +(g.bx - g.act).toFixed(1) } : null;
+      o.v3046 = { shorts: f(st.all), btcFellDuringTrade: f(st.down), btcRoseDuringTrade: f(st.up), exitsTaken: st.exits, keptByDominance: st.kept, keptAct: st.kept ? +(st.keptAct / st.kept).toFixed(3) : null, btcTriggers: st.trig,
+        verdict: st.all && st.all.n >= 1000 ? (((st.all.bx - st.all.act) / st.all.n >= .03 && (!st.down.n || st.down.bx >= st.down.act)) ? 'نجح' : 'فشل') : `لسه (${st.all ? st.all.n : 0}/1000)` }; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.46', e); } }, 18000);
+window.SONAR_WEB = '3.0.46';
+} catch (e) { console.warn("baked 3.0.46", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
