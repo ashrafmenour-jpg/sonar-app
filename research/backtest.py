@@ -220,6 +220,16 @@ def candidates(sym, f, ctx, rule):
         # a held event only counts on its first hour (onset below); a new bar with the same event is a new signal
         newbar = pd.Series(closed_on_hours(pd.Series(np.arange(len(k)), index=k.index), f.index, tf), index=f.index)
         a = np.where(newbar.ne(newbar.shift(1)).values, a, 0)
+    elif sig == 'wvf':   # Williams VIX Fix (daily): fear = how far today's low sits under the 22-day highest close; «extreme» = above its
+        # Bollinger band (20, 2) or its 85th percentile of 50 days (the LuxAlgo/ChrisMoody defaults). trig 'peak' = buy the fear itself
+        # (control); 'recede' = the post's claim: an extreme in the last 5 days, today no longer extreme and the close holds above yesterday's
+        d = resample(f, '1D'); hc = d.c.rolling(22).max(); w = (hc - d.l) / hc * 100
+        ext = (w >= w.rolling(20).mean() + 2 * w.rolling(20).std()) | (w >= w.rolling(50).max() * .85)
+        if rule.get('trig') == 'peak': e = ext & ~ext.shift(1, fill_value=False)
+        else: e = ext.shift(1).rolling(5).max().fillna(0).astype(bool) & ~ext & (d.c > d.c.shift(1))
+        f['_dl'] = closed_on_hours(d.l.rolling(5).min(), f.index, '1D'); f['_dh'] = closed_on_hours(d.h.rolling(5).max(), f.index, '1D')
+        x = pd.Series(np.where(e, 1, 0), index=d.index)
+        a = np.where(pd.Series(closed_on_hours(x, f.index, '1D'), index=f.index).fillna(0) > 0, 1, 0)
     elif sig == 'revert':   # a big move over the last k hours, measured in 4h-ATRs, is faded (Target 4.2's minute bias pointed the wrong way at 1–4 h)
         k = int(rule.get('k_h', 4)); mv = (f.c - f.c.shift(k)) / f.atr4h
         thr = rule.get('thr_atr', 2.0); a = np.where(mv <= -thr, 1, np.where(mv >= thr, -1, 0))

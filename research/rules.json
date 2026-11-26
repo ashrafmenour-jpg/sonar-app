@@ -2350,6 +2350,75 @@
    "mood": null,
    "loc": null,
    "registered": "2026-11-26"
+  },
+  {
+   "side": 1,
+   "signal": "wvf",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25,
+   "loc": null,
+   "mood": null,
+   "registered": "2026-11-26",
+   "id": "wvf_peak_long",
+   "trig": "peak",
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 240,
+   "name": "Williams VIX Fix (مقارنة): لونج يوم ما الخوف يوصل لمستوى استثنائي، وقف تحت قاع 5 أيام، هدف 2R"
+  },
+  {
+   "side": 1,
+   "signal": "wvf",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25,
+   "loc": null,
+   "mood": null,
+   "registered": "2026-11-26",
+   "id": "wvf_recede_long",
+   "trig": "recede",
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 240,
+   "name": "Williams VIX Fix (فكرة المنشور): الخوف كان استثنائي آخر 5 أيام وبدأ ينحسر والسعر قفل فوق امبارح → لونج، وقف تحت قاع 5 أيام، هدف 2R"
+  },
+  {
+   "side": 1,
+   "signal": "wvf",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25,
+   "loc": null,
+   "mood": null,
+   "registered": "2026-11-26",
+   "id": "wvf_recede_trail",
+   "trig": "recede",
+   "no_tp": true,
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "name": "Williams VIX Fix (انحسار الخوف) بوقف متحرك 3×ATR بعد +1R بدل الهدف"
+  },
+  {
+   "side": 1,
+   "signal": "wvf",
+   "stop_mode": "sweep",
+   "stop_buf_atr4h": 0.25,
+   "loc": null,
+   "mood": null,
+   "registered": "2026-11-26",
+   "id": "wvf_recede_not_down",
+   "trig": "recede",
+   "tp_r": 2.0,
+   "be_at_r": 1.0,
+   "max_hours": 240,
+   "regime": [
+    "UP",
+    "RANGE",
+    "REBOUND"
+   ],
+   "name": "Williams VIX Fix (انحسار الخوف) بس لما السوق مش هابط"
   }
  ]
 }
