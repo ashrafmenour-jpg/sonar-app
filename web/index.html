@@ -15894,6 +15894,37 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.46', e); } }, 18000);
 window.SONAR_WEB = '3.0.46';
 } catch (e) { console.warn("baked 3.0.46", e); }
+
+/* ===== baked update 3.0.47 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.47 (Ashraf, 26 Nov: «اعمل») — the channel grader counted things that inflated a channel's numbers:
+   1. the same call reposted (same coin, same side, stop within 1 %, within 3 days) counted again each time — now only the first
+      counts (Shaima: WLD ×4, BTC short ×3, BLUR ×2);
+   2. a «market price» entry with a stop almost at the price made a tiny risk, so an ordinary move became +60R — the risk used to
+      express R is now at least 0.5 % of the price or half the channel's usual stop distance, whichever is larger
+      (the result in % is unchanged; only its size in R is honest).
+   Applied when the stats are computed, so every channel's verdict, rank and score use the corrected numbers. Report v3047. */
+  if (typeof CHN === 'undefined' || !CHN.stats) return;
+  const FLOOR = .5, DAY = 864e5; let lastFix = {};
+  function clean(calls) { const out = [], seen = []; let dup = 0, capped = 0;
+    const rk = calls.map(c => c.res && c.res.risk_pct).filter(x => N(x) && x > 0).sort((x, y) => x - y), med = rk.length ? rk[Math.floor(rk.length / 2)] : 0;
+    const FL = Math.max(FLOOR, med / 2);   // at least 0.5 %, or half the channel's usual stop distance
+    for (const c of calls.slice().sort((a, b) => a.t - b.t)) {
+      const twin = seen.find(x => x.sym === c.sym && x.sg === c.sg && c.t - x.t < 3 * DAY && x.stop && c.stop && Math.abs(x.stop / c.stop - 1) < .01);
+      if (twin) { dup++; continue; } seen.push(c);
+      const r = c.res; if (r && r.st === 'done' && N(r.R) && N(r.risk_pct) && r.risk_pct > 0 && r.risk_pct < FL) { capped++; out.push(Object.assign({}, c, { res: Object.assign({}, r, { R: +(r.R * r.risk_pct / FL).toFixed(3), capped: 1 }) })); }
+      else out.push(c); }
+    return { out, dup, capped }; }
+  const s0 = CHN.stats.bind(CHN);
+  CHN.stats = function (name) { const ch = this.st()[name]; if (!ch || !Array.isArray(ch.calls)) return s0(name); const keep = ch.calls, k = clean(keep);
+    ch.calls = k.out; try { const x = s0(name); if (x) { x.dupRemoved = k.dup; x.riskFloored = k.capped; } lastFix[name] = { dup: k.dup, capped: k.capped }; return x; } finally { ch.calls = keep; } };
+  window.CHN3047 = { clean };
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { const rows = []; for (const name of Object.keys(CHN.st())) { const x = CHN.stats(name); if (x && (x.dupRemoved || x.riskFloored)) rows.push({ name, dup: x.dupRemoved, floored: x.riskFloored, n: x.evaluated, avgR: x.avgR }); } o.v3047 = rows.slice(0, 30); } catch (e) {} return o; }; } catch (e) {}
+  try { if (typeof CHN.render === 'function') CHN.render(); } catch (e) {}
+} catch (e) { console.warn('3.0.47', e); } }, 18500);
+window.SONAR_WEB = '3.0.47';
+} catch (e) { console.warn("baked 3.0.47", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
