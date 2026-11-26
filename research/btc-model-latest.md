@@ -1,13 +1,13 @@
-# Sonar BTC model — 2026-11-23T20:03:01Z
-BTC 61271.1 · regime DOWN · last closed day 2026-11-22
+# Sonar BTC model — 2026-11-26T12:24:38Z
+BTC 60458.0 · regime DOWN · last closed day 2026-11-25
 
 | horizon | target | best | AUC 2023+ | best baseline AUC | acc 2023+ | best baseline acc | beats baselines |
 |---|---|---|---|---|---|---|---|
-| d1 | up | gbm | 0.529 | 0.495 | 0.519 | 0.504 | ✅ |
-| d1 | big | gbm | 0.651 | 0.614 | 0.872 | 0.873 | ❌ |
-| d3 | up | logit | 0.529 | 0.489 | 0.518 | 0.529 | ❌ |
-| d3 | big | logit | 0.594 | 0.63 | 0.866 | 0.866 | ❌ |
-| d7 | up | logit | 0.539 | 0.491 | 0.512 | 0.526 | ❌ |
-| d7 | big | blend | 0.663 | 0.703 | 0.852 | 0.849 | ❌ |
+| d1 | up | gbm | 0.53 | 0.496 | 0.52 | 0.504 | ✅ |
+| d1 | big | gbm | 0.652 | 0.614 | 0.872 | 0.874 | ❌ |
+| d3 | up | logit | 0.529 | 0.49 | 0.518 | 0.529 | ❌ |
+| d3 | big | logit | 0.595 | 0.631 | 0.866 | 0.866 | ❌ |
+| d7 | up | logit | 0.54 | 0.492 | 0.513 | 0.525 | ❌ |
+| d7 | big | blend | 0.664 | 0.704 | 0.852 | 0.85 | ❌ |
 
-Today (probability, experimental): up_d1 0.406, big_d1 0.079, up_d3 0.5, big_d3 0.083, up_d7 0.477, big_d7 0.072
+Today (probability, experimental): up_d1 0.439, big_d1 0.07, up_d3 0.47, big_d3 0.081, up_d7 0.525, big_d7 0.067
