@@ -15969,6 +15969,35 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.48', e); } }, 19000);
 window.SONAR_WEB = '3.0.48';
 } catch (e) { console.warn("baked 3.0.48", e); }
+
+/* ===== baked update 3.0.49 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.49 — Ashraf (26 Nov): the BTC-strength exit was «an idea to try in certain cases», not a rule for every short.
+   3.0.46 keeps its pre-registered overall verdict; this adds the split it needs to find WHICH cases: the same shadow result,
+   counted by market state (GATE320) and by how long the short had been open when BTC turned (under 12 h / 12 h or more —
+   his exception was «a long short of days»). Declared now, before any result: a case counts as useful when it has ≥ 200
+   shorts, the exit adds ≥ +0.03R per trade there, and it does not lose on the shorts whose life saw BTC fall. Nothing trades
+   differently. Report v3049. */
+  if (typeof TRN === 'undefined' || !TRN.settle || !window.G3046) return;
+  const own = T => /^(مثبت|واعد)/.test(T.src || '') || T.flex || T.qk || T.lx || T.vb || T.sw;
+  const G = { st: Object.assign({ c: {} }, store.get('p3049', {})), save() { store.set('p3049', this.st); } }; let k = 0;
+  const reg = () => { try { return (window.GATE320 && GATE320.reg) || '?'; } catch (e) { return '?'; } };
+  const st0 = TRN.settle.bind(TRN);
+  TRN.settle = function (T, px, why, now) { const r = st0(T, px, why, now);
+    try { if (T && T.sg < 0 && !own(T) && N(r)) { const cost = (TRN.costR ? TRN.costR(T) : 0) || 0, bx = T._bx ? T._bx.R - cost : r, b = S.prices.BTCUSDT;
+        const fell = N(T._b0) && N(b) && b < T._b0, age = T._bx && N(T._bx.t) && N(T.t) ? (T._bx.t - T.t >= 12 * 3600e3 ? 'long' : 'short') : 'none';
+        for (const key of [reg(), reg() + '|' + age, 'age|' + age]) { const g = G.st.c[key] || (G.st.c[key] = { n: 0, act: 0, bx: 0, dn: 0, dAct: 0, dBx: 0 }); g.n++; g.act += r; g.bx += bx; if (fell) { g.dn++; g.dAct += r; g.dBx += bx; } }
+        if (++k % 10 === 0) G.save(); } } catch (e) {} return r; };
+  window.G3049 = G;
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { const st = window.SONAR_SERVER ? G.st : (store.get('p3049', null) || G.st), out = {};
+      for (const [key, g] of Object.entries(st.c || {})) { const d = (g.bx - g.act) / g.n;
+        out[key] = { n: g.n, act: +(g.act / g.n).toFixed(3), diff: +d.toFixed(3), btcFell: g.dn ? +((g.dBx - g.dAct) / g.dn).toFixed(3) : null,
+          verdict: g.n < 200 ? `لسه (${g.n}/200)` : (d >= .03 && (!g.dn || g.dBx >= g.dAct)) ? 'مفيد هنا' : 'مش مفيد هنا' }; }
+      o.v3049 = out; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.49', e); } }, 19500);
+window.SONAR_WEB = '3.0.49';
+} catch (e) { console.warn("baked 3.0.49", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
