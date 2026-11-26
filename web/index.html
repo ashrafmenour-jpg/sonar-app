@@ -15925,6 +15925,50 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.47', e); } }, 18500);
 window.SONAR_WEB = '3.0.47';
 } catch (e) { console.warn("baked 3.0.47", e); }
+
+/* ===== baked update 3.0.48 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.48 — shadow test of the «crowded short» filter (26 Nov). In the 25–26 Nov learning file the training shorts lost
+   −556R in the 28 hours when more than 10 shorts opened at once, but made +37R in quiet hours; and 948 shorts on a coin that
+   already had a short from under 4 h earlier made −368R. Nothing trades differently: every training short is tagged when it
+   opens — «crowd» = at least 4 other shorts opened in the previous 60 min, «dup» = the same coin was shorted in the previous 4 h —
+   and its result is counted by tag and by market state (GATE320: DOWN / REBOUND / RANGE / UP).
+   Verdict (set before testing): over ≥ 1,000 tagged-or-clean shorts the flagged ones must be worse than the clean ones by
+   ≥ 0.15R per trade, and worse in ≥ 3 market states (≥ 30 trades on each side). Dropped if, in any market state with ≥ 30 on
+   each side, the flagged shorts did better than the clean ones. Report v3048. */
+  if (typeof TRN === 'undefined' || !TRN.settle) return;
+  const HOUR = 3600e3, t0 = Date.now(), LOG = [];
+  const Z = () => ({ n: 0, s: 0, q: 0 });
+  const G = { st: Object.assign({ all: {}, start: t0 }, store.get('p3048', {})), save() { store.set('p3048', this.st); } };
+  const reg = () => { try { return (window.GATE320 && GATE320.reg) || '?'; } catch (e) { return '?'; } };
+  // seed the log with shorts already known, so the first tags are not blind
+  try { for (const T of [].concat(TRN.st.open || [], (TRN.st.closed || []).slice(-800))) if (T.sg < 0 && !T.shd && N(T.t) && t0 - T.t < 4 * HOUR) LOG.push([T.t, T.sym]); } catch (e) {}
+  for (const T of TRN.st.open || []) if (T.sg < 0 && !T._cr) T._cr = { pre: 1 };   // opened before this test: not counted
+  function scan() { const now = Date.now(); while (LOG.length && now - LOG[0][0] > 5 * HOUR) LOG.shift();
+    const fresh = (TRN.st.open || []).filter(T => T.sg < 0 && !T.shd && !T._cr && N(T.t)).sort((a, b) => a.t - b.t);
+    for (const T of fresh) { const n = LOG.filter(x => T.t - x[0] < HOUR && T.t >= x[0]).length, d = LOG.some(x => x[1] === T.sym && T.t - x[0] < 4 * HOUR && T.t >= x[0]);
+      T._cr = { n, c: n >= 4 ? 1 : 0, d: d ? 1 : 0, g: reg() }; LOG.push([T.t, T.sym]); LOG.sort((a, b) => a[0] - b[0]); } }
+  setInterval(() => { try { scan(); } catch (e) {} }, 20e3); window.G3048 = { G, LOG, scan };
+  const add = (k, r) => { const a = G.st.all; const g = a[k] || (a[k] = Z()); g.n++; g.s += r; g.q += r * r; };
+  const st0 = TRN.settle.bind(TRN);
+  TRN.settle = function (T, px, why, now) { const r = st0(T, px, why, now);
+    try { const c = T && T._cr; if (c && !c.pre && N(r)) { const f = c.c || c.d ? 'flag' : 'clean', g = c.g || '?';
+        add(f, r); add(f + '|' + g, r); if (c.c) add('crowd', r); if (c.d) add('dup', r); if (c.c && !c.d) add('crowdOnly', r); if (c.d && !c.c) add('dupOnly', r);
+        if ((G.st.all.flag ? G.st.all.flag.n : 0) % 10 === 0) G.save(); } } catch (e) {} return r; };
+  function judge(st) { const a = st.all || {}, m = g => g && g.n ? g.s / g.n : null, tt = g => { if (!g || g.n < 2) return null; const mu = g.s / g.n, v = (g.q - g.n * mu * mu) / (g.n - 1); return v > 0 ? mu / Math.sqrt(v / g.n) : null; };
+    const f = g => g && g.n ? { n: g.n, avgR: +m(g).toFixed(3), sumR: +g.s.toFixed(1), t: tt(g) == null ? null : +tt(g).toFixed(2) } : null;
+    const states = {}; let worse = 0, better = 0;
+    for (const k of ['DOWN', 'REBOUND', 'RANGE', 'UP', '?']) { const F = a['flag|' + k], C = a['clean|' + k]; if (!F && !C) continue; states[k] = { flagged: f(F), clean: f(C) };
+      if (F && C && F.n >= 30 && C.n >= 30) { if (m(F) < m(C)) worse++; else better++; } }
+    const n = (a.flag ? a.flag.n : 0) + (a.clean ? a.clean.n : 0), gap = a.flag && a.clean ? m(a.flag) - m(a.clean) : null;
+    const verdict = better ? 'فشل (في حالة سوق المزدحم كان أحسن)' : n < 1000 ? `لسه (${n}/1000)` : (gap != null && gap <= -.15 && worse >= 3) ? 'نجح' : `لسه مش كفاية (الفرق ${gap == null ? '—' : gap.toFixed(2)}R، حالات ${worse}/3)`;
+    return { since: new Date(st.start || t0).toISOString().slice(0, 16), flagged: f(a.flag), clean: f(a.clean), gapR: gap == null ? null : +gap.toFixed(3), crowd: f(a.crowd), dup: f(a.dup), crowdOnly: f(a.crowdOnly), dupOnly: f(a.dupOnly), byState: states, verdict }; }
+  window.G3048.judge = () => judge(G.st);
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { o.v3048 = judge(window.SONAR_SERVER ? G.st : (store.get('p3048', null) || G.st)); } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.48', e); } }, 19000);
+window.SONAR_WEB = '3.0.48';
+} catch (e) { console.warn("baked 3.0.48", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
