@@ -15998,6 +15998,33 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.49', e); } }, 19500);
 window.SONAR_WEB = '3.0.49';
 } catch (e) { console.warn("baked 3.0.49", e); }
+
+/* ===== baked update 3.0.50 ===== */
+try {
+/* Sonar 3.0.50 — the real-trades warning (protHTML) said «نفس خطأ Claude في Alpha Arena … التزم بالوقف ولا تحرّكه» to everyone whose
+   average loss beat the average win. Checked 26 Nov: (1) wrong fact — in Alpha Arena Claude's problem was a one-sided long bias,
+   few trades, and it kept to its exit plans; (2) wrong diagnosis — the trades it listed had hit their stop at about −1R (MAGMA −1R)
+   or were cut early (SEI −0.4R), while the win was taken at +0.46R: the stop was respected, the winners were cut short.
+   The warning now measures instead of guessing, from the last 20 real trades: win rate vs the rate needed to break even,
+   average win and loss in R (loss past −1.15R = stop moved or slipped; win under 1R = winners closed early), and whether the
+   dollar risk is constant (largest loss > 1.6 × the usual loss = position size not fixed). Each worst loss shows its R. */
+  const p0 = protHTML, rr = v => (v > 0 ? '+' : '') + v.toFixed(2) + 'R';
+  function advice() { const J = RJ().slice(0, 20), W = J.filter(x => x.pnl > 0), Lo = J.filter(x => x.pnl < 0); if (J.length < 6 || !W.length || !Lo.length) return null;
+    const aw = W.reduce((a, x) => a + x.pnl, 0) / W.length, al = -Lo.reduce((a, x) => a + x.pnl, 0) / Lo.length, wr = W.length / J.length, need = al / (al + aw);
+    const wR = W.filter(x => N(x.R)), lR = Lo.filter(x => N(x.R)), mW = wR.length ? wR.reduce((a, x) => a + x.R, 0) / wR.length : null, mL = lR.length ? lR.reduce((a, x) => a + x.R, 0) / lR.length : null;
+    const ls = Lo.map(x => -x.pnl).sort((a, b) => a - b), med = ls[Math.floor(ls.length / 2)], big = ls[ls.length - 1];
+    const out = [`نسبة فوزك ${Math.round(wr * 100)}% والمطلوب علشان تتعادل ${Math.round(need * 100)}%.`];
+    if (mL != null && lR.length >= 2 && mL < -1.15) out.push(`الخسارة بتعدّي الوقف (متوسطها ${rr(mL)}): يعني الوقف بيتحرك أو بيتنفذ متأخر — التزم بيه.`);
+    if (mW != null && wR.length >= 2 && mW < 1) out.push(`المكسب بيتقفل بدري (متوسطه ${rr(mW)} بس من المخاطرة)${mL != null && mL >= -1.15 ? '، والوقف نفسه بيتحترم' : ''}: خلّي الهدف الأول 1.5R أو أكتر، وعند +1R حرّك الوقف للدخول بدل ما تقفل.`);
+    if (Lo.length >= 3 && big > 1.6 * med) out.push(`مبلغ المخاطرة مش ثابت: أكبر خسارة ${usd(-big)} قد ${(big / med).toFixed(1)} مرة خسارتك المعتادة — ثبّت المبلغ اللي بتخاطر بيه في كل صفقة، والكمية تتحسب من بُعد الوقف.`);
+    if (out.length === 1) out.push('حدّد قبل الدخول: مخاطرة ثابتة، وهدف أول 1.5R على الأقل.');
+    const worst = Lo.slice().sort((a, b) => a.pnl - b.pnl).slice(0, 3).map(x => `${esc(base(x.sym))} ${usd(x.pnl)}${N(x.R) ? ' (' + rr(x.R) + ')' : ''}${x.reason ? ' — ' + esc(x.reason) : ''}`).join('، ');
+    return `خسارتك المتوسطة (${usd(al)}) أكبر من مكسبك المتوسط (${usd(aw)}). ${out.join(' ')} أكبر الخسائر: ${worst}.`; }
+  protHTML = function () { let h = p0.apply(this, arguments);
+    try { const a = advice(); if (a) h = h.replace(/<p class="rk-w">خسارتك المتوسطة[\s\S]*?<\/p>/, `<p class="rk-w">${a}</p>`); } catch (e) {} return h; };
+  window.ADV3050 = advice;
+  window.SONAR_WEB = '3.0.50';
+} catch (e) { console.warn("baked 3.0.50", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
