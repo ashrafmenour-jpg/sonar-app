@@ -220,6 +220,19 @@ def candidates(sym, f, ctx, rule):
         # a held event only counts on its first hour (onset below); a new bar with the same event is a new signal
         newbar = pd.Series(closed_on_hours(pd.Series(np.arange(len(k)), index=k.index), f.index, tf), index=f.index)
         a = np.where(newbar.ne(newbar.shift(1)).values, a, 0)
+    elif sig == 'bbsq':   # Bollinger squeeze (HanyStock): daily BB(20, 2); «squeeze» = band width in its lowest 20 % of 120 days at some point
+        # in the last 5 days; trigger = a daily close outside the band, optionally with volume ≥ vr_min × its 20-day average.
+        # sq: 'yes' (the claim) / 'no' (control: the same breakout without a squeeze) / None (any)
+        d = f[['o', 'h', 'l', 'c', 'v']].resample('1D', label='left', closed='left').agg({'o': 'first', 'h': 'max', 'l': 'min', 'c': 'last', 'v': 'sum'}).dropna()
+        m = d.c.rolling(20).mean(); sd = d.c.rolling(20).std(); up, lo = m + 2 * sd, m - 2 * sd; w = (up - lo) / m
+        sq = (w <= w.rolling(120).quantile(.2)).astype(float).rolling(5).max().fillna(0).astype(bool)
+        e = (d.c > up) if rule['side'] > 0 else (d.c < lo)
+        e &= ~(((d.c.shift(1) > up.shift(1)) if rule['side'] > 0 else (d.c.shift(1) < lo.shift(1))).fillna(False))   # first close outside only
+        if rule.get('sq') == 'yes': e &= sq
+        elif rule.get('sq') == 'no': e &= ~sq
+        if rule.get('vr_min') is not None: e &= d.v / d.v.shift(1).rolling(20).mean().replace(0, np.nan) >= rule['vr_min']
+        x = pd.Series(np.where(e.fillna(False), 1, 0), index=d.index)
+        a = np.where(pd.Series(closed_on_hours(x, f.index, '1D'), index=f.index).fillna(0) > 0, rule['side'], 0)
     elif sig == 'wvf':   # Williams VIX Fix (daily): fear = how far today's low sits under the 22-day highest close; «extreme» = above its
         # Bollinger band (20, 2) or its 85th percentile of 50 days (the LuxAlgo/ChrisMoody defaults). trig 'peak' = buy the fear itself
         # (control); 'recede' = the post's claim: an extreme in the last 5 days, today no longer extreme and the close holds above yesterday's

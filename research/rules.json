@@ -2419,6 +2419,93 @@
     "REBOUND"
    ],
    "name": "Williams VIX Fix (انحسار الخوف) بس لما السوق مش هابط"
+  },
+  {
+   "signal": "bbsq",
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-27",
+   "id": "bbsq_long_vol",
+   "side": 1,
+   "sq": "yes",
+   "vr_min": 1.5,
+   "name": "بولينجر (HanyStock): انضغاط ثم أول إغلاق يومي فوق الباند العلوي بحجم ≥1.5× → لونج، تعزيز عند +1R ووقف متحرك 3×ATR"
+  },
+  {
+   "signal": "bbsq",
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-27",
+   "id": "bbsq_long",
+   "side": 1,
+   "sq": "yes",
+   "name": "بولينجر: انضغاط ثم أول إغلاق فوق الباند العلوي (من غير شرط حجم)"
+  },
+  {
+   "signal": "bbsq",
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-27",
+   "id": "bb_long_vol_nosq",
+   "side": 1,
+   "sq": "no",
+   "vr_min": 1.5,
+   "name": "بولينجر (مقارنة): نفس الاختراق بالحجم بس من غير انضغاط — هل الانضغاط بيزوّد حاجة؟"
+  },
+  {
+   "signal": "bbsq",
+   "stop_atr4h": 2.5,
+   "no_tp": true,
+   "pyramid": {
+    "at_r": 1.0
+   },
+   "trail": {
+    "mode": "atr",
+    "k": 3.0,
+    "after_r": 1.0
+   },
+   "max_hours": 480,
+   "mood": null,
+   "loc": null,
+   "registered": "2026-11-27",
+   "id": "bbsq_short_vol",
+   "side": -1,
+   "sq": "yes",
+   "vr_min": 1.5,
+   "name": "بولينجر: انضغاط ثم أول إغلاق تحت الباند السفلي بحجم ≥1.5× → شورت"
   }
  ]
 }
