@@ -16025,6 +16025,37 @@ try {
   window.ADV3050 = advice;
   window.SONAR_WEB = '3.0.50';
 } catch (e) { console.warn("baked 3.0.50", e); }
+
+/* ===== baked update 3.0.51 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.51 — 27 Nov learning file: of the first 155 training shorts tagged by 3.0.48, 153 were «flagged» and 2 «clean» —
+   «≥ 4 other shorts in the last hour» is the normal state here (about 25 shorts open per hour), so flagged-vs-clean can never
+   be compared. 3.0.48 keeps its pre-registered verdict; this adds the dose-response it needs, declared before any result:
+   the same shorts by how many other shorts opened in the previous hour (under 10 / 10–19 / 20–49 / 50+) and by repeat coin,
+   overall and by market state. Verdict: with ≥ 150 shorts in both «under 10» and «50+», crowding hurts if «50+» is worse by
+   ≥ 0.15R per trade and the middle buckets sit between them; it does not matter if «50+» is not worse. Nothing trades
+   differently. Report v3051. */
+  if (typeof TRN === 'undefined' || !TRN.settle) return;
+  const B = n => n < 10 ? 'a<10' : n < 20 ? 'b10-19' : n < 50 ? 'c20-49' : 'd50+';
+  const G = { st: Object.assign({ c: {} }, store.get('p3051', {})), save() { store.set('p3051', this.st); } }; let k = 0;
+  const add = (key, r) => { const g = G.st.c[key] || (G.st.c[key] = { n: 0, s: 0, q: 0 }); g.n++; g.s += r; g.q += r * r; };
+  const st0 = TRN.settle.bind(TRN);
+  TRN.settle = function (T, px, why, now) { const r = st0(T, px, why, now);
+    try { const c = T && T._cr; if (c && !c.pre && N(c.n) && N(r)) { const b = B(c.n), g = c.g || '?';
+        add(b, r); add(b + '|' + g, r); add((c.d ? 'dup' : 'first') + '|' + b, r); if (++k % 10 === 0) G.save(); } } catch (e) {} return r; };
+  window.G3051 = G;
+  try { const r0 = HC.report.bind(HC); HC.report = function () { const o = r0.apply(this, arguments);
+    try { const c = (window.SONAR_SERVER ? G.st : (store.get('p3051', null) || G.st)).c || {}, out = {};
+      const f = g => { if (!g || !g.n) return null; const m = g.s / g.n, v = g.n > 1 ? (g.q - g.n * m * m) / (g.n - 1) : 0; return { n: g.n, avgR: +m.toFixed(3), t: v > 0 ? +(m / Math.sqrt(v / g.n)).toFixed(2) : null }; };
+      for (const key of Object.keys(c).sort()) out[key] = f(c[key]);
+      const lo = c['a<10'], hi = c['d50+'], m = g => g.s / g.n;
+      let verdict = `لسه (أقل من 10: ${lo ? lo.n : 0}/150، 50+: ${hi ? hi.n : 0}/150)`;
+      if (lo && hi && lo.n >= 150 && hi.n >= 150) { const mids = ['b10-19', 'c20-49'].map(x => c[x]).filter(Boolean).map(m), a = m(lo), z = m(hi);
+        verdict = (z <= a - .15 && mids.every(x => x <= a + .05 && x >= z - .05)) ? 'الزحمة مضرة (كل ما تزيد النتيجة تسوء)' : z >= a ? 'الزحمة مش فارقة' : `مش واضح (الفرق ${(z - a).toFixed(2)}R)`; }
+      out.verdict = verdict; o.v3051 = out; } catch (e) {} return o; }; } catch (e) {}
+} catch (e) { console.warn('3.0.51', e); } }, 20000);
+window.SONAR_WEB = '3.0.51';
+} catch (e) { console.warn("baked 3.0.51", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
