@@ -16056,6 +16056,20 @@ try { setTimeout(function () { try {
 } catch (e) { console.warn('3.0.51', e); } }, 20000);
 window.SONAR_WEB = '3.0.51';
 } catch (e) { console.warn("baked 3.0.51", e); }
+
+/* ===== baked update 3.0.52 ===== */
+try { setTimeout(function () { try {
+/* Sonar 3.0.52 — 28 Nov diagnosis: the server wrote the market note 14 times in 9 h, though 3.0.43 allows once an hour. That
+   limit read the last note's time from memory (V21.aiTxt), which is empty after each restart/reload of the server page, so every
+   reload wrote a fresh note. The time of the last note is now kept in storage, so the hour holds across restarts. */
+  if (!window.V21 || typeof V21.ai !== 'function') return;
+  const a0 = V21.ai.bind(V21);
+  V21.ai = async function (force) {   // the note is already saved as 'v21.ai'; trust its time even when memory was wiped by a reload
+    if (!force) { const c = this.aiTxt || store.get('v21.ai', null); if (c && c.t && Date.now() - c.at < 60 * 60000) { this.aiTxt = c; return; } }
+    return a0(force); };
+} catch (e) { console.warn('3.0.52', e); } }, 1500);
+window.SONAR_WEB = '3.0.52';
+} catch (e) { console.warn("baked 3.0.52", e); }
 </script>
 <div id="ctl" class="ctl" hidden></div>
 </body>
